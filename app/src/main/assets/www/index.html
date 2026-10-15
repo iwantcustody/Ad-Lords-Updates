@@ -109,6 +109,7 @@ body.pc .streak span{font-size:11px}
 #settings .set>label,#settings .set>span:first-child{font-size:14px;font-weight:700;color:#e6eef2;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05)}
 #settings .set>*:not(label){justify-self:end}
 #settings .fine{color:rgba(230,238,242,.6);opacity:1}
+#settings .fine a{color:var(--gold)}
 #settings select{font:inherit;font-size:13px;font-weight:700;max-width:230px;background:#1a252d;color:#e6eef2;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:7px 8px}
 #settings .sw{background:#33424c}
 #settings .sw:checked{background:var(--gold)}
@@ -521,6 +522,8 @@ body.pc .titleFs{display:none}
         <div class="set" id="penTapSet"></div>
         <p id="saveNote"></p>
         <div class="set" id="updRow" hidden><span>Updates</span><button class="btn small" id="updCheck" type="button">Check now</button></div>
+        <h3 class="subh">Credits</h3>
+        <p class="fine">Sound effects by Filip_Hancho_Unltd. · Instagram: <a href="https://www.instagram.com/filip_hancho/" target="_blank" rel="noopener">@filip_hancho</a></p>
         <p class="fine" id="appVer"></p>
       </section>
       <section class="bfPane" data-pane="ctrl">
@@ -869,7 +872,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V68';
+const GAME_VERSION = 'V69';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -962,7 +965,7 @@ function playRec(t, L, v, r, out){
     (l.k === 'n' ? nz : tone)(t + (l.t || 0), l.dur, o); }
 }
 // per-sound minimum gap so a wall of bullets still sounds like a gun, not static
-const SFX_GAP = {touchdown: 0.18, ar: 0.07, pistol: 0.05, smg: 0.06, revolver: 0.08, bailiff: 0.1, shotgun: 0.1, minigun: 0.045, sniper: 0.1, grenade: 0.1, rpg: 0.1, cannon30: 0.07, cal50: 0.07, tank: 0.2, heliGun: 0.05, boom: 0.06, bigboom: 0.15, smallboom: 0.05, pop: 0.035, hit: 0.03, wood: 0.05, thud: 0.08, coin: 0.04, enemyGun: 0.06};
+const SFX_GAP = {imWood: 0.045, imConc: 0.045, imMetal: 0.06, whiz: 0.06, mpass: 0.4, debris: 1.4, wdebris: 1.4, rocket: 0.07, touchdown: 0.18, ar: 0.07, pistol: 0.05, smg: 0.06, revolver: 0.08, bailiff: 0.1, shotgun: 0.1, minigun: 0.045, sniper: 0.1, grenade: 0.1, rpg: 0.1, cannon30: 0.07, cal50: 0.07, tank: 0.2, heliGun: 0.05, boom: 0.06, bigboom: 0.15, smallboom: 0.05, pop: 0.035, hit: 0.03, wood: 0.05, thud: 0.08, coin: 0.04, enemyGun: 0.06};
 function sfx(name, vol = 1, pan = 0, own = false){
   if (!AU.ctx || !SETTINGS.sound || AU.ctx.state !== 'running') return;
   const c = AU.ctx, t = c.currentTime, gap = SFX_GAP[name] || 0;
@@ -972,6 +975,7 @@ function sfx(name, vol = 1, pan = 0, own = false){
   let out = bus;
   if (pan && c.createStereoPanner){ const p = c.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); p.connect(bus); out = p; }
   const v = vol, r = rnd(0.94, 1.06);
+  if (SMP_VOL[name] !== undefined || name === 'agm'){ if (name === 'agm' && !SMP.agm.length){ playRec(t, SFX_REC.hellfire, v*1.2, r*0.9, out); return; } if (SMP[name] && SMP[name].length) playSmp(SMP[name], t, v*(SMP_VOL[name] || 0.7), out); return; }
   switch (name){
     case 'pistol':    playRec(t, SFX_REC.pistol, v, r, out); break;
     case 'ar':        playRec(t, SFX_REC.ar, v, r, out); break;
@@ -983,7 +987,7 @@ function sfx(name, vol = 1, pan = 0, own = false){
     case 'sniper':    playRec(t, SFX_REC.sniper, v*0.85, r, out); break;
     case 'grenade':  tone(t, 0.14, {f: 320*r, f2: 90, vol: 0.45*v, out}); nz(t, 0.12, {f: 700, vol: 0.3*v, out}); break;
     case 'rpg':       playRec(t, SFX_REC.rpg, v, r, out); break;
-    case 'rocket':    playRec(t, SFX_REC.rocket, v, r, out); break;
+    case 'rocket':    if (SMP.rocket.length){ playSmp(SMP.rocket, t, v*0.42, out); playRec(t, SFX_REC.rocket.slice(0, 1), v*0.5, r, out); } else playRec(t, SFX_REC.rocket, v, r, out); break;
     case 'hellfire':  if (SMP.missile.length){ playSmp(SMP.missile, t, v*0.55, out); playRec(t, SFX_REC.hellfire.slice(0, 1), v*0.6, r, out); } else playRec(t, SFX_REC.hellfire, v, r, out); break;
     // 30mm: mostly a sub-bass thump (~60% of the energy under 60 Hz), a short mid crack, then a long rough tail
     case 'cannon30': tone(t, 0.22, {f: 62*r, f2: 34, vol: 0.6*v, out}); tone(t, 0.12, {f: 180*r, f2: 85, type: 'triangle', vol: 0.55*v, out});
@@ -1012,7 +1016,7 @@ function sfx(name, vol = 1, pan = 0, own = false){
     case 'lock':     tone(t, 0.06, {f: 1800, type: 'square', vol: 0.05*v, out}); break;
     case 'warn':     [0, 0.14].forEach(d => tone(t + d, 0.1, {f: 1250, type: 'square', vol: 0.09*v, out})); break;
     // flare launch, fitted to the flare-launch references
-    case 'flare':     playRec(t, SFX_REC.flare, v, r, out); break;
+    case 'flare':     if (SMP.flareL.length){ playSmp(SMP.flareL, t, v*0.75, out); if (SMP.flareB.length) playSmp(SMP.flareB, t + 0.3, v*0.35, out); } else playRec(t, SFX_REC.flare, v, r, out); break;
     // hitting the ground: short thud centred ~250–500 Hz with a 2 kHz crunch (the reference hits are only a few dB over the rotor)
     case 'touchdown':tone(t, 0.22, {f: 95*r, f2: 45, vol: 0.45*v, out}); nz(t, 0.16, {type: 'bandpass', f: 330*r, q: 1.0, vol: 0.5*v, out}); nz(t, 0.09, {type: 'bandpass', f: 2100*r, q: 1.2, vol: 0.3*v, out}); crackle(t + 0.03, 0.25, 4, 0.05*v, out); break;
     case 'gull':     { const o = AU.amb; tone(t, 0.25, {f: 1500, f2: 900, type: 'triangle', vol: 0.06, out: o}); tone(t + 0.3, 0.3, {f: 1600, f2: 1000, type: 'triangle', vol: 0.05, out: o}); break; }
@@ -1064,18 +1068,35 @@ const _v0 = new THREE.Vector3();
 const M134 = {buf: {}, ready: false, loading: false, v: {}};
 const OWN_GUNS = new Set(['player', 'dg', 'hmdoor', 'hmw', 'df']);
 const M134_LOOP = {fire: [0.2, 6.082], spin: [0.2, 4.71]};
-// recorded one-shots (the missile launches are a friend's fire-bottle throws); the synth recipe stands in until they load
-const SMP = {missile: [], loading: false};
+// recorded one-shots by Filip_Hancho_Unltd. (see Settings → Gameplay → Credits). Each bank holds a few takes;
+// one is picked at random with a slight pitch change. The synth recipes stand in until a bank loads.
+const SMP_DEF = {missile: 5, agm: 3, mpass: 6, whiz: 16, flareL: 6, flareB: 4, rocket: 5, imWood: 6, imConc: 6, imMetal: 5, debris: 4, wdebris: 4, downdraft: 2};
+const SMP_VOL = {mpass: 0.9, whiz: 0.55, imWood: 0.5, imConc: 0.5, imMetal: 0.55, debris: 0.45, wdebris: 0.45};
+const SMP = {loading: false}; for (const k in SMP_DEF) SMP[k] = [];
 function smpLoad(){
   if (!AU.ctx || SMP.loading) return; SMP.loading = true;
-  for (let k = 1; k <= 5; k++) fetch('assets/missile_' + k + '.mp3').then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
-    .then(b => new Promise((res, rej) => AU.ctx.decodeAudioData(b, res, rej))).then(b => SMP.missile.push(b)).catch(e => console.warn('missile sample', k, e));
+  for (const [k, n] of Object.entries(SMP_DEF)) for (let i = 1; i <= n; i++)
+    fetch('assets/sfx/' + k + '_' + i + '.mp3').then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(b => new Promise((res, rej) => AU.ctx.decodeAudioData(b, res, rej))).then(b => SMP[k].push(b)).catch(e => console.warn('sample', k, i, e));
 }
-function playSmp(list, t, vol, out){
+function playSmp(list, t, vol, out, rate = 0.94 + Math.random()*0.12){
   const c = AU.ctx, s = c.createBufferSource(), g = c.createGain();
-  s.buffer = list[(Math.random()*list.length)|0]; s.playbackRate.value = 0.94 + Math.random()*0.12;
+  s.buffer = list[(Math.random()*list.length)|0]; s.playbackRate.value = rate;
   g.gain.value = vol; s.connect(g); g.connect(out); s.start(t);
+  return s;
 }
+// rotor downdraft: a looped roar of air and grit that swells as the helicopter gets close to the ground
+const DD = {src: null, g: null};
+function downdraftTick(){
+  if (!AU.ctx || !SMP.downdraft.length) return;
+  if (!DD.src){ DD.g = AU.ctx.createGain(); DD.g.gain.value = 0; DD.g.connect(AU.sfx); DD.src = AU.ctx.createBufferSource(); DD.src.buffer = SMP.downdraft[0]; DD.src.loop = true; DD.src.connect(DD.g); DD.src.start(); }
+  const fly = state === 'play' && SETTINGS.sound && ((MODE === 'heli' && HM.on) || (DF.on && DF.v)), alt = MODE === 'heli' && HM.on ? HM.pos.y : DF.v ? DF.v.y : 99;
+  const want = fly ? clamp(1 - (alt - 2.2)/8, 0, 1)*0.6 : 0;
+  DD.g.gain.setTargetAtTime(want, AU.ctx.currentTime, 0.25);
+}
+// where a round lands decides what it sounds like: deck planks on the pier, tarmac on the airfield, nothing over water
+function surfAt(x, z){ if (LOC.cur === 'airfield') return 'imConc'; return Math.abs(x) <= halfW(z) + 0.3 && z < 6 ? 'imWood' : null; }
+function impactSfx(x, z){ const k = surfAt(x, z); if (!k) return; const v = camVol(x, 0.4, z); if (v < 0.3 || Math.random() > 0.6) return; sfx(k, v, camPan(x)); }
 function m134Load(){
   if (!AU.ctx || M134.loading) return; M134.loading = true;
   const names = ['fire', 'spin', 'windup', 'start', 'stop', 'spindown'];
@@ -2582,7 +2603,7 @@ function fx(kind, x, y, z, size){
 const PUFFS = [];
 function hitPuff(x, z, delay){ if (PUFFS.length < 60) PUFFS.push({x, z, t: delay}); }
 function fxTick(dt){
-  for (let k = PUFFS.length - 1; k >= 0; k--){ const p = PUFFS[k]; p.t -= dt; if (p.t <= 0){ fx('dust', p.x, 0.35, p.z, rnd(0.45, 0.8)); if (Math.random() < 0.3) chips(p.x, 0.4, p.z, SPARK, 2, 3); PUFFS.splice(k, 1); } }
+  for (let k = PUFFS.length - 1; k >= 0; k--){ const p = PUFFS[k]; p.t -= dt; if (p.t <= 0){ fx('dust', p.x, 0.35, p.z, rnd(0.45, 0.8)); if (Math.random() < 0.3) chips(p.x, 0.4, p.z, SPARK, 2, 3); impactSfx(p.x, p.z); PUFFS.splice(k, 1); } }
   for (const p of fxs){
     if (p.life <= 0) continue;
     p.t += dt; const k = p.t/p.life;
@@ -2603,6 +2624,7 @@ function impactFx(x, z, r, quiet){
 function explode(x, z, r, dmg, quiet){
   impactFx(x, z, r, quiet);
   sfx(quiet ? 'smallboom' : r >= 3.4 ? 'bigboom' : 'boom', quiet ? 0.7 : 1, x/8);
+  if (r >= 4 && AU.ctx) setTimeout(() => sfx(LOC.cur === 'airfield' ? 'debris' : 'wdebris', camVol(x, 0.5, z)*Math.min(1, r/6), camPan(x)), 350);
   for (let i = 0; i < en; i++){
     if (eh[i] <= 0) continue;
     const d = Math.hypot(ex[i] - x, ez[i] - z);
@@ -4174,7 +4196,7 @@ function aiSquadTick(dt){
 function inputTick(dt){
   gpPoll(dt); tsTick(); motionPoll(); tiltTick(); lsTick(dt); gyMeterTick();
   if (BH.on && performance.now() - BH.t > 150) bfHudHide();
-  aiSquadTick(dt);
+  aiSquadTick(dt); downdraftTick();
   if (state !== 'play'){ gyroTake(); return; }
   gyroTick();
   const G = INPUT.gp, dz = v => Math.abs(v) < 0.18 ? 0 : (v - Math.sign(v)*0.18)/0.82;
@@ -5027,7 +5049,7 @@ function apAIGunner(P, dt){
 function hmFireAGM(P, to){
   P.agmCd = AGM.cd;
   const from = P.pos.clone(); from.y -= 0.9;
-  hmShoot('agm', from, to.clone().sub(from), 30, {to: to.clone()}); sfx('hellfire', 1, 0, true);
+  hmShoot('agm', from, to.clone().sub(from), 30, {to: to.clone()}); sfx('agm', 1, 0, true);
 }
 function hmGunnerAGM(){
   const P = HM; if (state !== 'play' || P.agmCd > 0) return;
@@ -5072,7 +5094,7 @@ function hmHitHelis(p, r, dmg){
   let hit = false;
   for (const e of HM.enemies){
     if (e.hp <= 0) continue;
-    if (e.pos.distanceTo(p) < r + 2.4){ e.hp -= dmg; e.hit = 0.1; hit = true; chips(p.x, p.y, p.z, SPARK, 3, 3);
+    if (e.pos.distanceTo(p) < r + 2.4){ e.hp -= dmg; e.hit = 0.1; hit = true; chips(p.x, p.y, p.z, SPARK, 3, 3); sfx('imMetal', camVol(p.x, p.y, p.z), camPan(p.x));
       if (e.hp <= 0){ HM.score += 250; kills++; coins += 20; explode(e.pos.x, e.pos.z, 0.1, 0, true); chips(e.pos.x, e.pos.y, e.pos.z, ORANGE, 40, 7); chips(e.pos.x, e.pos.y, e.pos.z, SMOKE, 30, 5); sfx('bigboom'); e.fall = 0; toast('Apache down  +250', '#ffe28a'); }
     }
   }
@@ -5349,6 +5371,11 @@ function hmUpdate(dt){
     }
     o.m.position.addScaledVector(o.v, dt); o.life -= dt;
     const d = o.m.position.distanceTo(P.pos);
+    if (!o.passed && o.pd !== undefined && d > o.pd && o.pd < (o.missile ? 16 : 5)){
+      o.passed = true; const sx = o.m.position.x - camera.position.x;
+      sfx(o.missile ? 'mpass' : 'whiz', clamp(1.3 - o.pd/(o.missile ? 16 : 5), 0.35, 1), clamp(sx/6, -1, 1), true);
+    }
+    o.pd = d;
     let gone = o.life <= 0 || o.m.position.y < 0.2;
     if (!gone && d < (o.missile ? 2.4 : 1.7)){ hmDamage(o.missile ? 20 : 1.3); gone = true; if (o.missile){ chips(P.pos.x, P.pos.y, P.pos.z, ORANGE, 20, 6); sfx('boom'); } }
     if (o.missile && o.decoy && o.m.position.distanceTo(o.decoy) < 2){ chips(o.m.position.x, o.m.position.y, o.m.position.z, ORANGE, 14, 5); sfx('smallboom'); gone = true; }

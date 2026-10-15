@@ -872,7 +872,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V69';
+const GAME_VERSION = 'V70';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -965,7 +965,7 @@ function playRec(t, L, v, r, out){
     (l.k === 'n' ? nz : tone)(t + (l.t || 0), l.dur, o); }
 }
 // per-sound minimum gap so a wall of bullets still sounds like a gun, not static
-const SFX_GAP = {imWood: 0.045, imConc: 0.045, imMetal: 0.06, whiz: 0.06, mpass: 0.4, debris: 1.4, wdebris: 1.4, rocket: 0.07, touchdown: 0.18, ar: 0.07, pistol: 0.05, smg: 0.06, revolver: 0.08, bailiff: 0.1, shotgun: 0.1, minigun: 0.045, sniper: 0.1, grenade: 0.1, rpg: 0.1, cannon30: 0.07, cal50: 0.07, tank: 0.2, heliGun: 0.05, boom: 0.06, bigboom: 0.15, smallboom: 0.05, pop: 0.035, hit: 0.03, wood: 0.05, thud: 0.08, coin: 0.04, enemyGun: 0.06};
+const SFX_GAP = {flarePop: 0.2, imWood: 0.045, imConc: 0.045, imMetal: 0.06, whiz: 0.06, mpass: 0.4, debris: 1.4, wdebris: 1.4, rocket: 0.07, touchdown: 0.18, ar: 0.07, pistol: 0.05, smg: 0.06, revolver: 0.08, bailiff: 0.1, shotgun: 0.1, minigun: 0.045, sniper: 0.1, grenade: 0.1, rpg: 0.1, cannon30: 0.07, cal50: 0.07, tank: 0.2, heliGun: 0.05, boom: 0.06, bigboom: 0.15, smallboom: 0.05, pop: 0.035, hit: 0.03, wood: 0.05, thud: 0.08, coin: 0.04, enemyGun: 0.06};
 function sfx(name, vol = 1, pan = 0, own = false){
   if (!AU.ctx || !SETTINGS.sound || AU.ctx.state !== 'running') return;
   const c = AU.ctx, t = c.currentTime, gap = SFX_GAP[name] || 0;
@@ -1016,6 +1016,7 @@ function sfx(name, vol = 1, pan = 0, own = false){
     case 'lock':     tone(t, 0.06, {f: 1800, type: 'square', vol: 0.05*v, out}); break;
     case 'warn':     [0, 0.14].forEach(d => tone(t + d, 0.1, {f: 1250, type: 'square', vol: 0.09*v, out})); break;
     // flare launch, fitted to the flare-launch references
+    case 'flarePop':  playRec(t, SFX_REC.flare.slice(0, 3), v, r, out); if (SMP.flareB.length) playSmp(SMP.flareB, t + 0.05, v*0.18, out); break;
     case 'flare':     if (SMP.flareL.length){ playSmp(SMP.flareL, t, v*0.75, out); if (SMP.flareB.length) playSmp(SMP.flareB, t + 0.3, v*0.35, out); } else playRec(t, SFX_REC.flare, v, r, out); break;
     // hitting the ground: short thud centred ~250–500 Hz with a 2 kHz crunch (the reference hits are only a few dB over the rotor)
     case 'touchdown':tone(t, 0.22, {f: 95*r, f2: 45, vol: 0.45*v, out}); nz(t, 0.16, {type: 'bandpass', f: 330*r, q: 1.0, vol: 0.5*v, out}); nz(t, 0.09, {type: 'bandpass', f: 2100*r, q: 1.2, vol: 0.3*v, out}); crackle(t + 0.03, 0.25, 4, 0.05*v, out); break;
@@ -4887,7 +4888,7 @@ function hmStart(type = 'apache'){
   MODE = 'heli'; reset(true);
   clearGunners(); $('hud').hidden = true; $('bottom').hidden = true;
   for (const g of gates){ g.broken = true; g.rebuild = 1e9; g.g.visible = false; }
-  Object.assign(HM, {on: true, pq: 0, wr: 0, wp: 0, wy: 0, camYaw: 0, camPitch: 0, landT: 0, seat: 'pilot', view: 'chase', wsel: 'pri', zoom: false, free: false, hfHold: false, coll: 0, mdx: 0, mdy: 0, lookYaw: 0, lookPitch: 0, yaw: 0, speed: 0, alt: 12, sx: 0, sy: 0, climb: 0, firing: false, aimAz: 0, aimEl: -0.45,
+  Object.assign(HM, {on: true, flPairs: 0, flT: 0, pq: 0, wr: 0, wp: 0, wy: 0, camYaw: 0, camPitch: 0, landT: 0, seat: 'pilot', view: 'chase', wsel: 'pri', zoom: false, free: false, hfHold: false, coll: 0, mdx: 0, mdy: 0, lookYaw: 0, lookPitch: 0, yaw: 0, speed: 0, alt: 12, sx: 0, sy: 0, climb: 0, firing: false, aimAz: 0, aimEl: -0.45,
     hull: 100, score: 0, mag: CANNON.mag, reload: 0, rockets: 38, rkMax: 38, rkReload: 0, hfReload: 0, hellfire: 8, flares: 12, fireT: 0, hfCd: 0, flCd: 0, heliSpawnT: 6, toSpawn: 0, breakT: 0, warnT: 0, bank: 0, pitch: 0, hintT: 6,
     airT: 9, kicked: true, camQ2: null, volley: 0, volleyT: 0, agi: type === 'little' ? LB_AGI : null});
   HM.pos.set(0, 12, 12); HM.type = type; if (!HM.vel) HM.vel = new THREE.Vector3(); HM.vel.set(0, 0, 0);
@@ -5070,13 +5071,19 @@ function hmFireHellfire(){
 }
 function hmFlares(){
   if (HM.flares <= 0 || HM.flCd > 0 || state !== 'play') return;
-  HM.flares--; HM.flCd = 1.5; sfx('flare', 1.1, 0, true);
-  for (let k = 0; k < 6; k++){
+  // Battlefield-style: six pairs, one left and one right, spread evenly over 1.75 s
+  HM.flares--; HM.flCd = 2.2; HM.flPairs = 6; HM.flT = 0; sfx('flare', 1.1, 0, true);
+}
+function hmFlarePair(){
+  const P = HM, f = hmFwd(P.yaw, _v3), right = new THREE.Vector3(-f.z, 0, f.x), base = P.vel ? P.vel.clone().multiplyScalar(0.6) : new THREE.Vector3();
+  for (const sd of [-1, 1]){
     const m = new THREE.Sprite(new THREE.SpriteMaterial({map: flashTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, color: 0xffd080}));
-    m.scale.setScalar(1.6); m.position.copy(HM.pos); scene.add(m);
-    HM.flareObjs.push({m, v: new THREE.Vector3(rnd(-6, 6), rnd(-2, 3), rnd(-6, 6)), life: 3});
+    m.scale.setScalar(1.6); m.position.copy(P.pos).addScaledVector(right, sd*0.8); m.position.y -= 0.4; scene.add(m);
+    P.flareObjs.push({m, v: base.clone().addScaledVector(right, sd*rnd(5, 7)).addScaledVector(f, -rnd(2, 4)).add(new THREE.Vector3(0, rnd(-1.5, 1), 0)), life: 3});
   }
-  for (const mi of HM.emiss) mi.decoy = HM.pos.clone().add(new THREE.Vector3(rnd(-8, 8), -4, rnd(-8, 8)));
+  if (P.flPairs < 5) sfx('flarePop', 0.8, 0, true);
+  // every missile in the air, including ones launched after you started, goes for the newest pair
+  for (const mi of P.emiss) if (mi.missile) mi.decoy = P.pos.clone().add(new THREE.Vector3(rnd(-8, 8), -4, rnd(-8, 8)));
 }
 function hmOnWave(){
   HM.toSpawn = wave >= 2 ? Math.min(4, Math.floor(wave/2)) : 0;
@@ -5193,6 +5200,7 @@ function hmSelect(w){ if (HM.seat !== 'pilot') return; HM.wsel = w; sfx('click')
 function hmUpdate(dt){
   const P = HM; heliAudioTick(P, dt);
   P.hfCd = Math.max(0, P.hfCd - dt); P.flCd = Math.max(0, P.flCd - dt); P.hintT -= dt;
+  if (P.flPairs > 0){ P.flT -= dt; while (P.flT <= 0 && P.flPairs > 0){ P.flT += 0.35; P.flPairs--; hmFlarePair(); } }
   if (P.hfHold && P.hfCd <= 0 && P.wsel === 'sec') hmFireHellfire();
   // rocket pods reload on their own; Hellfires trickle back slowly
   P.rkReload = (P.rkReload || 0) + dt*(P.firing && P.seat === 'pilot' ? 1.6 : 3.2); while (P.rkReload >= 1){ P.rkReload--; if (P.rockets < P.rkMax) P.rockets++; }

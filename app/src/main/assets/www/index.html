@@ -137,6 +137,8 @@ body.pc .streak span{font-size:11px}
 .gyInfo span{opacity:.65;font-variant-numeric:tabular-nums}
 .gyInfo .btn{align-self:flex-start}
 /* gunner look stick */
+#bfHud{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;display:none}#bfHud.on{display:block}
+#hm.pilotseat #hmRet,#hm.pilotseat #hmAtt,#df.sim .ret{display:none!important}
 #lookStick{position:absolute;z-index:7;display:none;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;border:2px solid rgba(232,251,255,.8);background:rgba(10,16,22,.28);opacity:.55;touch-action:none}
 #lookStick.on{display:block}#lookStick.act{opacity:.85}
 #lookStick i{position:absolute;left:50%;top:50%;width:46%;height:46%;margin:-23% 0 0 -23%;border-radius:50%;background:rgba(232,251,255,.6);pointer-events:none}
@@ -433,6 +435,7 @@ body.pc .titleFs{display:none}
     <div class="act"><button id="dfHf" type="button">HELLFIRE<small id="dfHfN">4</small></button><button id="dfRk" type="button">ROCKETS<small id="dfRkN">38</small></button></div>
   </div>
   <div id="flash"></div>
+  <canvas id="bfHud" aria-hidden="true"></canvas>
   <div id="lookStick" aria-hidden="true"><i></i><span>AIM</span></div>
   <button id="tiltBtn" type="button" aria-label="Recenter tilt">⦿</button>
   <div id="updBar" hidden><span id="updTxt"></span><button id="updGo" type="button">Restart</button><button id="updX" type="button" aria-label="Later">✕</button></div>
@@ -534,6 +537,7 @@ body.pc .titleFs{display:none}
           <label for="tsFloat">Sticks follow your thumb</label><input class="sw" type="checkbox" id="tsFloat">
           <label for="tsSticky">Collective stays where you leave it</label><input class="sw" type="checkbox" id="tsSticky">
           <label for="tsInv">Invert pitch stick</label><input class="sw" type="checkbox" id="tsInv">
+          <label for="sGuided">Aim-guided rockets &amp; missiles (follow the HUD)</label><input class="sw" type="checkbox" id="sGuided">
           <label for="sHf">Gunship flight</label><select id="sHf"><option value="auto">Auto (classic on PC)</option><option value="classic">Classic (Battlefield-style)</option><option value="arcade">Arcade (simple)</option></select>
           <span>Positions</span><button class="btn small" id="tsArrange" type="button">Arrange sticks</button>
         </div>
@@ -760,7 +764,7 @@ const ASSETS = {
     // a body without its own rotor gets the Apache blades, rescaled.
     // Sikorsky UH-60M with the external-tank stub wings (hull space: metres, nose -z, mast at the UH-60's); the gunner-window panes are
     // left out of the model so the M134s stick out of them
-    blackhawk: {model: 'assets/uh60.json', body: 'assets/uh60s_body.json', rotor: 'assets/uh60s_rotor.json', tailRotor: 'assets/uh60s_tail.json', tailAt: [0.288, 1.84, 8.79], gunAt: [1.62, 0.84, -1.5]},
+    blackhawk: {model: 'assets/uh60.json', body: 'assets/uh60s_body.json', rotor: 'assets/uh60s_rotor.json', tailRotor: 'assets/uh60s_tail.json', tailAt: [0.288, 1.84, 8.79], gunAt: [1.36, 0.3, -2.75]},
     // MH-60L DAP: “MH-60L DAP (War Thunder)” by KojfDiscord, CC BY 4.0 — body, rotor and tail rotor already in hull space
     dap:       {model: 'assets/uh60.json', body: 'assets/dapwt_body.json', rotor: 'assets/dapwt_rotor.json', tailRotor: 'assets/dapwt_tail.json'},
     // “Minigun M-134” by Nik Vega, CC BY 4.0 — split by its rig into receiver and spinning barrel cluster (metres, barrels along -z)
@@ -779,7 +783,7 @@ const DAP_MODELS = {
   light:    {model: 'assets/uh60.json', body: 'assets/dapusa_body.json', rotor: 'assets/dapusa_rotor.json', tailRotor: null, noTail: true, stores: {pod: [2.65, 0.05, -1.3], gun: [1.95, -0.3, -1.95]}},
   detailed: {model: 'assets/uh60.json', body: 'assets/dapwt_body.json', rotor: 'assets/dapwt_rotor.json', tailRotor: 'assets/dapwt_tail.json', stores: {pod: [2.85, 0, -1.45], gun: [1.95, -0.05, -1.45]}},
   // the Sikorsky UH-60M with the tank pods: rockets leave from the pod noses, the wing guns hang under the stubs
-  pods:     {model: 'assets/uh60.json', body: 'assets/uh60s_body.json', rotor: 'assets/uh60s_rotor.json', tailRotor: 'assets/uh60s_tail.json', tailAt: [0.288, 1.84, 8.79], gunAt: [1.62, 0.84, -1.5],
+  pods:     {model: 'assets/uh60.json', body: 'assets/uh60s_body.json', rotor: 'assets/uh60s_rotor.json', tailRotor: 'assets/uh60s_tail.json', tailAt: [0.288, 1.84, 8.79], gunAt: [1.36, 0.3, -2.75],
              stores: {pod: [2.7, -0.05, -3.05], gun: [1.95, -0.35, -1.3]}},
 };
 try { const pick = (JSON.parse(localStorage.getItem('adlords-settings') || '{}').dapLook) || 'pods'; ASSETS.vehicles.dap = {...DAP_MODELS[pick] || DAP_MODELS.pods}; } catch(e){ ASSETS.vehicles.dap = {...DAP_MODELS.pods}; }
@@ -854,7 +858,7 @@ const VEHICLES = {
   blackhawk: {name: 'Black Hawk', desc: 'Hovers off the pier with two M134 door miniguns.', dur: 28, price: 280, weight: 3},
   dap:       {name: 'DAP Black Hawk', desc: 'Armed Black Hawk: circles the thickest part of the horde with door miniguns, wing guns and rocket pods. Take a door gun yourself.', dur: 48, price: 560, weight: 1.2},
   bulldozer: {name: 'Bulldozer', desc: 'Drives up the pier and flattens everything.', dur: 0, price: 110, weight: 5},
-  apache:    {name: 'Apache', desc: 'Take the gunner seat: 30mm cannon, rockets and Hellfires. Once every 3 waves.', dur: 22, price: 650, weight: 1.5},
+  apache:    {name: 'Apache', desc: 'Take the gunner seat: 30mm cannon, rockets and Hellfires. Once every 3 waves.', dur: 38, price: 650, weight: 1.5},
   little:    {name: 'Little Bird', desc: 'Fast AH-6 strafing runs up the pier: twin miniguns and quick rocket volleys.', dur: 26, price: 340, weight: 2.6},
 };
 
@@ -864,7 +868,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V64';
+const GAME_VERSION = 'V65';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -1996,7 +2000,8 @@ function buildM134(){
 }
 // door-gun range of motion: swings from straight ahead (0) round to the tail (2.75 rad). Across the ESSS
 // (stub wing, pods/tanks) the elevation cam forces the muzzle down so it always clears them.
-function gunLimits(th, ph){
+function gunLimits(th, ph){ return [clamp(th, 0, 2.75), clamp(ph, -1.35, 0.22)]; }    // arm mount: full forward to mostly aft, never above the blades
+function gunLimitsOld(th, ph){
   th = clamp(th, 0, 2.75);
   // the pod sits outboard and just aft of the gun: roughly 60°–145° off the nose, and no higher than ~11° below level
   let top = 0.2;
@@ -2006,7 +2011,7 @@ function gunLimits(th, ph){
 // MH-60L DAP from the crew chief window: the wing stores start ~0.9 m aft and 0.65 m outboard (~37° back from the nose),
 // so past that the muzzle has to stay below their bottoms
 function dapLimits(th, ph){
-  ph = clamp(ph, -1.45, 0.25);
+  ph = clamp(ph, -1.35, 0.22);      // up: stops short of the rotor blades; down: almost straight down
   // forward and abeam are clear; aft of ~110° the stores are right below the line of fire, so the gun stops there when aiming down
   th = clamp(th, 0, ph < -0.12 ? 1.92 : 2.75);
   return [th, ph];
@@ -2080,6 +2085,8 @@ function buildUH60(dap){
   for (const side of [-1, 1]){
     const gun = buildM134(); gun.side = side; if (own && cfg.gunAt) gun.g.position.set(side*cfg.gunAt[0], cfg.gunAt[1], cfg.gunAt[2]); else gun.g.position.set(side*1.3, 0.32, own && dap ? -2.2 : -1.5); hull.add(gun.g);   // crew chief / gunner window
     if (own && dap) gun.lim = dapLimits;
+    // the M134 rides on an arm that swings out of the crew-chief window, so it clears the fuselage looking forward
+    if (own && cfg.gunAt){ const ax = Math.abs(cfg.gunAt[0]), l = ax - 0.92, arm = vAdd(hull, new B(l, 0.07, 0.12), darkM, side*(0.92 + l/2), cfg.gunAt[1] - 0.16, cfg.gunAt[2]); arm.castShadow = true; }
     aimGun(gun, side, 0.9, -0.55); guns.push(gun);
   }
   const pods = [], wing = [];
@@ -2849,24 +2856,29 @@ const camVol = (x, y, z) => clamp(1.25 - Math.hypot(x - camera.position.x, y - c
 function gunAI(gun, dt, on, rate, dmg, voice, x, lim = gun.lim || gunLimits, reach = 26){
   gun.rt = (gun.rt || 0) - dt;
   if (on && (gun.rt <= 0 || !(gun.tgt >= 0 && gun.tgt < en && eh[gun.tgt] > 0))){
-    gun.rt = 0.3; gun.tgt = -1; let bd = reach*reach;
+    gun.rt = 0.3; gun.tgt = -1; let bd = Infinity, cnt = 0;
     gun.g.getWorldPosition(_gq);
-    const n = Math.min(48, en);
+    const n = Math.min(48, en), R2 = reach*reach;
     for (let s = 0; s < n; s++){
       const i = en <= 48 ? s : (Math.random()*en)|0; if (eh[i] <= 0 || ez[i] < FAR + 4) continue;
-      const d = (ex[i] - _gq.x)**2 + (ez[i] - _gq.z)**2; if (d >= bd) continue;
-      if (gunSolve(gun, ex[i], ez[i], lim)){ bd = d; gun.tgt = i; }
+      const d = (ex[i] - _gq.x)**2 + (ez[i] - _gq.z)**2; if (d >= R2) continue;
+      const sol = gunSolve(gun, ex[i], ez[i], lim); if (!sol) continue;
+      cnt++;
+      // a crowd: keep the trigger down and sweep to whoever is closest to where the gun already points
+      const sc = gun.crowd ? Math.abs(sol[0] - gun.th) + Math.abs(sol[1] - gun.ph) + d*0.0004 : d;
+      if (sc < bd){ bd = sc; gun.tgt = i; }
     }
+    gun.crowd = cnt*(en > 48 ? en/48 : 1) >= 7;
   }
   let firing = false;
   if (on && gun.tgt >= 0){
     const sol = gunSolve(gun, ex[gun.tgt], ez[gun.tgt], lim);
     if (sol){
-      const sl = dt*4;
+      const sl = dt*(gun.crowd ? 2.2 : 3.4), tol = gun.crowd ? 0.45 : 0.06;     // few targets: let off while panning, fire once on
       const [th, ph] = lim(gun.th + clamp(sol[0] - gun.th, -sl, sl), gun.ph + clamp(sol[1] - gun.ph, -sl, sl));
       aimGun(gun, gun.side, th, ph); gun.g.updateMatrixWorld(true);
       gun.up = Math.min(1, (gun.up || 0) + dt/0.45);       // spin-up before the first round
-      if (gun.up >= 1 && Math.abs(sol[0] - th) < 0.15 && Math.abs(sol[1] - ph) < 0.15){
+      if (gun.up >= 1 && Math.abs(sol[0] - th) < tol && Math.abs(sol[1] - ph) < tol){
         gun.fireT = (gun.fireT || 0) - dt;
         while (gun.fireT <= 0){ gun.fireT += rate; gunFire(gun, 48, dmg, 1); }
         firing = true; gun.lastFire = 0;
@@ -3030,7 +3042,7 @@ function dgGun(v, gun, dt, lv){
 // eye directly behind the gun, a little above the receiver; camera "up" follows the airframe so banking tilts the horizon
 // BF door-gun framing: the eye sits just behind the spade grips, a hand above the barrels, so the M134 fills the bottom
 // middle of the screen and the barrels point just under the centre; the gun is drawn larger while you're on it
-const DGEYE = {y: 0.33, z: 0.5, look: 0.3, fov: 62, gunScale: 1.6};
+const DGEYE = {y: 0.3, z: 0.3, look: 0.3, fov: 64, gunScale: 1.6};
 function gunnerEye(gun, airframe){
   if (!gun.big){ gun.big = true; gun.g.scale.multiplyScalar(DGEYE.gunScale); }
   _gq.set(0, DGEYE.y, DGEYE.z); gun.pitch.localToWorld(_gq); camera.position.copy(_gq);
@@ -3112,7 +3124,7 @@ function dfFly(v, dt, lv){
   if (m.fire && m.rkT <= 0){
     m.rkT = 0.16/rateMul; v.rk ^= 1;
     const from = v.pods[v.rk].getWorldPosition(new THREE.Vector3()), to = dfBoresight(v); to.x += rnd(-1.2, 1.2); to.z += rnd(-1.2, 1.2);
-    gsShoot('rocket', from, to, {dmg: 24*lv, aoe: 2.8}); sfx('rocket', 0.8, v.rk ? 0.35 : -0.35, true);
+    gsShoot('rocket', from, to, {dmg: 24*lv, aoe: 2.8, followDF: !!(DF.P && SETTINGS.guided)}); sfx('rocket', 0.8, v.rk ? 0.35 : -0.35, true);
   }
   $('dfTime').style.width = Math.max(0, 100 - v.t/v.dur*100) + '%'; $('dfKills').textContent = fmt(kills - m.kills0);
   $('dfHfN').textContent = m.hf; $('dfHf').disabled = !m.hf || m.hfCd > 0; $('dfRkN').textContent = '∞';
@@ -3121,8 +3133,8 @@ function dfFly(v, dt, lv){
 const _dfF = new THREE.Vector3(), _dfD = new THREE.Vector3();
 function dfBoresight(v){
   if (DF.P){ // classic flight: where the nose points
-    const P = DF.P, f = hmFwd(P.yaw, _dfF), cp = Math.cos(P.pitch), d = _dfD.set(f.x*cp, -Math.sin(P.pitch) - 0.12, f.z*cp).normalize();
-    const t = d.y < -0.01 ? (0.2 - P.pos.y)/d.y : 60; return P.pos.clone().addScaledVector(d, Math.min(t, 60));
+    const P = DF.P, d = simNose(P, _dfD, ROCKET_DEP);
+    const t = d.y < -0.01 ? (0.2 - P.pos.y)/d.y : 120; return P.pos.clone().addScaledVector(d, Math.min(t, 120));
   }
   const fx = -Math.sin(v.yaw), fz = -Math.cos(v.yaw), d = new THREE.Vector3(fx, -0.34, fz).normalize(), t = v.y/Math.max(0.05, -d.y);
   return new THREE.Vector3(v.x, v.y, v.z).addScaledVector(d, Math.min(t, 60));
@@ -3132,7 +3144,7 @@ function dfHellfire(){
   DF.hf--; DF.hfCd = 1;
   const bp = dfBoresight(v); let bi = -1, bh = 0;
   for (let i = 0; i < en; i++){ if (eh[i] <= 0) continue; const d = Math.hypot(ex[i] - bp.x, ez[i] - bp.z); if (d < 9 && eh[i]/(1 + d*0.2) > bh){ bh = eh[i]/(1 + d*0.2); bi = i; } }
-  const nb = nearBoss(bp, 12), tg = nb ? {boss: nb} : bi >= 0 ? {id: eid[bi]} : {};
+  const nb = nearBoss(bp, 12), tg = !DF.P ? (nb ? {boss: nb} : bi >= 0 ? {id: eid[bi]} : {}) : SETTINGS.guided ? {followDF: true} : {};
   const from = v.pods[DF.hf & 1].getWorldPosition(new THREE.Vector3());
   gsShoot('hellfire', from, bp, tg); sfx('hellfire', 1, 0, true);
 }
@@ -3143,9 +3155,9 @@ function dfCamera(){
     const P = DF.P, dt = Math.min(0.05, DF.dt || 1/60), far = camera.aspect < 1 ? 1.35 : 1;
     chaseCam(P, v.g, false, CHASE.df, dt, far);
     camera.fov = CHASE.fov; camera.updateProjectionMatrix();
-    const bp = dfBoresight(v).project(camera), r = $('dfRet'); let nx = bp.z < 1 ? bp.x : 0, ny = bp.z < 1 ? bp.y : -0.3;
-    const lim = 0.32, rr = Math.hypot(nx*camera.aspect, ny); if (rr > lim){ nx *= lim/rr; ny *= lim/rr; }
-    r.style.left = ((nx + 1)/2*100) + '%'; r.style.top = ((1 - ny)/2*100) + '%';
+    const bp = dfBoresight(v).project(camera), g = SETTINGS.guided ? 'GUID ' : '';
+    bfHud({cockpit: false, aim: bp.z < 1 && Math.abs(bp.x) < 1.3 && Math.abs(bp.y) < 1.3 ? bp : null, msl: !!DF.sec, hdg: P.yaw*57.2958, alt: P.pos.y*3.3, kts: Math.hypot(P.vel.x, P.vel.z)*4.86, pitch: P.pitch, bank: P.bank || 0, flr: '—',
+      lines: [(DF.sec ? '  ' : '▸ ') + g + 'RKT RDY', (DF.sec ? '▸ ' : '  ') + g + 'AT MSL ' + (DF.hf > 0 && DF.hfCd <= 0 ? 'RDY' : 'CDN')]});
     return true;
   }
   const fx = -Math.sin(v.yaw), fz = -Math.cos(v.yaw), far = camera.aspect < 1 ? 1.35 : 1;
@@ -3190,7 +3202,9 @@ function airShots(dt){
       sh.v.lerp(want, Math.min(1, dt*4)); sh.m.lookAt(sh.m.position.clone().add(sh.v));
       if (Math.random() < 0.6) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.6);
     } else if (sh.kind === 'rocket' && Math.random() < 0.4) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.5);
+    if (sh.followDF && DF.on && DF.v){ sh.to.copy(dfBoresight(DF.v)); if (sh.kind === 'rocket'){ const sp = sh.v.length(); sh.v.lerp(_trX.copy(sh.to).sub(sh.m.position).normalize().multiplyScalar(sp), Math.min(1, dt*3)); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v)); } }
     sh.m.position.addScaledVector(sh.v, dt); sh.life -= dt;
+    if (sh.life <= 0 && sh.m.position.y > 1.2){ scene.remove(sh.m); P.shots.splice(k, 1); continue; }     // too far: it just goes
     const hit = sh.m.position.y <= 0.4 || sh.m.position.distanceTo(sh.to) < (sh.kind === 'cannon' ? 1.2 : 0.8) || sh.life <= 0;
     if (hit){
       const x = sh.m.position.x, z = sh.m.position.z, before = kills;
@@ -3215,7 +3229,7 @@ function toonify(obj, k){
 const AP_RIG = {turret: [-0.6284, -0.255, 0.0028], gun: [-0.6857, -0.2856, 0.0061], pit: [-0.6093, -0.0872, 0], rotor: [-0.3248, 0.0621, 0], tail: [0.8187, 0.0015, 0.086],
   eyePilot: [-0.49, -0.012, 0], eyeGunner: [-0.6506, -0.0256, 0], disc: 0.053, R: 0.905};
 function apToon(obj, k){
-  obj.traverse(o => { if (!o.isMesh) return; const n = o.material.name, map = o.material.map;
+  obj.traverse(o => { if (!o.isMesh) return; const n = o.material.name, map = o.material.map; o.userData.mat = n;
     if (n === 'glass'){ o.material = new THREE.MeshPhongMaterial({color: 0x7f9aa8, transparent: true, opacity: 0.22, depthWrite: false, shininess: 90, specular: 0x666666, side: THREE.DoubleSide}); o.renderOrder = 2; o.castShadow = false; }
     else if (n === 'light'){ o.material = new THREE.MeshBasicMaterial({color: o.material.color}); }
     else { o.material = new THREE.MeshToonMaterial({map, gradientMap: gradSoft, side: THREE.DoubleSide, color: new THREE.Color(k, k*1.02, k*0.96)}); o.castShadow = true; } });
@@ -3328,7 +3342,7 @@ function gsShoot(kind, from, to, extra){
   if (kind === 'cannon'){ _trX.copy(to).sub(from).normalize(); m.position.addScaledVector(_trX, 2.8); m.lookAt(_trD.copy(m.position).sub(_trX)); }
   const speed = kind === 'cannon' ? 70 : kind === 'rocket' ? 38 : 30;
   const v = to.clone().sub(from).normalize().multiplyScalar(speed);
-  GS_.shots.push({kind, m, v, to: to.clone(), life: 3, ...extra});
+  GS_.shots.push({kind, m, v, to: to.clone(), life: extra && extra.followDF ? 4 : 3, ...extra});
 }
 function gsTargetNear(p){
   const nb = nearBoss(p, 9); if (nb) return {boss: nb};
@@ -4083,6 +4097,7 @@ cv.addEventListener('pointermove', e => {
 // continuous controls from held keys and the controller sticks, every frame
 function inputTick(dt){
   gpPoll(dt); tsTick(); motionPoll(); tiltTick(); lsTick(dt); gyMeterTick();
+  if (BH.on && performance.now() - BH.t > 150) bfHudHide();
   if (state !== 'play'){ gyroTake(); return; }
   gyroTick();
   const G = INPUT.gp, dz = v => Math.abs(v) < 0.18 ? 0 : (v - Math.sign(v)*0.18)/0.82;
@@ -4822,18 +4837,19 @@ function hmSeatUI(){
   $('hm').classList.toggle('doorgun', !pilot && HM.type === 'dap');
   const dap = HM.type === 'dap', lb = HM.type === 'little';
   $('hmHullName').textContent = dap ? 'DAP' : lb ? 'LITTLE BIRD' : 'APACHE';
-  $('hmSeatBtn').hidden = lb; $('hmMissile').firstChild.textContent = lb ? 'ROCKETS' : 'HELLFIRE';
+  $('hmSeatBtn').hidden = lb; $('hmMissile').firstChild.textContent = lb ? 'ROCKETS' : pilot ? 'HELLFIRE' : 'AGM';
   $('hmSeat').textContent = (dap ? 'DAP · ' : lb ? 'LITTLE BIRD · ' : 'APACHE · ') + (pilot ? 'PILOT · ' + (HM.view === 'chase' ? 'CHASE CAM' : 'COCKPIT') : dap ? 'DOOR GUN · M134' : 'GUNNER · 30MM');
   $('hmFire').firstChild.textContent = pilot ? (HM.wsel === 'sec' ? (lb ? 'VOLLEY' : 'HELLFIRE') : dap ? 'GUNS + ROCKETS' : lb ? 'MINIGUNS' : 'ROCKETS') : dap ? 'M134' : '30MM';
   if (HM.vm) HM.vm.g.visible = false;
   if (dap && !pilot){ camera.near = 0.03; camera.updateProjectionMatrix(); }
-  $('hmMissile').hidden = !pilot;
+  $('hmMissile').hidden = !pilot && HM.type !== 'apache';
   $('hmViewBtn').hidden = !pilot;
   $('hmSeatBtn').textContent = pilot ? 'Gunner seat' : 'Pilot seat';
   if (GS_.cockpit) GS_.cockpit.visible = pilot && HM.view === 'cockpit';
   if (pilot && HM.view === 'cockpit' && lb){ if (GS_.cockpit) GS_.cockpit.visible = false; camera.near = 0.03; }
   else if (pilot && HM.view === 'cockpit' && !dap && HM.heli && HM.heli.rig){ if (GS_.cockpit) GS_.cockpit.visible = false; camera.near = 0.02; }
   else if (pilot && HM.view === 'cockpit' && !dap){ gsBuildCockpit(); if (GS_.cockpit.parent !== camera) camera.add(GS_.cockpit); GS_.cockpit.position.set(0, 0, 0); GS_.cockpit.rotation.set(0.089, 0, 0); GS_.cockpit.visible = true; camera.near = 0.02; }
+  else if (pilot && HM.view === 'cockpit' && dap){ if (GS_.cockpit) GS_.cockpit.visible = false; camera.near = 0.02; }
   else if (!(dap && !pilot)) camera.near = 0.08;
   camera.updateProjectionMatrix();
   if (!pilot){ const tgt = new THREE.Vector3(0, 0, -18); const d = tgt.sub(HM.pos); HM.aimAz = Math.atan2(d.x, -d.z); HM.aimEl = clamp(Math.atan2(-HM.pos.y, Math.hypot(d.x, d.z)), -1.3, -0.15); }
@@ -4854,11 +4870,12 @@ function hmDamage(d){
   if (HM.hull <= 0){ HM.hull = 0; explode(HM.pos.x, HM.pos.z, 3, 0); chips(HM.pos.x, HM.pos.y, HM.pos.z, SMOKE, 30, 6); setTimeout(() => { if (state === 'dying' && MODE === 'heli') gameOver(); }, 1100); state = 'dying'; HM.firing = false; }
 }
 function hmShoot(kind, from, dir, speed, extra){
-  const m = kind === 'cannon' ? tracerObj(3.2, 0.08) : new THREE.Mesh(kind === 'hellfire' ? missileGeo : shotGeo, kind === 'rocket' ? rocketMat : hfMat);
-  if (kind === 'rocket') m.scale.set(1.4, 1.4, 1.4);
+  const m = kind === 'cannon' ? tracerObj(3.2, 0.08) : new THREE.Mesh(kind === 'hellfire' || kind === 'agm' ? missileGeo : shotGeo, kind === 'rocket' ? rocketMat : hfMat);
+  if (kind === 'rocket') m.scale.set(1.4, 1.4, 1.4); else if (kind === 'agm') m.scale.set(1.5, 1.5, 1.5);
   m.position.copy(from); scene.add(m);
   if (kind === 'cannon'){ _trX.copy(dir).normalize(); m.position.addScaledVector(_trX, 3.6); m.lookAt(_trD.copy(m.position).sub(_trX)); }   // starts clear of the gun sight; streak trails behind the round
-  HM.shots.push({kind, m, v: dir.clone().normalize().multiplyScalar(speed), life: kind === 'hellfire' ? 6 : 3, ...extra});
+  if (kind !== 'cannon') m.lookAt(_trD.copy(m.position).add(dir));
+  HM.shots.push({kind, m, v: dir.clone().normalize().multiplyScalar(speed), life: kind === 'hellfire' || kind === 'agm' ? 6 : kind === 'rocket' ? 3.4 : 3, ...extra});
 }
 function hmBoresight(out){
   // where the nose rockets would land: a ray pitched down from the nose
@@ -4878,21 +4895,78 @@ function hmLockTarget(){
   let best = null, bs = 0;
   for (const e of HM.enemies){ if (e.hp <= 0) continue; const d = e.pos.clone().sub(HM.pos); const dist = d.length(); const c = d.normalize().dot(f); if (c > 0.82 && dist < 90){ const sc = c*3 - dist*0.01; if (sc > bs){ bs = sc; best = {heli: e}; } } }
   if (best) return best;
+  if (heliSim()) return null;      // classic flight: ground shots go where the reticle is; no lock that bends them
   const bp = heliSim() ? hmAimPoint(new THREE.Vector3()) : hmBoresight(new THREE.Vector3());
   { const nb = nearBoss(bp, 12); if (nb) return {boss: nb}; }
   let bi = -1, bh = 0;
   for (let i = 0; i < en; i++){ if (eh[i] <= 0) continue; const d = Math.hypot(ex[i] - bp.x, ez[i] - bp.z); if (d < 9 && eh[i]/(1 + d*0.2) > bh){ bh = eh[i]/(1 + d*0.2); bi = i; } }
   return bi >= 0 ? {id: eid[bi]} : null;
 }
+
+// ---- Apache front seat when you fly: the AI gunner works the 30 mm and the AGM ----
+const AGM = {r: 8.5, dmg: 240, cd: 10};
+const _aiD = new THREE.Vector3(), _shA = new THREE.Vector3();
+function apArc(P, dx, dy, dz){
+  let a = Math.atan2(dx, -dz) - P.yaw; a = Math.atan2(Math.sin(a), Math.cos(a));
+  const el = Math.atan2(dy, Math.hypot(dx, dz));
+  return Math.abs(a) < 1.9 && el > -1.25 && el < 0.2;
+}
+function apAIGunner(P, dt){
+  const A = P.ai || (P.ai = {fireT: 0, mag: CANNON.mag, reload: 0, t: 0, tgt: -1, heli: null, crowd: false});
+  A.t -= dt;
+  const valid = A.heli ? A.heli.hp > 0 : A.tgt >= 0 && A.tgt < en && eh[A.tgt] > 0;
+  if (A.t <= 0 || !valid){
+    A.t = 0.35; A.tgt = -1; A.heli = null; let cnt = 0, best = Infinity;
+    for (const e of P.enemies){ if (e.hp <= 0) continue; const d = e.pos.distanceToSquared(P.gun); if (d < 80*80 && d < best && apArc(P, e.pos.x - P.gun.x, e.pos.y - P.gun.y, e.pos.z - P.gun.z)){ best = d; A.heli = e; } }
+    if (!A.heli){
+      const cur = hmGunDir(_aiD), n = Math.min(64, en);
+      for (let s = 0; s < n; s++){
+        const i = en <= 64 ? s : (Math.random()*en)|0; if (eh[i] <= 0) continue;
+        const dx = ex[i] - P.gun.x, dz = ez[i] - P.gun.z, dy = 0.9 - P.gun.y, h2 = dx*dx + dz*dz; if (h2 > 62*62 || !apArc(P, dx, dy, dz)) continue;
+        cnt++;
+        const r = Math.sqrt(h2 + dy*dy), sc = A.crowd ? (1 - (dx*cur.x + dy*cur.y + dz*cur.z)/r)*400 + r*0.05 : h2;
+        if (sc < best){ best = sc; A.tgt = i; }
+      }
+      A.crowd = cnt*(en > 64 ? en/64 : 1) >= 7;
+    }
+  }
+  let tx = null, ty = 0, tz = 0;
+  if (A.heli){ tx = A.heli.pos.x; ty = A.heli.pos.y; tz = A.heli.pos.z; } else if (A.tgt >= 0 && eh[A.tgt] > 0){ tx = ex[A.tgt]; ty = 0.9; tz = ez[A.tgt]; }
+  let wa = P.yaw, we = -0.3;
+  if (tx !== null){ const dx = tx - P.gun.x, dy = ty - P.gun.y, dz = tz - P.gun.z; wa = Math.atan2(dx, -dz); we = Math.atan2(dy, Math.hypot(dx, dz)); }
+  const da = Math.atan2(Math.sin(wa - P.aimAz), Math.cos(wa - P.aimAz)), de = we - P.aimEl, sl = dt*(A.crowd ? 1.7 : 2.8);
+  P.aimAz += clamp(da, -sl, sl); P.aimEl = clamp(P.aimEl + clamp(de, -sl, sl), -1.35, 0.25);
+  const on = tx !== null && Math.hypot(da, de) < (A.crowd ? 0.3 : 0.05);      // few targets: off the trigger while it swings across
+  if ((on || A.reload > 0) && cannonTick(A, dt) && on){
+    const d = hmGunDir(_aiD); d.x += rnd(-0.014, 0.014); d.y += rnd(-0.014, 0.014); d.z += rnd(-0.014, 0.014);
+    hmShoot('cannon', P.gun, d, 85); sfx('cannon30', 0.7, 0, true);
+  }
+  // the AGM goes into a thick crowd, every ten seconds
+  if (P.agmCd <= 0 && A.crowd && tx !== null && !A.heli){
+    let near = 0; for (let i = 0; i < en; i++) if (eh[i] > 0 && Math.abs(ex[i] - tx) < AGM.r*0.8 && Math.abs(ez[i] - tz) < AGM.r*0.8) near++;
+    if (near >= 8) hmFireAGM(P, new THREE.Vector3(tx, 0.2, tz));
+  }
+}
+function hmFireAGM(P, to){
+  P.agmCd = AGM.cd;
+  const from = P.pos.clone(); from.y -= 0.9;
+  hmShoot('agm', from, to.clone().sub(from), 30, {to: to.clone()}); sfx('hellfire', 1, 0, true);
+}
+function hmGunnerAGM(){
+  const P = HM; if (state !== 'play' || P.agmCd > 0) return;
+  const d = hmGunDir(_aiD), t = d.y < -0.02 ? (0.2 - P.gun.y)/d.y : 120, to = P.gun.clone().addScaledVector(d, Math.min(t, 120)); to.y = Math.max(0.2, to.y);
+  hmFireAGM(P, to); toast('AGM away', '#c8ffd0');
+}
 function hmFireHellfire(){
   if (HM.type === 'little'){ if (HM.seat === 'pilot' && HM.rockets > 0 && HM.hfCd <= 0 && !HM.volley && state === 'play'){ HM.volley = 14; HM.volleyT = 0; HM.hfCd = 1.1; } return; }
-  if (HM.seat !== 'pilot' || HM.hellfire <= 0 || HM.hfCd > 0 || state !== 'play') return;
+  if (HM.seat !== 'pilot'){ if (HM.type === 'apache') hmGunnerAGM(); return; }
+  if (HM.hellfire <= 0 || HM.hfCd > 0 || state !== 'play') return;
   HM.hellfire--; HM.hfCd = 0.9;
   const t = hmLockTarget() || {};
   const f = hmFwd(HM.yaw, new THREE.Vector3()), side = new THREE.Vector3(-f.z, 0, f.x).multiplyScalar(HM.hellfire % 2 ? 1.6 : -1.6);
   const from = HM.pos.clone().add(side); from.y -= 0.8;
   const aim = heliSim() ? hmAimPoint(new THREE.Vector3()) : hmBoresight(new THREE.Vector3());
-  hmShoot('hellfire', from, heliSim() ? hmNoseDir(new THREE.Vector3()) : aim.clone().sub(from), 26, {heli: t.heli, boss: t.boss, id: t.id, to: aim});
+  hmShoot('hellfire', from, aim.clone().sub(from), 30, heliSim() ? {heli: t.heli, to: aim, follow: SETTINGS.guided && !t.heli} : {heli: t.heli, boss: t.boss, id: t.id, to: aim});
   sfx('hellfire', 1, 0, true);
 }
 function hmFlares(){
@@ -5062,7 +5136,7 @@ function hmUpdate(dt){
   if (P.seat === 'pilot'){
     if (P.firing && P.fireT <= 0 && P.rockets > 0 && !little){
       P.rockets--; P.fireT = dap ? 0.28 : 0.14; const side = right.clone().multiplyScalar((P.rockets % 2 ? 1 : -1)*(dap ? 1.2 : 1.5)); const from = P.pos.clone().add(side); from.y -= dap ? 0.2 : 0.7;
-      if (heliSim()){ const tgt = hmAimPoint(new THREE.Vector3()); tgt.x += rnd(-0.8, 0.8); tgt.z += rnd(-0.8, 0.8); hmShoot('rocket', from, hmNoseDir(new THREE.Vector3()), 42, {guide: tgt}); }
+      if (heliSim()){ const tgt = hmAimPoint(new THREE.Vector3()); tgt.x += rnd(-0.6, 0.6); tgt.z += rnd(-0.6, 0.6); hmShoot('rocket', from, tgt.sub(from), 42, SETTINGS.guided ? {follow: true} : null); }
       else { const aim = hmBoresight(new THREE.Vector3()); aim.x += rnd(-1.2, 1.2); aim.z += rnd(-1.2, 1.2); hmShoot('rocket', from, aim.sub(from), 42); } sfx('rocket', 0.8, P.rockets % 2 ? 0.4 : -0.4, true);
     }
     // DAP: the fixed wing M134s fire with the pods
@@ -5081,7 +5155,7 @@ function hmUpdate(dt){
       if (P.volley > 0){ P.volleyT -= dt;
         while (P.volleyT <= 0 && P.volley > 0 && P.rockets > 0){ P.volleyT += 0.045; P.volley--; P.rockets--;
           const from = P.heli.pods[P.volley & 1].getWorldPosition(new THREE.Vector3()), tgt = heliSim() ? hmAimPoint(new THREE.Vector3()) : hmBoresight(new THREE.Vector3());
-          tgt.x += rnd(-1.4, 1.4); tgt.z += rnd(-1.4, 1.4); hmShoot('rocket', from, heliSim() ? hmNoseDir(new THREE.Vector3()) : tgt.clone().sub(from), 62, {guide: tgt}); sfx('rocket', 0.65, P.volley & 1 ? 0.4 : -0.4, true); } } }
+          tgt.x += rnd(-1.4, 1.4); tgt.z += rnd(-1.4, 1.4); hmShoot('rocket', from, tgt.clone().sub(from), 62, heliSim() && SETTINGS.guided ? {follow: true} : null); sfx('rocket', 0.65, P.volley & 1 ? 0.4 : -0.4, true); } } }
   } else if (!dap){
     // Apache 30mm: keeps reloading even when you let go of the trigger
     if (P.firing || P.reload > 0 || P.mag < CANNON.mag){
@@ -5103,6 +5177,9 @@ function hmUpdate(dt){
     } else if (P.gunT < 0) P.gunT = 0;
     g.spinV += ((P.firing ? 1 : 0) - g.spinV)*Math.min(1, dt*(P.firing ? 6 : 1.2)); gunTick(g, dt);
   }
+  if (P.type === 'apache' && P.seat === 'pilot') apAIGunner(P, dt);
+  P.agmCd = Math.max(0, (P.agmCd || 0) - dt);
+  if (dap && P.heli && P.heli.guns){ for (const g of P.heli.guns){ if (P.seat !== 'pilot' && g === P.dgun) continue; gunAI(g, dt, state === 'play', M134_STEP/rateMul, 2.4, 'hmai' + g.side, P.pos.x, dapLimits, 46); } }
   // ---- our projectiles ----
   for (let k = P.shots.length - 1; k >= 0; k--){
     const sh = P.shots[k];
@@ -5112,17 +5189,23 @@ function hmUpdate(dt){
       else if (sh.boss && sh.boss.hp > 0) tgt = new THREE.Vector3(sh.boss.x, 2.5, sh.boss.z);
       else if (sh.id){ for (let i = 0; i < en; i++) if (eid[i] === sh.id && eh[i] > 0){ tgt = new THREE.Vector3(ex[i], 1.2, ez[i]); break; } }
       if (tgt) sh.to = tgt;
+      else if (sh.follow && P.seat === 'pilot') sh.to = hmAimPoint(sh.to || new THREE.Vector3());
       const want = sh.to.clone().sub(sh.m.position).normalize().multiplyScalar(30);
       sh.v.lerp(want, Math.min(1, dt*3.5)); sh.m.lookAt(sh.m.position.clone().add(sh.v));
       if (Math.random() < 0.7) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.6);
     } else if (sh.kind === 'rocket'){
       // aim-guided: leaves along the nose, then bends toward the point under the centre dot
-      if (sh.guide){ const want = sh.guide.clone().sub(sh.m.position).normalize().multiplyScalar(42); sh.v.lerp(want, Math.min(1, dt*2.4)); sh.m.lookAt(sh.m.position.clone().add(sh.v)); }
+      // guided option: keeps steering for the point under the HUD reticle as the helicopter moves
+      if (sh.follow && P.seat === 'pilot'){ const a = hmAimPoint(_shA), sp = sh.v.length(); sh.v.lerp(a.sub(sh.m.position).normalize().multiplyScalar(sp), Math.min(1, dt*3)); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v)); }
       if (Math.random() < 0.5) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.5);
+    } else if (sh.kind === 'agm'){
+      const want = sh.to.clone().sub(sh.m.position).normalize().multiplyScalar(36); sh.v.lerp(want, Math.min(1, dt*2.5)); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v));
+      if (Math.random() < 0.8) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.7);
     }
     sh.m.position.addScaledVector(sh.v, dt); sh.life -= dt;
     const p = sh.m.position;
-    let hit = p.y <= 0.35 || sh.life <= 0 || (sh.kind === 'hellfire' && sh.to && p.distanceTo(sh.to) < 1.2);
+    if (sh.life <= 0 && p.y > 1.2){ scene.remove(sh.m); P.shots.splice(k, 1); continue; }     // too far: it just goes
+    let hit = p.y <= 0.35 || sh.life <= 0 || ((sh.kind === 'hellfire' || sh.kind === 'agm') && sh.to && p.distanceTo(sh.to) < 1.2);
     if (!hit) hit = hmHitHelis(p, sh.kind === 'cannon' ? 0.6 : 0.5, sh.kind === 'cannon' ? 6 : sh.kind === 'rocket' ? 18 : 110);
     if (!hit && p.y < 6 && bosses.some(b => Math.hypot(b.x - p.x, b.z - p.z) < 2.4)) hit = true;
     if (!hit && p.y < 3){ for (let i = 0; i < en; i++){ if (eh[i] > 0 && Math.abs(ex[i] - p.x) < 0.7 && Math.abs(ez[i] - p.z) < 0.7){ hit = true; break; } } }
@@ -5131,6 +5214,7 @@ function hmUpdate(dt){
       if (p.y < 6){
         if (sh.kind === 'cannon') explode(p.x, p.z, CANNON.r, CANNON.dmg*1.1*dmgMul, true);
         else if (sh.kind === 'rocket') explode(p.x, p.z, 3.0, 27*dmgMul, true);
+        else if (sh.kind === 'agm'){ explode(p.x, p.z, AGM.r, AGM.dmg*dmgMul); explode(p.x + rnd(-2, 2), p.z + rnd(-2, 2), AGM.r*0.6, 0, true); shake = Math.max(shake, 0.5); }
         else explode(p.x, p.z, 4.4, 150*dmgMul);
       }
       P.score += (kills - before)*10;
@@ -5253,7 +5337,13 @@ function chaseCam(P, g, apacheFrame, ch, dt, far){
 const CHASE = {apache: {d: 8.3, h: 1.75}, dap: {d: 9.2, h: 1.95}, df: {d: 7.9, h: 1.7}, little: {d: 6.4, h: 1.35}, fov: 45, tilt: 0.12, follow: 2.6, pmax: 1.35, arc: 0.75};
 const _aimD = new THREE.Vector3(), _hmF = new THREE.Vector3(), _noseV = new THREE.Vector3(), _aimR = new THREE.Raycaster(), _aimC = new THREE.Vector2(0, 0);
 // classic flight: nose direction with pitch (where unguided rounds go) and the aim point under the screen-centre dot
-function hmNoseDir(out){ const f = hmFwd(HM.yaw, _noseV), cp = Math.cos(HM.pitch), sp = Math.sin(HM.pitch); return out.set(f.x*cp, -sp, f.z*cp).normalize(); }
+function simNose(P, out, dep = 0){
+  const p = P.pitch + dep, sp = Math.sin(p), cp = Math.cos(p), sb = Math.sin(P.bank || 0), cb = Math.cos(P.bank || 0), cy = Math.cos(P.yaw), sy = Math.sin(P.yaw);
+  const x = sp*sb, y = -sp*cb, z = -cp;
+  return out.set(x*cy - z*sy, y, x*sy + z*cy).normalize();
+}
+const ROCKET_DEP = 0.04;
+function hmNoseDir(out){ return simNose(HM, out, ROCKET_DEP); }
 function hmAimPoint(out){
   // BF: the aim stays on the nose; only freelook lets you aim with the camera instead
   let o, d;
@@ -5261,13 +5351,20 @@ function hmAimPoint(out){
   else { o = HM.pos; d = hmNoseDir(_aimD); }
   const t = d.y < -0.01 ? (0.2 - o.y)/d.y : 160; return out.copy(o).addScaledVector(d, Math.min(t, 160));
 }
+// the UH-60's right seat (pilot in command), in hull metres; the crew figures hide while you sit there
+const DAP_EYE = [0.62, 0.38, -3.2];
+function dapCrew(h, show){
+  if (!h.crew){ h.crew = []; h.hull.traverse(o => { if (o.isMesh && /plt/i.test(o.userData.mat || '')) h.crew.push(o); }); }
+  for (const m of h.crew) m.visible = show; h.crewHidden = !show;
+}
 function hmCamera(dt){
   const P = HM, f = hmFwd(P.yaw, P.fwd), h = P.heli;
   if (P.dgun && !(P.seat !== 'pilot' && P.type === 'dap')) gunnerEyeOff(P.dgun);
+  if (h && h.crewHidden && !(P.seat === 'pilot' && P.view === 'cockpit')) dapCrew(h, true);
   if (h){
     h.g.position.copy(P.pos);
     if (P.type !== 'apache'){ h.g.rotation.set(0, -P.yaw, 0); h.g.rotateZ(P.bank); h.g.rotateX(-P.pitch); h.rotor.rotation.y += dt*(P.type === 'little' ? 34 : 28); h.tail.rotation.x += dt*(P.type === 'little' ? 80 : 70); }
-    else { h.g.rotation.set(0, -P.yaw - Math.PI/2, 0); h.g.rotateX(P.bank); h.g.rotateZ(P.pitch); /* nose is -x: same sense as the DAP */ h.rotor.rotation.y += dt*30; h.tail.rotation.z += dt*45; apAimTurret(h, P.seat === 'pilot' ? hmNoseDir(_hmF2) : hmGunDir(_hmF2)); }
+    else { h.g.rotation.set(0, -P.yaw - Math.PI/2, 0); h.g.rotateX(P.bank); h.g.rotateZ(P.pitch); /* nose is -x: same sense as the DAP */ h.rotor.rotation.y += dt*30; h.tail.rotation.z += dt*45; apAimTurret(h, hmGunDir(_hmF2)); }
   }
   const lockEl = $('hmLock'), ret = $('hmRet');
   if (P.seat === 'pilot' && P.view === 'chase'){
@@ -5292,6 +5389,12 @@ function hmCamera(dt){
     _apE.set(-0.1 + (P.lookPitch || 0), -(P.lookYaw || 0), 0, 'YXZ'); camera.quaternion.multiply(_apQ.setFromEuler(_apE));
     camera.fov = 78;
     if (GS_.rt && (P.mfdT ^= 1)){ GS_.gunCam.position.copy(P.gun); GS_.gunCam.lookAt(hmBoresight(_v3)); GS_.gunCam.aspect = 320/300; GS_.gunCam.updateProjectionMatrix(); h.g.visible = false; renderer.setRenderTarget(GS_.rt); renderer.render(scene, GS_.gunCam); renderer.setRenderTarget(null); h.g.visible = true; }
+  } else if (P.seat === 'pilot' && h && h.hull && P.type === 'dap'){
+    h.g.visible = true; dapCrew(h, false); h.g.updateMatrixWorld(true);
+    camera.position.copy(_hmV.fromArray(DAP_EYE).applyMatrix4(h.hull.matrixWorld));
+    camera.quaternion.copy(h.g.quaternion);
+    _apE.set(-0.12 + (P.lookPitch || 0), -(P.lookYaw || 0), 0, 'YXZ'); camera.quaternion.multiply(_apQ.setFromEuler(_apE));
+    camera.fov = 80;
   } else if (P.seat === 'pilot'){
     if (h) h.g.visible = false;
     camera.position.copy(P.pos).addScaledVector(f, P.type === 'dap' ? 2.9 : P.type === 'little' ? 0.9 : 1.7); camera.position.y += P.type === 'dap' ? 0.15 : P.type === 'little' ? 0.25 : 0.3;
@@ -5349,9 +5452,18 @@ function hmCamera(dt){
   $('hmHullN').textContent = Math.round(P.hull*10); $('hmPierN').textContent = Math.round(Math.max(0, wall));
   $('hmAtt').style.transform = `translate(-50%, ${-P.pitch*60}px) rotate(${P.bank*-57}deg)`;
   $('hmPri').textContent = P.seat === 'pilot' ? (P.type === 'little' && P.wsel !== 'sec' ? '∞' : P.rockets) : P.type === 'dap' ? '∞' : P.reload > 0 ? 'RLD' : String(P.mag);
-  $('hmHf').textContent = P.type === 'little' ? P.rockets : P.hellfire; $('hmFl').textContent = P.flares;
-  $('hmMissile').disabled = !(P.type === 'little' ? P.rockets : P.hellfire) || P.hfCd > 0 || P.volley > 0; $('hmFlare').disabled = !P.flares || P.flCd > 0;
+  const agmSeat = P.seat !== 'pilot' && P.type === 'apache';
+  $('hmHf').textContent = agmSeat ? (P.agmCd > 0 ? Math.ceil(P.agmCd) + 's' : 'RDY') : P.type === 'little' ? P.rockets : P.hellfire; $('hmFl').textContent = P.flares;
+  $('hmMissile').disabled = agmSeat ? P.agmCd > 0 : !(P.type === 'little' ? P.rockets : P.hellfire) || P.hfCd > 0 || P.volley > 0; $('hmFlare').disabled = !P.flares || P.flCd > 0;
   $('hmSound').textContent = SETTINGS.sound ? '🔊' : '🔇';
+  if (P.seat === 'pilot'){
+    const ap = (heliSim() ? hmAimPoint(_hmV) : hmBoresight(_hmV)).project(camera), lb = P.type === 'little', hs = P.vel ? Math.hypot(P.vel.x, P.vel.z) : Math.abs(P.speed || 0);
+    const msl = P.wsel === 'sec' && !lb, rk = P.rockets > 0 ? 'RDY' : 'RLD', g = SETTINGS.guided && heliSim() ? 'GUID ' : '';
+    bfHud({cockpit: P.view === 'cockpit', frame: P.view === 'cockpit' && lb, aim: ap.z < 1 && Math.abs(ap.x) < 1.3 && Math.abs(ap.y) < 1.3 ? ap : null, msl,
+      hdg: P.yaw*57.2958, alt: P.pos.y*3.3, kts: hs*4.86, pitch: P.pitch, bank: P.bank || 0, flr: P.flares > 0 && P.flCd <= 0 ? 'RDY' : 'CDN',
+      lines: lb ? [(P.wsel !== 'sec' ? '▸ ' : '  ') + 'M134 RDY', (P.wsel === 'sec' ? '▸ ' : '  ') + g + 'RKT VOLLEY ' + (P.rockets > 0 && P.hfCd <= 0 ? 'RDY' : 'RLD')]
+        : [(msl ? '  ' : '▸ ') + g + (P.type === 'dap' ? 'RKT+GUN ' : 'RKT ') + rk, (msl ? '▸ ' : '  ') + g + 'AT MSL ' + (P.hellfire > 0 && P.hfCd <= 0 ? 'RDY' : 'CDN')]});
+  }
   return true;
 }
 // ---- gunship input: virtual stick, buttons, keyboard, S Pen hover ----
@@ -5951,7 +6063,7 @@ document.querySelectorAll('#settings input[type=range]').forEach(rgWrap);
 // ---- new controls ----
 function bindNew(){
   const G = SETTINGS.gunner, A = SETTINGS.agi, F = SETTINGS.gyro.fly;
-  $('gnAim').value = G.aim; $('gnSide').value = G.side; $('gnFloat').checked = G.float; $('gnSwipe').value = G.swipe; $('gnStick').value = G.stick; $('gnExpo').value = G.expo; $('gnInv').checked = G.inv;
+  $('sGuided').checked = !!SETTINGS.guided; $('gnAim').value = G.aim; $('gnSide').value = G.side; $('gnFloat').checked = G.float; $('gnSwipe').value = G.swipe; $('gnStick').value = G.stick; $('gnExpo').value = G.expo; $('gnInv').checked = G.inv;
   $('agApache').value = A.apache; $('agDap').value = A.dap; $('agLittle').value = A.little;
   $('gfOn').checked = F.on; $('gfSens').value = F.sens; $('gfDead').value = F.dead; $('gfInvP').checked = F.invP; $('gfInvR').checked = F.invR;
   $('gyOn').checked = SETTINGS.gyro.on; $('gySens').value = SETTINGS.gyro.sens; $('gyInvX').checked = SETTINGS.gyro.invX; $('gyInvY').checked = SETTINGS.gyro.invY;
@@ -5959,7 +6071,7 @@ function bindNew(){
   $('appVer').textContent = 'Game ' + GAME_VERSION + (nv ? ' · App ' + nv : '');
 }
 for (const [id, get, key, kind] of [
-  ['gnAim', () => SETTINGS.gunner, 'aim', 's'], ['gnSide', () => SETTINGS.gunner, 'side', 's'], ['gnFloat', () => SETTINGS.gunner, 'float', 'b'],
+  ['sGuided', () => SETTINGS, 'guided', 'b'], ['gnAim', () => SETTINGS.gunner, 'aim', 's'], ['gnSide', () => SETTINGS.gunner, 'side', 's'], ['gnFloat', () => SETTINGS.gunner, 'float', 'b'],
   ['gnSwipe', () => SETTINGS.gunner, 'swipe', 'n'], ['gnStick', () => SETTINGS.gunner, 'stick', 'n'], ['gnExpo', () => SETTINGS.gunner, 'expo', 'n'], ['gnInv', () => SETTINGS.gunner, 'inv', 'b'],
   ['agApache', () => SETTINGS.agi, 'apache', 'n'], ['agDap', () => SETTINGS.agi, 'dap', 'n'], ['agLittle', () => SETTINGS.agi, 'little', 'n'],
   ['gfSens', () => SETTINGS.gyro.fly, 'sens', 'n'], ['gfDead', () => SETTINGS.gyro.fly, 'dead', 'n'], ['gfInvP', () => SETTINGS.gyro.fly, 'invP', 'b'], ['gfInvR', () => SETTINGS.gyro.fly, 'invR', 'b']])
@@ -5969,6 +6081,76 @@ $('gyOn').addEventListener('change', async e => { if (e.target.checked && !(awai
 $('gySens').addEventListener('input', e => { SETTINGS.gyro.sens = +e.target.value; saveSettings(); });
 $('gyInvX').addEventListener('change', e => { SETTINGS.gyro.invX = e.target.checked; saveSettings(); });
 $('gyInvY').addEventListener('change', e => { SETTINGS.gyro.invY = e.target.checked; saveSettings(); });
+
+// ---- Battlefield-style flight HUD: one canvas over the game, drawn by whichever pilot seat is live ----
+// rockets/guns: the "I" — its bottom bar is the impact point; missiles: corner brackets with a centre dot
+const BH = {cv: $('bfHud'), x: null, t: 0, on: false, w: 0, h: 0, d: 1};
+function bfHudHide(){ if (BH.on){ BH.on = false; BH.cv.classList.remove('on'); } }
+function bfHud(o){
+  const c = BH.cv; if (!BH.x) BH.x = c.getContext('2d');
+  const d = Math.min(2, devicePixelRatio || 1), W = c.clientWidth || innerWidth, H = c.clientHeight || innerHeight;
+  if (!BH.on){ BH.on = true; c.classList.add('on'); }
+  if (BH.w !== W || BH.h !== H || BH.d !== d){ BH.w = W; BH.h = H; BH.d = d; c.width = Math.round(W*d); c.height = Math.round(H*d); }
+  BH.t = performance.now();
+  const x = BH.x, s = clamp(Math.min(W, H)/430, 0.72, 1.5), cx = W/2;
+  x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, W, H);
+  if (o.frame){   // Little Bird bubble: thin pillars and a low dash
+    x.shadowBlur = 0; x.fillStyle = '#1a1f24';
+    x.beginPath(); x.moveTo(0, 0); x.lineTo(W*0.05, 0); x.lineTo(W*0.15, H*0.72); x.lineTo(W*0.11, H); x.lineTo(0, H); x.fill();
+    x.beginPath(); x.moveTo(W, 0); x.lineTo(W*0.95, 0); x.lineTo(W*0.85, H*0.72); x.lineTo(W*0.89, H); x.lineTo(W, H); x.fill();
+    x.fillRect(0, 0, W, H*0.035);
+    x.beginPath(); x.moveTo(0, H); x.lineTo(0, H*0.9); x.quadraticCurveTo(cx, H*0.8, W, H*0.9); x.lineTo(W, H); x.fill();
+  }
+  const col = 'rgba(238,240,196,0.95)';
+  x.strokeStyle = col; x.fillStyle = col; x.lineWidth = 1.6; x.shadowColor = 'rgba(0,0,0,.65)'; x.shadowBlur = 2.5;
+  x.font = `600 ${Math.round(12*s)}px Consolas, "DejaVu Sans Mono", ui-monospace, monospace`; x.textBaseline = 'middle';
+  if (o.aim){
+    const ax = (o.aim.x + 1)/2*W, ay = (1 - o.aim.y)/2*H;
+    x.beginPath();
+    if (o.msl){
+      const b = 34*s, e = 10*s;
+      for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ x.moveTo(ax + sx*b, ay + sy*(b - e)); x.lineTo(ax + sx*b, ay + sy*b); x.lineTo(ax + sx*(b - e), ay + sy*b); }
+      x.stroke(); x.beginPath(); x.arc(ax, ay, 1.6*s, 0, 6.29); x.fill();
+    } else {
+      const w = 10*s, h = 25*s, t = 6*s, m = ay - h/2;
+      x.moveTo(ax - w, ay); x.lineTo(ax + w, ay); x.moveTo(ax - w, ay - h); x.lineTo(ax + w, ay - h); x.moveTo(ax, ay); x.lineTo(ax, ay - h);
+      x.moveTo(ax - w - t, m); x.lineTo(ax - w + 3*s, m); x.moveTo(ax + w - 3*s, m); x.lineTo(ax + w + t, m);
+      x.stroke();
+    }
+  }
+  if (o.cockpit){
+    // heading tape
+    const tw = Math.min(W*0.5, 520*s), ty = H*0.2, hd = ((o.hdg % 360) + 360) % 360, span = 50;
+    x.beginPath(); x.moveTo(cx - tw/2, ty); x.lineTo(cx + tw/2, ty);
+    for (let a = Math.ceil((hd - span)/5)*5; a <= hd + span; a += 5){
+      const px = cx + (a - hd)/span*tw/2; if (Math.abs(px - cx) > tw/2) continue;
+      const big = a % 10 === 0; x.moveTo(px, ty); x.lineTo(px, ty + (big ? 7 : 4)*s);
+    }
+    x.stroke(); x.textAlign = 'center';
+    for (let a = Math.ceil((hd - span)/30)*30; a <= hd + span; a += 30){ const px = cx + (a - hd)/span*tw/2; if (Math.abs(px - cx) > tw/2 - 8) continue; x.fillText(String(((a % 360) + 360) % 360), px, ty + 18*s); }
+    x.beginPath(); x.moveTo(cx - 6*s, ty - 9*s); x.lineTo(cx + 6*s, ty - 9*s); x.lineTo(cx, ty - 3*s); x.fill();
+    for (let px = cx - tw/2; px <= cx + tw/2; px += 9*s) x.fillRect(px, ty + 28*s, 1.4, 1.4);
+    // altitude tape (right of centre): pointer and readout ride up the scale
+    const lx = cx + tw*0.47, y0 = H*0.78, y1 = H*0.34, amax = 120;
+    x.beginPath(); x.moveTo(lx, y1); x.lineTo(lx, y0);
+    for (let k = 0; k <= 12; k++){ const py = y0 + (y1 - y0)*k/12, big = k % 4 === 0; x.moveTo(lx - (big ? 9 : 5)*s, py); x.lineTo(lx, py); }
+    x.moveTo(lx - 9*s, y1); x.lineTo(lx + 9*s, y1); x.moveTo(lx - 9*s, y0); x.lineTo(lx + 9*s, y0); x.stroke();
+    const pa = y0 + (y1 - y0)*clamp(o.alt/amax, 0, 1);
+    x.beginPath(); x.moveTo(lx - 22*s, pa - 6*s); x.lineTo(lx - 12*s, pa); x.lineTo(lx - 22*s, pa + 6*s); x.fill();
+    x.strokeRect(lx + 14*s, pa - 9*s, 50*s, 18*s); x.textAlign = 'center'; x.fillText(String(Math.round(o.alt)), lx + 39*s, pa + 1);
+  }
+  // attitude box, bottom centre: the small box drifts with roll and pitch
+  { const by = H*0.86, bw = 108*s, bh = 26*s, ix = clamp(-o.bank*30*s, -bw/2 + 18*s, bw/2 - 18*s), iy = clamp(o.pitch*16*s, -bh/2 + 6*s, bh/2 - 6*s);
+    x.strokeRect(cx - bw/2, by - bh/2, bw, bh); x.beginPath(); x.moveTo(cx, by - bh/2 - 6*s); x.lineTo(cx, by - bh/2); x.moveTo(cx, by + bh/2); x.lineTo(cx, by + bh/2 + 4*s);
+    x.moveTo(cx - bw/2, by); x.lineTo(cx - bw/2 + 5*s, by); x.moveTo(cx + bw/2 - 5*s, by); x.lineTo(cx + bw/2, by); x.stroke();
+    x.strokeRect(cx + ix - 16*s, by + iy - 5.5*s, 32*s, 11*s); x.beginPath(); x.arc(cx + ix, by + iy, 3*s, 0, 6.29); x.fill();
+    // status text either side
+    const lh = 16*s; x.textAlign = 'right';
+    x.fillText(Math.round(o.kts) + ' KTS', cx - bw/2 - 24*s, by - lh/2); x.fillText('FLRS ' + o.flr, cx - bw/2 - 24*s, by + lh/2);
+    x.textAlign = 'left';
+    o.lines.forEach((l, i) => x.fillText(l, cx + bw/2 + 24*s, by - lh/2 + i*lh));
+  }
+}
 
 // ---- in-app updates (Android app only): the app downloads new game files in the background ----
 const UPD = {pending: null, dismissed: false};

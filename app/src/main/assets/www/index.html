@@ -138,8 +138,12 @@ body.pc .streak span{font-size:11px}
 .gyInfo span{opacity:.65;font-variant-numeric:tabular-nums}
 .gyInfo .btn{align-self:flex-start}
 /* gunner look stick */
+#trPrev{display:block;width:100%;max-width:420px;height:auto;aspect-ratio:320/130;margin:6px 0 8px;border-radius:6px;background:#0a1015;border:1px solid rgba(255,255,255,.08)}
+#radar{position:absolute;z-index:5;left:calc(10px + env(safe-area-inset-left,0px));top:calc(62px + env(safe-area-inset-top,0px));width:104px;height:104px;pointer-events:none;display:none}
+#radar.on{display:block}
+body.pc #radar{width:140px;height:140px}
 #bfHud{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;display:none}#bfHud.on{display:block}
-#hm.pilotseat #hmRet,#hm.pilotseat #hmAtt,#df.sim .ret,#hm.doorgun #hmRet,#dg>svg{display:none!important}
+#hm.pilotseat #hmRet,#hm.pilotseat #hmAtt,#df.sim .ret,#hm.doorgun #hmRet,#hm.apgun #hmRet,#dg>svg{display:none!important}
 #lookStick{position:absolute;z-index:7;display:none;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;border:2px solid rgba(232,251,255,.8);background:rgba(10,16,22,.28);opacity:.55;touch-action:none}
 #lookStick.on{display:block}#lookStick.act{opacity:.85}
 #lookStick i{position:absolute;left:50%;top:50%;width:46%;height:46%;margin:-23% 0 0 -23%;border-radius:50%;background:rgba(232,251,255,.6);pointer-events:none}
@@ -418,7 +422,7 @@ body.pc .titleFs{display:none}
     <div class="top"><div>APACHE · GUNNER<div class="bar"><i id="gsTime"></i></div></div><div style="text-align:right">30MM <span id="gsMag">12/12</span> · <span id="gsKills">0</span> KILLS<br><button class="landBtn" id="gsLand" type="button" aria-label="Landscape">⤢</button> <button id="gsExit" type="button">Exit</button></div></div>
     <svg class="ret" viewBox="-75 -75 150 150" aria-hidden="true"><g fill="none" stroke="#c8ffd0" stroke-width="2"><circle r="22"/><path d="M-70 0h34M36 0h34M0 -70v34M0 36v34"/><path d="M-50 -50h12M-50 -50v12M50 -50h-12M50 -50v12M-50 50h12M-50 50v-12M50 50h-12M50 50v-12"/></g><circle r="2.5" fill="#c8ffd0"/></svg>
     <div class="lock" id="gsLock"></div>
-    <div class="hint" id="gsHint">Drag to aim · the cannon fires 12-round bursts on its own</div>
+    <div class="hint" id="gsHint">Drag to aim · hold FIRE for the 30 mm</div>
     <div class="btns"><button id="gsRockets" type="button">ROCKETS<small id="gsRk">6 salvos</small></button><button id="gsHellfire" type="button">HELLFIRE<small id="gsHf">4 left</small></button></div>
   </div>
   <div id="dg" hidden>
@@ -437,6 +441,7 @@ body.pc .titleFs{display:none}
   </div>
   <div id="flash"></div>
   <canvas id="bfHud" aria-hidden="true"></canvas>
+  <canvas id="radar" width="300" height="300" aria-hidden="true"></canvas>
   <div id="lookStick" aria-hidden="true"><i></i><span>AIM</span></div>
   <button id="tiltBtn" type="button" aria-label="Recenter tilt">⦿</button>
   <div id="updBar" hidden><span id="updTxt"></span><button id="updGo" type="button">Restart</button><button id="updX" type="button" aria-label="Later">✕</button></div>
@@ -501,7 +506,7 @@ body.pc .titleFs{display:none}
     <div class="card bfset">
       <div class="bfHead"><h2>Settings</h2><span class="bfKeys">Q / E or LB / RB to change tabs</span><button class="btn small" id="settingsDone" type="button">Done</button></div>
       <nav class="bfTabs" id="bfTabs" role="tablist">
-        <button type="button" data-tab="game" class="on">Gameplay</button><button type="button" data-tab="ctrl">Controls</button><button type="button" data-tab="sens">Sensitivity</button><button type="button" data-tab="gyro">Gyro</button><button type="button" data-tab="gfx">Graphics</button><button type="button" data-tab="aud">Audio</button><button type="button" data-tab="keys">Keys</button>
+        <button type="button" data-tab="game" class="on">Gameplay</button><button type="button" data-tab="ctrl">Controls</button><button type="button" data-tab="sens">Sensitivity</button><button type="button" data-tab="gyro">Gyro</button><button type="button" data-tab="gfx">Graphics</button><button type="button" data-tab="hud">HUD</button><button type="button" data-tab="aud">Audio</button><button type="button" data-tab="keys">Keys</button>
       </nav>
       <div class="bfBody">
       <section class="bfPane on" data-pane="game">
@@ -604,9 +609,24 @@ body.pc .titleFs{display:none}
         <div class="set">
           <label for="sShadows">Shadows</label><input class="sw" type="checkbox" id="sShadows">
           <label for="sHq">Sharp graphics</label><input class="sw" type="checkbox" id="sHq">
+          <label for="sRadar">Air radar in helicopters</label><input class="sw" type="checkbox" id="sRadar">
           <label for="sLite">Light far crowd (faster, rougher)</label><input class="sw" type="checkbox" id="sLite">
           <label for="sPc">PC mode (landscape, sharper)</label><select id="sPc"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select>
         </div>
+      </section>
+      <section class="bfPane" data-pane="hud">
+        <h3 class="subh">Minigun sight</h3>
+        <div class="set">
+          <label for="hdDot">Sight dot size</label><input type="range" id="hdDot" min="0.6" max="3" step="0.05">
+          <label for="hdCdot">Centre dot size</label><input type="range" id="hdCdot" min="0.5" max="3" step="0.05">
+        </div>
+        <h3 class="subh">Tracers</h3>
+        <canvas id="trPrev" width="320" height="130" aria-label="Tracer preview"></canvas>
+        <div class="set">
+          <label for="trSize">Tracer size</label><input type="range" id="trSize" min="0.4" max="2.5" step="0.05">
+          <label for="trQty">Tracer amount (share of rounds)</label><input type="range" id="trQty" min="0" max="1" step="0.05">
+        </div>
+        <p class="fine">Applies to the miniguns, door guns and the 30 mm.</p>
       </section>
       <section class="bfPane" data-pane="aud">
         <div class="set">
@@ -768,7 +788,7 @@ const ASSETS = {
     // a body without its own rotor gets the Apache blades, rescaled.
     // Sikorsky UH-60M with the external-tank stub wings (hull space: metres, nose -z, mast at the UH-60's); the gunner-window panes are
     // left out of the model so the M134s stick out of them
-    blackhawk: {model: 'assets/uh60.json', body: 'assets/uh60s_body.json', rotor: 'assets/uh60s_rotor.json', tailRotor: 'assets/uh60s_tail.json', tailAt: [0.288, 1.84, 8.79], gunAt: [1.36, 0.3, -2.75]},
+    blackhawk: {model: 'assets/uh60.json', body: 'assets/uh60s_body.json', rotor: 'assets/uh60s_rotor.json', tailRotor: 'assets/uh60s_tail.json', tailAt: [0.288, 1.84, 8.79], gunAt: [1.44, 0.04, -2.78]},
     // MH-60L DAP: “MH-60L DAP (War Thunder)” by KojfDiscord, CC BY 4.0 — body, rotor and tail rotor already in hull space
     dap:       {model: 'assets/uh60.json', body: 'assets/dapwt_body.json', rotor: 'assets/dapwt_rotor.json', tailRotor: 'assets/dapwt_tail.json'},
     // “Minigun M-134” by Nik Vega, CC BY 4.0 — split by its rig into receiver and spinning barrel cluster (metres, barrels along -z)
@@ -787,7 +807,7 @@ const DAP_MODELS = {
   light:    {model: 'assets/uh60.json', body: 'assets/dapusa_body.json', rotor: 'assets/dapusa_rotor.json', tailRotor: null, noTail: true, stores: {pod: [2.65, 0.05, -1.3], gun: [1.95, -0.3, -1.95]}},
   detailed: {model: 'assets/uh60.json', body: 'assets/dapwt_body.json', rotor: 'assets/dapwt_rotor.json', tailRotor: 'assets/dapwt_tail.json', stores: {pod: [2.85, 0, -1.45], gun: [1.95, -0.05, -1.45]}},
   // the Sikorsky UH-60M with the tank pods: rockets leave from the pod noses, the wing guns hang under the stubs
-  pods:     {model: 'assets/uh60.json', body: 'assets/uh60s_body.json', rotor: 'assets/uh60s_rotor.json', tailRotor: 'assets/uh60s_tail.json', tailAt: [0.288, 1.84, 8.79], gunAt: [1.36, 0.3, -2.75],
+  pods:     {model: 'assets/uh60.json', body: 'assets/uh60s_body.json', rotor: 'assets/uh60s_rotor.json', tailRotor: 'assets/uh60s_tail.json', tailAt: [0.288, 1.84, 8.79], gunAt: [1.44, 0.04, -2.78],
              stores: {pod: [2.7, -0.05, -3.05], gun: [1.95, -0.35, -1.3]}},
 };
 try { const pick = (JSON.parse(localStorage.getItem('adlords-settings') || '{}').dapLook) || 'pods'; ASSETS.vehicles.dap = {...DAP_MODELS[pick] || DAP_MODELS.pods}; } catch(e){ ASSETS.vehicles.dap = {...DAP_MODELS.pods}; }
@@ -872,7 +892,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V71';
+const GAME_VERSION = 'V72';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -1091,8 +1111,8 @@ const DD = {src: null, g: null};
 function downdraftTick(){
   if (!AU.ctx || !SMP.downdraft.length) return;
   if (!DD.src){ DD.g = AU.ctx.createGain(); DD.g.gain.value = 0; DD.g.connect(AU.sfx); DD.src = AU.ctx.createBufferSource(); DD.src.buffer = SMP.downdraft[0]; DD.src.loop = true; DD.src.connect(DD.g); DD.src.start(); }
-  const fly = state === 'play' && SETTINGS.sound && ((MODE === 'heli' && HM.on) || (DF.on && DF.v)), alt = MODE === 'heli' && HM.on ? HM.pos.y : DF.v ? DF.v.y : 99;
-  const want = fly ? clamp(1 - (alt - 2.2)/8, 0, 1)*0.6 : 0;
+  const fly = state === 'play' && SETTINGS.sound && ((MODE === 'heli' && HM.on) || (DF.on && DF.v)), alt = MODE === 'heli' && HM.on ? HM.pos.y - (HM.gy || 2.2) + 2.2 : DF.v ? DF.v.y : 99;
+  const want = fly ? clamp(1 - (alt - 2.2)/10, 0, 1)*0.6 : 0;
   DD.g.gain.setTargetAtTime(want, AU.ctx.currentTime, 0.25);
 }
 // where a round lands decides what it sounds like: deck planks on the pier, tarmac on the airfield, nothing over water
@@ -2646,6 +2666,7 @@ function shoot(x, y, z, tx, tz, speed, dmg, pierce, kindIdx, life = 1.2, spread 
   const a = Math.atan2(tx - x, -(tz - z)) + rnd(-spread, spread), d = Math.hypot(tx - x, tz - z), t = Math.max(0.05, d/speed);
   const i = un++;
   ux[i] = x; uz[i] = z; uy[i] = y; uvx[i] = Math.sin(a)*speed; uvz[i] = -Math.cos(a)*speed; uvy[i] = y > 2.4 ? (1.0 - y)/t : 0;
+  if (tr >= 2) tr = Math.random() < SETTINGS.hud.trQty ? 3 : 2;      // the tracer share you set
   ud[i] = dmg*dmgMul; upi[i] = pierce + apLv(); ul[i] = Math.max(life, t + 0.3); uk[i] = kindIdx; um[i] = 3; ulast[i] = 0; utr[i] = tr; uo[i] = SHOT_OWN;
 }
 function nearestEnemy(x, z, maxZ = 2){
@@ -3104,10 +3125,11 @@ function dgGun(v, gun, dt, lv){
 // eye directly behind the gun, a little above the receiver; camera "up" follows the airframe so banking tilts the horizon
 // BF door-gun framing: the eye sits just behind the spade grips, a hand above the barrels, so the M134 fills the bottom
 // middle of the screen and the barrels point just under the centre; the gun is drawn larger while you're on it
-const DGEYE = {y: 0.3, z: 0.3, look: 0.3, fov: 64, gunScale: 1.6};
+const DGEYE = {y: 0.27, z: 0.3, look: 0.3, fov: 64, gunScale: 1.6};
 function gunnerEye(gun, airframe){
   if (!gun.big){ gun.big = true; gun.g.scale.multiplyScalar(DGEYE.gunScale); }
-  _gq.set(0, DGEYE.y, DGEYE.z); gun.pitch.localToWorld(_gq); camera.position.copy(_gq);
+  // looking out to the side the eye stays close behind the grips, so it never ends up inside the cabin wall
+  _gq.set(0, DGEYE.y, DGEYE.z*(1 - 0.65*Math.sin(clamp(gun.th || 0, 0, Math.PI)))); gun.pitch.localToWorld(_gq); camera.position.copy(_gq);
   camera.up.set(0, 1, 0).transformDirection(airframe.matrixWorld);
   _gd.set(0, DGEYE.look, -16); gun.pitch.localToWorld(_gd); camera.lookAt(_gd);
   camera.fov = DGEYE.fov; camera.updateProjectionMatrix();
@@ -3216,14 +3238,14 @@ function dfHellfire(){
 function dfCamera(){
   const v = DF.v; if (!v) return false;
   if (DF.P){
-    const P = DF.P, dt = Math.min(0.05, DF.dt || 1/60), far = camera.aspect < 1 ? 1.35 : 1, ck = DF.view === 'cockpit' && v.hull;
+    const P = DF.P, dt = Math.min(0.05, DF.dt || 1/60), far = camera.aspect < 1 ? 1.35 : 1, ck = DF.view === 'cockpit' && v.hull; P.ck = !!ck;
     if (ck){
       // right seat of the DAP, pilots hidden; freelook turns your head
       dapCrew(v, false); v.g.updateMatrixWorld(true);
       camera.position.copy(_hmV.fromArray(DAP_EYE).applyMatrix4(v.hull.matrixWorld));
       v.g.getWorldQuaternion(camera.quaternion);
       _apE.set(-0.12 + (P.lookPitch || 0), -(P.lookYaw || 0), 0, 'YXZ'); camera.quaternion.multiply(_apQ.setFromEuler(_apE));
-      camera.fov = 80; if (camera.near !== 0.02) camera.near = 0.02;
+      camera.fov = ckFov(); if (camera.near !== 0.02) camera.near = 0.02;
     } else {
       if (v.crewHidden) dapCrew(v, true); if (camera.near !== 0.08) camera.near = 0.08;
       // same chase cam as the gunship: follows the airframe's full attitude, a beat behind
@@ -3360,7 +3382,7 @@ function gsPlaceHeli(){
 function gunshipStart(){
   autoLand();
   if (GS_.on){ GS_.dur += 12; GS_.rockets += 3; GS_.hellfires += 2; toast('Apache resupplied', '#c8ffd0'); return; }
-  Object.assign(GS_, {on: true, phase: 'arrive', t: 0, dur: VEHICLES.apache.dur, ang: -0.6, kills: 0, rockets: 6, hellfires: 4, rkCd: 0, hfCd: 0, fireT: 0, salvo: 0, wasFp: fp, mag: CANNON.mag, reload: 0});
+  Object.assign(GS_, {on: true, firing: false, phase: 'arrive', t: 0, dur: VEHICLES.apache.dur, ang: -0.6, kills: 0, rockets: 6, hellfires: 4, rkCd: 0, hfCd: 0, fireT: 0, salvo: 0, wasFp: fp, mag: CANNON.mag, reload: 0});
   GS_.aim.set(cx*0.5, 0, -22);
   { const d = densestEnemy(); if (d >= 0) GS_.aim.set(ex[d], 0, Math.max(ez[d], -40)); }
   if (!GS_.heli){ GS_.heli = buildApache(); GS_.heli.g.scale.setScalar(GS_SCALE); scene.add(GS_.heli.g); }
@@ -3452,7 +3474,8 @@ function gsUpdate(dt){
   } else if (P.phase === 'gun'){
     if (P.t > 2.5) $('gsHint').style.opacity = 0;
     // 30mm: auto-fire at the reticle
-    if (cannonTick(P, dt)){ const to = P.aim.clone(); to.x += rnd(-0.7, 0.7); to.z += rnd(-0.7, 0.7); gsShoot('cannon', P.gun, to); sfx('cannon30', 0.8, 0, true); }
+    if (!P.firing && P.reload > 0) cannonTick(P, dt);
+    if (P.firing && cannonTick(P, dt)){ const to = P.aim.clone(); to.x += rnd(-0.7, 0.7); to.z += rnd(-0.7, 0.7); gsShoot('cannon', P.gun, to); sfx('cannon30', 0.8, 0, true); }
     $('gsMag').textContent = P.reload > 0 ? 'RELOADING' : P.mag + '/' + CANNON.mag;
     // rocket salvo in progress
     if (P.salvo > 0){ P.salvoT -= dt; if (P.salvoT <= 0){ P.salvo--; P.salvoT = 0.07; const to = P.aim.clone(); to.x += rnd(-1.8, 1.8); to.z += rnd(-1.8, 1.8); const from = P.gun.clone(); from.addScaledVector(new THREE.Vector3(-P.dir.z, 0, P.dir.x), P.salvo % 2 ? 1.1 : -1.1); gsShoot('rocket', from, to); sfx('rocket', 0.7, P.salvo % 2 ? 0.4 : -0.4, true); } }
@@ -3538,6 +3561,7 @@ function trSet(mesh, i, x, y, z, d, w, len){
 // a single tracer mesh for the 30 mm (own projectile objects)
 function tracerObj(len = 2.6, w = 0.06){
   const g = new THREE.Group(), a = new THREE.Mesh(TRC.geo, TRC.core), b = new THREE.Mesh(TRC.geo, TRC.halo);
+  const ts = SETTINGS.hud ? SETTINGS.hud.trSize : 1; w *= ts; len *= ts;
   a.scale.set(w, w, len); b.scale.set(w*3.2, w*3.2, len*1.05); a.position.z = b.position.z = len*0.5; a.renderOrder = b.renderOrder = 3; g.add(a, b); return g;
 }
 const chipMesh = new THREE.InstancedMesh(new B(0.14, 0.14, 0.14), new THREE.MeshBasicMaterial(), PCAP);
@@ -3886,7 +3910,7 @@ function actPress(a){
     }
     if (a === 'missile') dfHellfire(); else if (a === 'fire') DF.fire = true; return; }
   if (DG.on){ if (a === 'fire') DG.hold = true; return; }
-  if (GS_.on && GS_.phase === 'gun') return;
+  if (GS_.on && GS_.phase === 'gun'){ if (a === 'fire') GS_.firing = true; return; }
   if (a === 'prevW') cycleWeapon(-1); else if (a === 'nextW') cycleWeapon(1);
   else if (a === 'view') toggleView();
   else if (a === 'doorgun'){ if (!$('dgBtn').hidden) dgStart(); }
@@ -3898,7 +3922,7 @@ function actRelease(a){
   if (a === 'hFire') a = 'fire';
   if (a === 'fire') HM.hfHold = false;
   if (a !== 'fire' || FAB.firing) return;
-  if (MODE === 'heli' && HM.on) HM.firing = false; else if (DF.on) DF.fire = false; else if (DG.on) DG.hold = false;
+  if (MODE === 'heli' && HM.on) HM.firing = false; else if (DF.on) DF.fire = false; else if (DG.on) DG.hold = false; else if (GS_.on) GS_.firing = false;
 }
 function codeDown(code, e){
   if (INPUT.rebind){ rebindTake(code); if (e) e.preventDefault(); return true; }
@@ -4224,7 +4248,8 @@ function aiSquadTick(dt){
 function inputTick(dt){
   gpPoll(dt); tsTick(); motionPoll(); tiltTick(); lsTick(dt); gyMeterTick();
   if (BH.on && performance.now() - BH.t > 150) bfHudHide();
-  aiSquadTick(dt); downdraftTick();
+  aiSquadTick(dt); downdraftTick(); trPreviewTick(dt);
+  if (state === 'play' && MODE === 'heli' && HM.on) radarTick(dt, HM); else if (state === 'play' && DF.on && DF.P) radarTick(dt, DF.P); else radarHide();
   if (state !== 'play'){ gyroTake(); return; }
   gyroTick();
   const G = INPUT.gp, dz = v => Math.abs(v) < 0.18 ? 0 : (v - Math.sign(v)*0.18)/0.82;
@@ -4765,7 +4790,7 @@ function sync(dt){
   let tn = 0;
   for (let i = 0; i < un; i++){ if (utr[i] !== 3) continue;
     _trD.set(uvx[i], uvy[i], uvz[i]); const sp = _trD.length() || 1; _trD.multiplyScalar(1/sp); const len = Math.min(3.2, sp*0.05);
-    trSet(trCore, tn, ux[i], uy[i], uz[i], _trD, 0.03, len); trSet(trHalo, tn, ux[i], uy[i], uz[i], _trD, 0.1, len*1.05); tn++; }
+    const ts = SETTINGS.hud.trSize; trSet(trCore, tn, ux[i], uy[i], uz[i], _trD, 0.03*ts, len*ts); trSet(trHalo, tn, ux[i], uy[i], uz[i], _trD, 0.1*ts, len*1.05*ts); tn++; }
   trCore.count = trHalo.count = tn; if (tn){ trCore.instanceMatrix.needsUpdate = true; trHalo.instanceMatrix.needsUpdate = true; }
 
   const ca = chipMesh.instanceMatrix.array;
@@ -4906,7 +4931,7 @@ function redrawLabels(){ for (const g of gates) g.dirty = true; for (const b of 
 const HM = {on: false, seat: 'pilot', view: 'chase', pos: new THREE.Vector3(), yaw: 0, speed: 0, alt: 12, sx: 0, sy: 0, climb: 0,
   firing: false, aimAz: 0, aimEl: -0.45, hull: 100, score: 0, rockets: 38, hellfire: 8, flares: 12, fireT: 0, hfCd: 0, flCd: 0,
   heli: null, enemies: [], shots: [], emiss: [], flareObjs: [], heliSpawnT: 0, toSpawn: 0, breakT: 0, warnT: 0, bank: 0, pitch: 0, fwd: new THREE.Vector3(), gun: new THREE.Vector3(), aimPt: new THREE.Vector3(), lockT: null, hintT: 0, mfdT: 0};
-const HM_SCALE = 3.4;
+const HM_SCALE = 3.4, HB = 2;     // HB: gunship-mode helicopters are drawn (and collide) at twice the old size
 const hmFwd = (yaw, out) => out.set(Math.sin(yaw), 0, -Math.cos(yaw));
 function tintify(obj, r, g, b){ obj.traverse(o => { if (o.isMesh) o.material = new THREE.MeshToonMaterial({map: o.material.map, gradientMap: gradSoft, side: THREE.DoubleSide, color: new THREE.Color(r, g, b)}); }); return obj; }
 function hmStart(type = 'apache'){
@@ -4921,19 +4946,21 @@ function hmStart(type = 'apache'){
   HM.pos.set(0, 12, 12); HM.type = type; if (!HM.vel) HM.vel = new THREE.Vector3(); HM.vel.set(0, 0, 0);
   if (HM.heli) HM.heli.g.visible = false;
   if (type === 'dap'){
-    if (!HM.heliD){ HM.heliD = buildDap(); HM.heliD.hull.scale.setScalar(0.42); HM.heliD.hull.position.y = 0; scene.add(HM.heliD.g); }
+    if (!HM.heliD){ HM.heliD = buildDap(); HM.heliD.hull.scale.setScalar(0.42*HB); HM.heliD.hull.position.y = 0; scene.add(HM.heliD.g); }
     HM.dgun = HM.heliD.guns.find(g => g.side > 0); HM.dgun.flashBase = 0.42; HM.th = 0.5; HM.ph = -0.7;
     HM.heli = HM.heliD; HM.rkMax = HM.rockets = 38;
     if (!HM.vm){ HM.vm = buildM134(); HM.vm.g.scale.setScalar(0.55); HM.vm.g.position.set(0.16, -0.2, -0.42); HM.vm.post.visible = false; HM.vm.flash.scale.setScalar(0.2); HM.vm.g.traverse(o => { o.frustumCulled = false; }); camera.add(HM.vm.g); }
   } else if (type === 'little'){
-    if (!HM.heliL){ HM.heliL = buildLittle(); HM.heliL.hull.scale.setScalar(0.42); scene.add(HM.heliL.g); }
+    if (!HM.heliL){ HM.heliL = buildLittle(); HM.heliL.hull.scale.setScalar(0.42*HB); scene.add(HM.heliL.g); }
     HM.heli = HM.heliL; HM.rkMax = HM.rockets = 28; HM.hellfire = 0;
   } else {
-    if (!HM.heliA){ HM.heliA = buildApache(); HM.heliA.g.scale.setScalar(HM_SCALE); scene.add(HM.heliA.g); }
+    if (!HM.heliA){ HM.heliA = buildApache(); HM.heliA.g.scale.setScalar(HM_SCALE*HB); scene.add(HM.heliA.g); }
     HM.heli = HM.heliA;
   }
   if (HM.vm) HM.vm.g.visible = false;
   HM.heli.g.visible = true;
+  { const g = HM.heli.g; g.position.set(0, 0, 0); g.rotation.set(0, 0, 0); g.updateMatrixWorld(true); const bb = new THREE.Box3();
+    g.traverse(o => { if (o.isMesh && o.visible && !(o.material && o.material.transparent)) bb.expandByObject(o); }); HM.gy = isFinite(bb.min.y) ? Math.max(1.2, -bb.min.y + 0.05) : 2.2*HB; }
   if (!GS_.gunCam) GS_.gunCam = new THREE.PerspectiveCamera(38, 1, 0.3, 400);
   $('hm').hidden = false; hmSeatUI();
   $('hmHint').innerHTML = tsTwin() ? 'Two sticks fly it: ' + ({mode2: 'left = collective &amp; yaw · right = pitch &amp; roll', mode1: 'left = pitch &amp; yaw · right = collective &amp; roll', swap: 'left = pitch &amp; roll · right = collective &amp; yaw'})[SETTINGS.sticks.layout] + ' · ✥ arranges them' : heliSim() ? 'Click to capture the mouse · mouse rolls &amp; pitches · W nose down / S flare · A/D yaw · Shift/Ctrl throttle · F switch weapon · 3 flares · C camera · V freelook · Esc releases' : penSeen ? 'Pen: hover to steer or aim · FIRE button with your finger · pen tap: ' + (PEN_OPTS[SETTINGS.penTap[(HM.type || 'apache') + '_pilot']] || 'Flares').toLowerCase() : 'Left thumb: drag to fly · ▲▼ altitude · hold FIRE';
@@ -4961,7 +4988,7 @@ function hmSeatUI(){
   const pilot = HM.seat === 'pilot';
   $('hmRet').innerHTML = pilot ? RET_PILOT : HM.type === 'dap' ? RET_DOOR : RET_GUN; $('hmRet').setAttribute('viewBox', pilot || HM.type === 'dap' ? '-60 -60 120 120' : '-100 -70 200 140');
   $('hm').classList.toggle('gunner', !pilot);
-  $('hm').classList.toggle('doorgun', !pilot && HM.type === 'dap');
+  $('hm').classList.toggle('doorgun', !pilot && HM.type === 'dap'); $('hm').classList.toggle('apgun', !pilot && HM.type === 'apache');
   const dap = HM.type === 'dap', lb = HM.type === 'little';
   $('hmHullName').textContent = dap ? 'DAP' : lb ? 'LITTLE BIRD' : 'APACHE';
   $('hmSeatBtn').hidden = lb; $('hmMissile').firstChild.textContent = lb ? 'ROCKETS' : pilot ? 'HELLFIRE' : 'AGM';
@@ -4986,7 +5013,7 @@ function hmSwapView(){ if (HM.seat !== 'pilot') return; HM.view = HM.view === 'c
 function hmSpawnEnemy(){
   const e = {hp: 45*(1 + 0.25*(wave - 2)), max: 0, ang: rnd(0, 6.28), r: rnd(18, 30), h: rnd(9, 17), fireT: rnd(1, 3), burst: 0, missT: rnd(6, 10), hit: 0, pos: new THREE.Vector3(), g: null};
   e.max = e.hp;
-  const b = buildApache(); tintify(b.g, 1.9, 0.75, 0.7); b.g.scale.setScalar(HM_SCALE*0.9);
+  const b = buildApache(); tintify(b.g, 1.9, 0.75, 0.7); b.g.scale.setScalar(HM_SCALE*0.9*HB);
   e.g = b.g; e.rotor = b.rotor; e.tail = b.tail; scene.add(e.g);
   e.pos.set(rnd(-40, 40), 25, FAR - 30);
   HM.enemies.push(e); toast('Enemy Apache!', '#ff9a90'); sfx('warn');
@@ -4994,7 +5021,7 @@ function hmSpawnEnemy(){
 // enemy UH-60: circles you side-on so its two door gunners can work you over
 let _ebhMat = null;
 function hmSpawnBH(){
-  const b = buildUH60(false); b.hull.scale.setScalar(0.42); scene.add(b.g);
+  const b = buildUH60(false); b.hull.scale.setScalar(0.42*HB); scene.add(b.g);
   b.hull.traverse(o => { if (o.isMesh && o.material && !o.material.transparent && o.material.color){ o.material = o.material.clone(); o.material.color.multiply(new THREE.Color(1.3, 0.82, 0.78)); } });   // hostile tint; the rotor blur stays see-through
   const e = {kind: 'bh', hp: 70*(1 + 0.25*(wave - 2)), max: 0, ang: rnd(0, 6.28), r: rnd(15, 24), h: rnd(8, 15), hit: 0, pos: new THREE.Vector3(), g: b.g, rotor: b.rotor, tail: b.tail, guns: b.guns, uid: ++vehUid, dir: Math.random() < 0.5 ? 1 : -1};
   e.max = e.hp; for (const gn of e.guns){ gn.flashBase = 0.4; gn.bT = rnd(0.5, 2.5); }
@@ -5118,7 +5145,7 @@ function apAIGunner(P, dt){
 }
 function hmFireAGM(P, to){
   P.agmCd = AGM.cd;
-  const from = P.pos.clone(); from.y -= 0.9;
+  const from = P.pos.clone(); from.y -= 0.9*HB;
   hmShoot('agm', from, to.clone().sub(from), 30, {to: to.clone()}); sfx('agm', 1, 0, true);
 }
 function hmGunnerAGM(){
@@ -5132,8 +5159,8 @@ function hmFireHellfire(){
   if (HM.hellfire <= 0 || HM.hfCd > 0 || state !== 'play') return;
   HM.hellfire--; HM.hfCd = 0.9;
   const t = hmLockTarget() || {};
-  const f = hmFwd(HM.yaw, new THREE.Vector3()), side = new THREE.Vector3(-f.z, 0, f.x).multiplyScalar(HM.hellfire % 2 ? 1.6 : -1.6);
-  const from = HM.pos.clone().add(side); from.y -= 0.8;
+  const f = hmFwd(HM.yaw, new THREE.Vector3()), side = new THREE.Vector3(-f.z, 0, f.x).multiplyScalar((HM.hellfire % 2 ? 1.6 : -1.6)*HB);
+  const from = HM.pos.clone().add(side); from.y -= 0.8*HB;
   const aim = heliSim() ? hmAimPoint(new THREE.Vector3()) : hmBoresight(new THREE.Vector3());
   hmShoot('hellfire', from, aim.clone().sub(from), 30, heliSim() ? {heli: t.heli, to: aim, follow: SETTINGS.guided && !t.heli} : {heli: t.heli, boss: t.boss, id: t.id, to: aim});
   sfx('hellfire', 1, 0, true);
@@ -5170,7 +5197,7 @@ function hmHitHelis(p, r, dmg){
   let hit = false;
   for (const e of HM.enemies){
     if (e.hp <= 0) continue;
-    if (e.pos.distanceTo(p) < r + 2.4){ e.hp -= dmg; e.hit = 0.1; hit = true; chips(p.x, p.y, p.z, SPARK, 3, 3); fx('white', p.x, p.y, p.z, rnd(0.7, 1.1)); sfx('imMetal', camVol(p.x, p.y, p.z), camPan(p.x));
+    if (e.pos.distanceTo(p) < r + 2.4*HB){ e.hp -= dmg; e.hit = 0.1; hit = true; chips(p.x, p.y, p.z, SPARK, 3, 3); fx('white', p.x, p.y, p.z, rnd(0.7, 1.1)); sfx('imMetal', camVol(p.x, p.y, p.z), camPan(p.x));
       if (e.hp <= 0){ HM.score += 250; kills++; coins += 20; explode(e.pos.x, e.pos.z, 0.1, 0, true); chips(e.pos.x, e.pos.y, e.pos.z, ORANGE, 40, 7); chips(e.pos.x, e.pos.y, e.pos.z, SMOKE, 30, 5); sfx('bigboom'); e.fall = 0; toast('Apache down  +250', '#ffe28a'); }
     }
   }
@@ -5194,8 +5221,9 @@ function hmSimFlight(P, f, dt){
   let mdx = P.mdx || 0, mdy = P.mdy || 0; P.mdx = P.mdy = 0;
   // freelook: V (or the arrow keys) swings the camera instead of the helicopter
   const ax = (act('hAimR') ? 1 : 0) - (act('hAimL') ? 1 : 0), ay = (act('hAimU') ? 1 : 0) - (act('hAimD') ? 1 : 0);
-  if (P.free){ P.lookYaw = clamp((P.lookYaw || 0) + mdx*0.004, -2.6, 2.6); P.lookPitch = clamp((P.lookPitch || 0) - mdy*0.004, -0.9, 0.7); mdx = mdy = 0; }
-  else if (ax || ay){ P.lookYaw = clamp((P.lookYaw || 0) + ax*2*dt, -2.6, 2.6); P.lookPitch = clamp((P.lookPitch || 0) + ay*1.4*dt, -0.9, 0.7); }
+  const LY = P.ck ? 1.75 : 2.6, LP0 = P.ck ? -0.55 : -0.9, LP1 = P.ck ? 0.42 : 0.7;      // first person: about 100° either way, a little up and down
+  if (P.free){ P.lookYaw = clamp((P.lookYaw || 0) + mdx*0.004, -LY, LY); P.lookPitch = clamp((P.lookPitch || 0) - mdy*0.004, LP0, LP1); mdx = mdy = 0; }
+  else if (ax || ay){ P.lookYaw = clamp((P.lookYaw || 0) + ax*2*dt, -LY, LY); P.lookPitch = clamp((P.lookPitch || 0) + ay*1.4*dt, LP0, LP1); }
   else { P.lookYaw = (P.lookYaw || 0)*Math.max(0, 1 - dt*4); P.lookPitch = (P.lookPitch || 0)*Math.max(0, 1 - dt*4); }
   const kp = (act('hPitchDown') ? 1 : 0) - (act('hPitchUp') ? 1 : 0);
   const ky = (act('hYawR') ? 1 : 0) - (act('hYawL') ? 1 : 0) + gpAx(2) + TS.ax.yaw;
@@ -5246,7 +5274,8 @@ function hmSimFlight(P, f, dt){
     const sp2 = P.vel.length(), dr = Math.min(1, (SIM.drag + SIM.drag2*sp2)*AG.drag*dt); P.vel.x -= P.vel.x*dr; P.vel.z -= P.vel.z*dr; P.vel.y -= P.vel.y*dr*0.25; }
   P.pos.addScaledVector(P.vel, dt);
   const wasGround = P.onGround; P.onGround = false;
-  if (P.pos.y < 2.2){ P.onGround = true; const imp = Math.max(-P.vel.y, Math.hypot(P.vel.x, P.vel.z)*0.8)*(Math.abs(P.pitch) > 0.6 || Math.abs(P.bank) > 0.7 ? 1.6 : 1); if (!wasGround && imp > 1.2) sfx('touchdown', clamp(0.35 + imp/12, 0.35, 1.4), 0, true);   /* flat, level touchdowns are forgiving; nose-first or on its side is not */ if (imp > SIM.landSafe && !P.landT && !P.noDmg) hmDamage(Math.min(100, (imp - SIM.landSafe)*12)); P.landT = 0.5; P.pos.y = 2.2; P.vel.y = Math.max(0, P.vel.y); P.vel.x *= 1 - Math.min(1, dt*3); P.vel.z *= 1 - Math.min(1, dt*3); }
+  const GY = P.gy || 2.2;
+  if (P.pos.y < GY){ P.onGround = true; const imp = Math.max(-P.vel.y, Math.hypot(P.vel.x, P.vel.z)*0.8)*(Math.abs(P.pitch) > 0.6 || Math.abs(P.bank) > 0.7 ? 1.6 : 1); if (!wasGround && imp > 1.2) sfx('touchdown', clamp(0.35 + imp/12, 0.35, 1.4), 0, true);   /* flat, level touchdowns are forgiving; nose-first or on its side is not */ if (imp > SIM.landSafe && !P.landT && !P.noDmg) hmDamage(Math.min(100, (imp - SIM.landSafe)*12)); P.landT = 0.5; P.pos.y = GY; P.vel.y = Math.max(0, P.vel.y); P.vel.x *= 1 - Math.min(1, dt*3); P.vel.z *= 1 - Math.min(1, dt*3); }
   P.landT = Math.max(0, (P.landT || 0) - dt);
   if (wasGround && !P.onGround){ P.airT = 0; P.kicked = false; }
   if (P.pos.y > 80){ P.pos.y = 80; P.vel.y = Math.min(0, P.vel.y); }
@@ -5304,14 +5333,14 @@ function hmUpdate(dt){
     P.pos.y += (P.alt - P.pos.y)*Math.min(1, dt*2);
   }
   if (!(sim && P.seat === 'pilot')){ P.pos.x = clamp(P.pos.x, -48, 48); P.pos.z = clamp(P.pos.z, FAR - 40, 28); }
-  P.gun.copy(P.pos).addScaledVector(f, 2.2); P.gun.y -= 0.9;
-  if (P.pos.y < 10 && Math.random() < dt*40*(1 - P.pos.y/10)){ const a = rnd(0, 6.28), r = rnd(1, 5); chips(P.pos.x + Math.cos(a)*r, 0.25, P.pos.z + Math.sin(a)*r, DUST, 2, 3.5); }
+  P.gun.copy(P.pos).addScaledVector(f, 2.2*HB); P.gun.y -= 0.9*HB;
+  if (P.pos.y < 14 && Math.random() < dt*40*(1 - P.pos.y/14)){ const a = rnd(0, 6.28), r = rnd(1, 5); chips(P.pos.x + Math.cos(a)*r, 0.25, P.pos.z + Math.sin(a)*r, DUST, 2, 3.5); }
   // ---- weapons ----
   const right = new THREE.Vector3(-f.z, 0, f.x), dap = P.type === 'dap', little = P.type === 'little';
   P.fireT -= dt; P.gunT = (P.gunT || 0) - dt;
   if (P.seat === 'pilot'){
     if (P.firing && P.fireT <= 0 && P.rockets > 0 && !little){
-      P.rockets--; P.fireT = dap ? 0.28 : 0.14; const side = right.clone().multiplyScalar((P.rockets % 2 ? 1 : -1)*(dap ? 1.2 : 1.5)); const from = P.pos.clone().add(side); from.y -= dap ? 0.2 : 0.7;
+      P.rockets--; P.fireT = dap ? 0.28 : 0.14; const side = right.clone().multiplyScalar((P.rockets % 2 ? 1 : -1)*(dap ? 1.2 : 1.5)*HB); const from = P.pos.clone().add(side); from.y -= (dap ? 0.2 : 0.7)*HB;
       if (heliSim()){ const tgt = hmAimPoint(new THREE.Vector3()); tgt.x += rnd(-0.6, 0.6); tgt.z += rnd(-0.6, 0.6); hmShoot('rocket', from, tgt.sub(from), 42, SETTINGS.guided ? {follow: true} : null); }
       else { const aim = hmBoresight(new THREE.Vector3()); aim.x += rnd(-1.2, 1.2); aim.z += rnd(-1.2, 1.2); hmShoot('rocket', from, aim.sub(from), 42); } sfx('rocket', 0.8, P.rockets % 2 ? 0.4 : -0.4, true);
     }
@@ -5320,7 +5349,7 @@ function hmUpdate(dt){
       const aim = heliSim() ? hmAimPoint(new THREE.Vector3()) : hmBoresight(new THREE.Vector3());
       while (P.gunT <= 0){
         P.gunT += M134_STEP/rateMul/(little ? 2 : 1); P.tc = ((P.tc || 0) + 1) & 3;     // Little Bird: two guns, each at full rate
-        const from = P.pos.clone().addScaledVector(right, (P.tc & 1 ? 1 : -1)*(little ? 0.5 : 0.8)); from.y -= little ? 0.25 : 0.1;
+        const from = P.pos.clone().addScaledVector(right, (P.tc & 1 ? 1 : -1)*(little ? 0.5 : 0.8)*HB); from.y -= (little ? 0.25 : 0.1)*HB;
         if (little){ const gg = P.heli.guns[P.tc & 1]; gg.flash.visible = true; gg.flashT = 0.035; }
         { const ax = aim.x + rnd(-1.4, 1.4), az = aim.z + rnd(-1.4, 1.4); shoot(from.x, from.y, from.z, ax, az, 70, 1.6, 1, 5, 2.4, 0.01, P.tc & 2 ? 3 : 2); if (Math.random() < 0.5) hitPuff(ax, az, from.distanceTo(aim)/70); }
       }
@@ -5449,13 +5478,13 @@ function hmUpdate(dt){
     }
     o.m.position.addScaledVector(o.v, dt); o.life -= dt;
     const d = o.m.position.distanceTo(P.pos);
-    if (!o.passed && o.pd !== undefined && d > o.pd && o.pd < (o.missile ? 16 : 5)){
+    if (!o.passed && o.pd !== undefined && d > o.pd && o.pd < (o.missile ? 22 : 8)){
       o.passed = true; const sx = o.m.position.x - camera.position.x;
-      sfx(o.missile ? 'mpass' : 'whiz', clamp(1.3 - o.pd/(o.missile ? 16 : 5), 0.35, 1), clamp(sx/6, -1, 1), true);
+      sfx(o.missile ? 'mpass' : 'whiz', clamp(1.3 - o.pd/(o.missile ? 22 : 8), 0.35, 1), clamp(sx/6, -1, 1), true);
     }
     o.pd = d;
     let gone = o.life <= 0 || o.m.position.y < 0.2;
-    if (!gone && d < (o.missile ? 2.4 : 1.7)){ hmDamage(o.missile ? 20 : (o.dmg || 1.3)); gone = true; if (o.missile){ chips(P.pos.x, P.pos.y, P.pos.z, ORANGE, 20, 6); sfx('boom'); } }
+    if (!gone && d < (o.missile ? 2.4 : 1.7)*HB*0.9){ hmDamage(o.missile ? 20 : (o.dmg || 1.3)); gone = true; if (o.missile){ chips(P.pos.x, P.pos.y, P.pos.z, ORANGE, 20, 6); sfx('boom'); } }
     if (o.missile && o.decoy && o.m.position.distanceTo(o.decoy) < 2){ chips(o.m.position.x, o.m.position.y, o.m.position.z, ORANGE, 14, 5); sfx('smallboom'); gone = true; }
     if (gone){ scene.remove(o.m); P.emiss.splice(k, 1); }
   }
@@ -5540,8 +5569,10 @@ function dapCrew(h, show){
   if (!h.crew){ h.crew = []; h.hull.traverse(o => { if (o.isMesh && /plt/i.test(o.userData.mat || '')) h.crew.push(o); }); }
   for (const m of h.crew) m.visible = show; h.crewHidden = !show;
 }
+// cockpit field of view: ~100° across on a wide screen (BF-like), never narrower than 56° tall
+const ckFov = () => camera.aspect >= 1 ? clamp(2*Math.atan(Math.tan(50*Math.PI/180)/camera.aspect)*180/Math.PI, 56, 80) : 80;
 function hmCamera(dt){
-  const P = HM, f = hmFwd(P.yaw, P.fwd), h = P.heli;
+  const P = HM, f = hmFwd(P.yaw, P.fwd), h = P.heli; P.ck = P.seat === 'pilot' && P.view === 'cockpit';
   if (P.dgun && !(P.seat !== 'pilot' && P.type === 'dap')){ gunnerEyeOff(P.dgun); P.dgun.own = false; }
   if (h && h.crewHidden && !(P.seat === 'pilot' && P.view === 'cockpit')) dapCrew(h, true);
   if (h){
@@ -5555,14 +5586,14 @@ function hmCamera(dt){
     const sim = heliSim(), lf = sim && (P.lookYaw || P.lookPitch) ? hmFwd(P.yaw + (P.lookYaw || 0), _hmF) : f;
     const rgt = _v3.set(-lf.z, 0, lf.x);
     const far = camera.aspect < 1 ? 1.35 : 1, bh = P.type === 'dap';      // portrait: step back so the whole aircraft fits
-    _hmV.copy(P.pos).addScaledVector(lf, (bh ? -10 : -8.6)*far*CHASE.arc).addScaledVector(rgt, bh ? 0 : -1.5*CHASE.arc); _hmV.y += (bh ? 4.2 : 3.1)*far*CHASE.arc - (sim ? (P.lookPitch || 0)*6 : 0);
+    _hmV.copy(P.pos).addScaledVector(lf, (bh ? -10 : -8.6)*far*CHASE.arc*HB).addScaledVector(rgt, bh ? 0 : -1.5*CHASE.arc); _hmV.y += (bh ? 4.2 : 3.1)*far*CHASE.arc*HB - (sim ? (P.lookPitch || 0)*6 : 0);
     camera.position.lerp(_hmV, Math.min(1, dt*5));
     _hmL.copy(P.pos).addScaledVector(lf, (bh ? 14 : 16)*CHASE.arc).addScaledVector(rgt, bh ? 0 : -1.2*CHASE.arc); _hmL.y -= (bh ? 4.2 : 2.6)*CHASE.arc - (sim ? (P.lookPitch || 0)*12 - P.pitch*6 : 0);
     camera.lookAt(_hmL); camera.fov = 62;
     if (sim){
       // Battlefield chase: rides along with the airframe's full attitude (heading, pitch and roll, upside down included),
       // trailing it a beat so it leads a little in a manoeuvre and then lines back up
-      chaseCam(P, h.g, P.type === 'apache', P.type === 'little' ? CHASE.little : bh ? CHASE.dap : CHASE.apache, dt, far);
+      { const c0 = P.type === 'little' ? CHASE.little : bh ? CHASE.dap : CHASE.apache; chaseCam(P, h.g, P.type === 'apache', {d: c0.d*HB, h: c0.h*HB}, dt, far); }
     }
   } else if (P.seat === 'pilot' && h && h.rig && P.type !== 'dap'){
     // back seat of the real airframe: the canopy frame, panel and rotor stay put while you look around
@@ -5570,17 +5601,17 @@ function hmCamera(dt){
     camera.position.fromArray(AP_RIG.eyePilot).applyMatrix4(h.g.matrixWorld);
     camera.quaternion.copy(h.g.quaternion).multiply(_apQ2.setFromAxisAngle(_apY, Math.PI/2));
     _apE.set(-0.1 + (P.lookPitch || 0), -(P.lookYaw || 0), 0, 'YXZ'); camera.quaternion.multiply(_apQ.setFromEuler(_apE));
-    camera.fov = 78;
+    camera.fov = ckFov();
     if (GS_.rt && (P.mfdT ^= 1)){ GS_.gunCam.position.copy(P.gun); GS_.gunCam.lookAt(hmBoresight(_v3)); GS_.gunCam.aspect = 320/300; GS_.gunCam.updateProjectionMatrix(); h.g.visible = false; renderer.setRenderTarget(GS_.rt); renderer.render(scene, GS_.gunCam); renderer.setRenderTarget(null); h.g.visible = true; }
   } else if (P.seat === 'pilot' && h && h.hull && P.type === 'dap'){
     h.g.visible = true; dapCrew(h, false); h.g.updateMatrixWorld(true);
     camera.position.copy(_hmV.fromArray(DAP_EYE).applyMatrix4(h.hull.matrixWorld));
     camera.quaternion.copy(h.g.quaternion);
     _apE.set(-0.12 + (P.lookPitch || 0), -(P.lookYaw || 0), 0, 'YXZ'); camera.quaternion.multiply(_apQ.setFromEuler(_apE));
-    camera.fov = 80;
+    camera.fov = ckFov();
   } else if (P.seat === 'pilot'){
     if (h) h.g.visible = false;
-    camera.position.copy(P.pos).addScaledVector(f, P.type === 'dap' ? 2.9 : P.type === 'little' ? 0.9 : 1.7); camera.position.y += P.type === 'dap' ? 0.15 : P.type === 'little' ? 0.25 : 0.3;
+    camera.position.copy(P.pos).addScaledVector(f, (P.type === 'dap' ? 2.9 : P.type === 'little' ? 0.9 : 1.7)*HB); camera.position.y += (P.type === 'dap' ? 0.15 : P.type === 'little' ? 0.25 : 0.3)*HB;
     { const lf = heliSim() ? hmFwd(P.yaw + (P.lookYaw || 0), _hmF) : f; _hmL.copy(camera.position).addScaledVector(lf, 10); _hmL.y -= 2.4 - P.pitch*4 - (P.lookPitch || 0)*10; }
     camera.lookAt(_hmL); camera.rotateZ(P.bank); camera.fov = 78;
     // keep the gun-camera screen live (every other frame)
@@ -5594,6 +5625,7 @@ function hmCamera(dt){
       if (h) h.g.visible = false;
       camera.position.copy(P.gun);
       const d = hmGunDir(_hmV); _hmL.copy(P.gun).addScaledVector(d, 20); camera.lookAt(_hmL); camera.fov = 38;
+      { const t = d.y < -0.01 ? (0.2 - P.gun.y)/d.y : 0; apGunnerHud(t ? t*3.3 : 0, P.pitch, P.bank || 0); }
     }
   }
   if (P.zoom) camera.fov *= P.seat === 'pilot' ? 0.55 : 0.45;
@@ -5618,7 +5650,7 @@ function hmCamera(dt){
   } else lockEl.style.display = 'none';
   // enemy heli health tags
   let tags = '';
-  for (const e of P.enemies){ if (e.hp <= 0) continue; const v = e.pos.clone(); v.y += 2.5; v.project(camera); if (v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1) tags += `<span class="hmh" style="left:${(v.x + 1)/2*100}%;top:${(1 - v.y)/2*100}%">${e.kind === 'bh' ? 'BLACK HAWK' : 'APACHE'} ${Math.ceil(e.hp/e.max*100)}%</span>`; }
+  for (const e of P.enemies){ if (e.hp <= 0) continue; const v = e.pos.clone(); v.y += 2.5*HB; v.project(camera); if (v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1) tags += `<span class="hmh" style="left:${(v.x + 1)/2*100}%;top:${(1 - v.y)/2*100}%">${e.kind === 'bh' ? 'BLACK HAWK' : 'APACHE'} ${Math.ceil(e.hp/e.max*100)}%</span>`; }
   $('hmTags').innerHTML = tags;
   $('hmWarn').style.display = P.warnT > 0 ? 'block' : 'none';
   if (P.warnT > 0 && Math.random() < dt*3) sfx('warn', 0.6);
@@ -5812,7 +5844,7 @@ function fabPlace(){
 }
 function fabFire(on){
   FAB.firing = on; fabGo.classList.toggle('on', on);
-  if (MODE === 'heli' && HM.on) HM.firing = on; else if (DF.on) DF.fire = on; else if (DG.on) DG.hold = on;
+  if (MODE === 'heli' && HM.on) HM.firing = on; else if (DF.on) DF.fire = on; else if (DG.on) DG.hold = on; else if (GS_.on && GS_.phase === 'gun') GS_.firing = on;
 }
 fabGo.addEventListener('pointerdown', e => {
   e.preventDefault(); e.stopPropagation(); audioInit();
@@ -5842,7 +5874,7 @@ addEventListener('pointermove', e => {
 }, true);
 let _fabOn = null;
 function fabTick(){
-  const on = ((MODE === 'heli' && HM.on) || DG.on || DF.on) && (state === 'play' || state === 'dying');
+  const on = ((MODE === 'heli' && HM.on) || DG.on || DF.on || (GS_.on && GS_.phase === 'gun')) && (state === 'play' || state === 'dying');
   if (on !== _fabOn){ _fabOn = on; fab.style.display = on ? 'block' : 'none'; if (!on && FAB.firing) fabFire(false); if (on) fabPlace(); }
 }
 const holdBtn = (id, on, off) => { const b = $(id); b.addEventListener('pointerdown', e => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch(_){} on(); b.classList.add('on'); }); const up = () => { off(); b.classList.remove('on'); }; b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('contextmenu', e => e.preventDefault()); };
@@ -6246,6 +6278,7 @@ document.querySelectorAll('#settings input[type=range]').forEach(rgWrap);
 // ---- new controls ----
 function bindNew(){
   const G = SETTINGS.gunner, A = SETTINGS.agi, F = SETTINGS.gyro.fly;
+  { const U = SETTINGS.hud; $('hdDot').value = U.dot; $('hdCdot').value = U.cdot; $('trSize').value = U.trSize; $('trQty').value = U.trQty; $('sRadar').checked = U.radar; }
   $('sGuided').checked = !!SETTINGS.guided; $('sAiSquad').checked = SETTINGS.aiSquad !== false; $('gnAim').value = G.aim; $('gnSide').value = G.side; $('gnFloat').checked = G.float; $('gnSwipe').value = G.swipe; $('gnStick').value = G.stick; $('gnExpo').value = G.expo; $('gnInv').checked = G.inv;
   $('agApache').value = A.apache; $('agDap').value = A.dap; $('agLittle').value = A.little;
   $('gfOn').checked = F.on; $('gfSens').value = F.sens; $('gfDead').value = F.dead; $('gfInvP').checked = F.invP; $('gfInvR').checked = F.invR;
@@ -6254,6 +6287,7 @@ function bindNew(){
   $('appVer').textContent = 'Game ' + GAME_VERSION + (nv ? ' · App ' + nv : '');
 }
 for (const [id, get, key, kind] of [
+  ['hdDot', () => SETTINGS.hud, 'dot', 'n'], ['hdCdot', () => SETTINGS.hud, 'cdot', 'n'], ['trSize', () => SETTINGS.hud, 'trSize', 'n'], ['trQty', () => SETTINGS.hud, 'trQty', 'n'], ['sRadar', () => SETTINGS.hud, 'radar', 'b'],
   ['sGuided', () => SETTINGS, 'guided', 'b'], ['sAiSquad', () => SETTINGS, 'aiSquad', 'b'], ['gnAim', () => SETTINGS.gunner, 'aim', 's'], ['gnSide', () => SETTINGS.gunner, 'side', 's'], ['gnFloat', () => SETTINGS.gunner, 'float', 'b'],
   ['gnSwipe', () => SETTINGS.gunner, 'swipe', 'n'], ['gnStick', () => SETTINGS.gunner, 'stick', 'n'], ['gnExpo', () => SETTINGS.gunner, 'expo', 'n'], ['gnInv', () => SETTINGS.gunner, 'inv', 'b'],
   ['agApache', () => SETTINGS.agi, 'apache', 'n'], ['agDap', () => SETTINGS.agi, 'dap', 'n'], ['agLittle', () => SETTINGS.agi, 'little', 'n'],
@@ -6337,7 +6371,7 @@ function bfHud(o){
 
 
 // ---- BF door-gun sight: a ring of dots as wide as the bullet cone, a centre dot, corner brackets on hits ----
-const M134_CONE = 0.03;
+const M134_CONE = 0.05;
 const HITM = {t: -9, kill: false};
 function hitMark(kill){ HITM.t = performance.now(); HITM.kill = HITM.kill && performance.now() - HITM.t < 200 ? true : kill; if (kill) HITM.kill = true; }
 const _gs1 = new THREE.Vector3(), _gs2 = new THREE.Vector3();
@@ -6353,8 +6387,8 @@ function gunSightHud(gun){
   if (_gs1.z > 1) return;
   const cx = (_gs1.x + 1)/2*W, cy = (1 - _gs1.y)/2*H, R = Math.max(14, Math.hypot((_gs2.x - _gs1.x)/2*W, (_gs2.y - _gs1.y)/2*H));
   x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 2; x.fillStyle = 'rgba(255,255,255,.92)';
-  for (let k = 0; k < 16; k++){ const a = k/16*6.2832; x.beginPath(); x.arc(cx + Math.cos(a)*R, cy + Math.sin(a)*R, 1.9, 0, 6.29); x.fill(); }
-  x.beginPath(); x.arc(cx, cy, 1.6, 0, 6.29); x.fill();
+  for (let k = 0; k < 16; k++){ const a = k/16*6.2832; x.beginPath(); x.arc(cx + Math.cos(a)*R, cy + Math.sin(a)*R, 1.9*SETTINGS.hud.dot, 0, 6.29); x.fill(); }
+  x.beginPath(); x.arc(cx, cy, 1.6*SETTINGS.hud.cdot, 0, 6.29); x.fill();
   const age = performance.now() - HITM.t;
   if (age < 260){
     const a = 1 - age/260, b = R*0.42, e = R*0.17;
@@ -6364,6 +6398,90 @@ function gunSightHud(gun){
     x.stroke();
   } else HITM.kill = false;
   if (gun.rng){ x.font = `700 ${Math.round(clamp(Math.min(W, H)/30, 12, 20))}px Consolas, "DejaVu Sans Mono", monospace`; x.textAlign = 'right'; x.textBaseline = 'middle'; x.fillText(String(Math.round(gun.rng*3.3)), cx - R - 10, cy); }
+}
+
+// ---- HUD settings ----
+SETTINGS.hud = Object.assign({dot: 1, cdot: 1, trSize: 1, trQty: 0.5, radar: true}, SETTINGS.hud || {});
+// ---- air radar: a green sweep, heading-up; enemy aircraft and incoming missiles light up as the beam passes ----
+const RAD = {cv: $('radar'), x: null, a: 0, on: false, range: 140};
+function radarHide(){ if (RAD.on){ RAD.on = false; RAD.cv.classList.remove('on'); } }
+function radarTick(dt, own){
+  if (!SETTINGS.hud.radar){ radarHide(); return; }
+  const c = RAD.cv; if (!RAD.x) RAD.x = c.getContext('2d');
+  if (!RAD.on){ RAD.on = true; c.classList.add('on'); }
+  const x = RAD.x, W = c.width, R = W/2 - 6, cx = W/2, cy = W/2;
+  RAD.a = (RAD.a + dt*2*Math.PI/1.6) % (2*Math.PI);
+  x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, W, W);
+  x.fillStyle = 'rgba(6,22,14,.62)'; x.beginPath(); x.arc(cx, cy, R, 0, 6.29); x.fill();
+  x.strokeStyle = 'rgba(110,255,150,.35)'; x.lineWidth = 2;
+  for (const k of [1, 0.66, 0.33]){ x.beginPath(); x.arc(cx, cy, R*k, 0, 6.29); x.stroke(); }
+  x.beginPath(); x.moveTo(cx - R, cy); x.lineTo(cx + R, cy); x.moveTo(cx, cy - R); x.lineTo(cx, cy + R); x.stroke();
+  // sweep wedge
+  const g = x.createConicGradient ? x.createConicGradient(RAD.a - Math.PI/2 - 0.9, cx, cy) : null;
+  if (g){ g.addColorStop(0, 'rgba(110,255,150,0)'); g.addColorStop(0.143, 'rgba(110,255,150,.38)'); g.addColorStop(0.144, 'rgba(110,255,150,0)'); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, R, 0, 6.29); x.fill(); }
+  x.strokeStyle = 'rgba(150,255,180,.9)'; x.beginPath(); x.moveTo(cx, cy); x.lineTo(cx + Math.sin(RAD.a)*R, cy - Math.cos(RAD.a)*R); x.stroke();
+  const yaw = own.yaw, cs = Math.cos(yaw), sn = Math.sin(yaw);
+  const blip = (wx, wz, col, size, shape) => {
+    const dx = wx - own.pos.x, dz = wz - own.pos.z, f = dx*Math.sin(yaw) - dz*Math.cos(yaw), r = dx*Math.cos(yaw) + dz*Math.sin(yaw);    // ahead / right of the nose
+    let px = r/RAD.range*R, py = -f/RAD.range*R; const l = Math.hypot(px, py); if (l > R - 4){ px *= (R - 4)/l; py *= (R - 4)/l; }
+    let ang = Math.atan2(px, -py); if (ang < 0) ang += 6.2832; let since = RAD.a - ang; if (since < 0) since += 6.2832;
+    const a = 0.35 + 0.65*Math.max(0, 1 - since/5.2);
+    x.globalAlpha = a; x.fillStyle = col; x.beginPath();
+    if (shape === 'd'){ x.moveTo(cx + px, cy + py - size); x.lineTo(cx + px + size, cy + py); x.lineTo(cx + px, cy + py + size); x.lineTo(cx + px - size, cy + py); }
+    else x.arc(cx + px, cy + py, size, 0, 6.29);
+    x.fill(); x.globalAlpha = 1;
+  };
+  if (MODE === 'heli' && HM.on){
+    for (const e of HM.enemies) if (e.hp > 0) blip(e.pos.x, e.pos.z, '#ff5a4a', 9, 'd');
+    for (const o of HM.emiss) if (o.missile) blip(o.m.position.x, o.m.position.z, '#ffb03a', 5);
+  }
+  for (const v of vehicles) if (v.g && !v.done && v.y > 3) blip(v.x, v.z, '#6ad6ff', 6, 'd');      // friendly aircraft
+  // you: a small arrow at the centre
+  x.fillStyle = '#d8ffe2'; x.beginPath(); x.moveTo(cx, cy - 11); x.lineTo(cx + 8, cy + 9); x.lineTo(cx, cy + 4); x.lineTo(cx - 8, cy + 9); x.fill();
+  x.fillStyle = 'rgba(160,255,190,.85)'; x.font = '700 22px Consolas, monospace'; x.textAlign = 'center'; x.fillText('RADAR', cx, W - 8);
+}
+// ---- Apache gunner (30 mm) HUD, BF-style: big corner frame, gapped crosshair, range on the left, attitude box ----
+function apGunnerHud(rng, pitch, bank){
+  const c = BH.cv; if (!BH.x) BH.x = c.getContext('2d');
+  const d = Math.min(2, devicePixelRatio || 1), W = c.clientWidth || innerWidth, H = c.clientHeight || innerHeight;
+  if (!BH.on){ BH.on = true; c.classList.add('on'); }
+  if (BH.w !== W || BH.h !== H || BH.d !== d){ BH.w = W; BH.h = H; BH.d = d; c.width = Math.round(W*d); c.height = Math.round(H*d); }
+  BH.t = performance.now();
+  const x = BH.x, s = clamp(Math.min(W, H)/430, 0.72, 1.5), cx = W/2, cy = H/2;
+  x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, W, H);
+  x.strokeStyle = x.fillStyle = 'rgba(238,240,196,.95)'; x.lineWidth = 1.7; x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 2.5;
+  const fx0 = W*0.5 - Math.min(W*0.36, H*0.62), fx1 = W - fx0, fy0 = H*0.2, fy1 = H*0.8, e = 18*s;
+  x.beginPath();
+  for (const [px, py, sx, sy] of [[fx0, fy0, 1, 1], [fx1, fy0, -1, 1], [fx0, fy1, 1, -1], [fx1, fy1, -1, -1]]){ x.moveTo(px, py + sy*e); x.lineTo(px, py); x.lineTo(px + sx*e, py); }
+  const g = 9*s, t = 22*s, hl = 46*s;
+  x.moveTo(cx, cy - g); x.lineTo(cx, cy - t); x.moveTo(cx - 5*s, cy - t); x.lineTo(cx + 5*s, cy - t);
+  x.moveTo(cx, cy + g); x.lineTo(cx, cy + t); x.moveTo(cx - 5*s, cy + t); x.lineTo(cx + 5*s, cy + t);
+  x.moveTo(cx - g*1.6, cy); x.lineTo(cx - hl, cy); x.moveTo(cx - hl, cy - 4*s); x.lineTo(cx - hl, cy + 4*s);
+  x.moveTo(cx + g*1.6, cy); x.lineTo(cx + hl, cy); x.moveTo(cx + hl, cy - 4*s); x.lineTo(cx + hl, cy + 4*s);
+  x.stroke(); x.beginPath(); x.arc(cx, cy, 1.4*s, 0, 6.29); x.fill();
+  x.font = `600 ${Math.round(14*s)}px Consolas, "DejaVu Sans Mono", monospace`; x.textAlign = 'right'; x.textBaseline = 'middle';
+  if (rng) x.fillText(String(Math.round(rng)), cx - hl - 8*s, cy + 1);
+  const by = fy1 + 18*s, bw = 108*s, bh = 26*s, ix = clamp(-bank*30*s, -bw/2 + 18*s, bw/2 - 18*s), iy = clamp(pitch*16*s, -bh/2 + 6*s, bh/2 - 6*s);
+  x.strokeRect(cx - bw/2, by - bh/2, bw, bh); x.strokeRect(cx + ix - 16*s, by + iy - 5.5*s, 32*s, 11*s); x.beginPath(); x.arc(cx + ix, by + iy, 3*s, 0, 6.29); x.fill();
+  x.textAlign = 'left'; x.fillText('A1.5', cx - bw/2 - 44*s, by);
+}
+// ---- tracer preview: a burst from the bottom-left corner at the size and amount you picked ----
+const TPV = {cv: $('trPrev'), x: null, b: [], t: 0};
+function trPreviewTick(dt){
+  if ($('settings').hidden || !document.querySelector('.bfPane.on[data-pane="hud"]')) return;
+  const c = TPV.cv; if (!TPV.x) TPV.x = c.getContext('2d'); const x = TPV.x, W = c.width, H = c.height, S = SETTINGS.hud;
+  TPV.t -= dt;
+  while (TPV.t <= 0){ TPV.t += 0.03; const a = -0.32 + rnd(-0.05, 0.05); TPV.b.push({x: 18, y: H - 18, vx: Math.cos(a)*520, vy: Math.sin(a)*520, tr: Math.random() < S.trQty, life: 0.75}); }
+  x.fillStyle = 'rgba(10,16,21,.55)'; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#2b3a33'; x.fillRect(0, H - 10, W, 10);
+  for (let k = TPV.b.length - 1; k >= 0; k--){
+    const b = TPV.b[k]; b.x += b.vx*dt; b.y += b.vy*dt; b.life -= dt; if (b.life <= 0 || b.x > W + 40){ TPV.b.splice(k, 1); continue; }
+    if (!b.tr) continue;
+    const L = 26*S.trSize, w = 2.2*S.trSize, n = Math.hypot(b.vx, b.vy), ux = b.vx/n, uy = b.vy/n;
+    x.strokeStyle = 'rgba(255,90,60,.35)'; x.lineWidth = w*3.2; x.lineCap = 'round'; x.beginPath(); x.moveTo(b.x - ux*L, b.y - uy*L); x.lineTo(b.x, b.y); x.stroke();
+    x.strokeStyle = 'rgba(255,190,160,.95)'; x.lineWidth = w; x.beginPath(); x.moveTo(b.x - ux*L, b.y - uy*L); x.lineTo(b.x, b.y); x.stroke();
+  }
+  x.fillStyle = '#3c4146'; x.fillRect(4, H - 30, 30, 14);
 }
 // ---- in-app updates (Android app only): the app downloads new game files in the background ----
 const UPD = {pending: null, dismissed: false};

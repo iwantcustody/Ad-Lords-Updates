@@ -869,7 +869,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V67';
+const GAME_VERSION = 'V68';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -927,7 +927,7 @@ function audioInit(){
   //  skid: metal/concrete scrape while you slide along the ground
   AU.scrape = loopN(1.0, AU.sfx, bq('bandpass', 2800, 0.9), bq('peaking', 1200, 1.0));
   AU.rotorGain = rg; AU.rotorLfo = rl; AU.rotorLfoG = rlg; AU.rotShelf = shelf; AU.surgeD = slg;
-  applyVolumes(); m134Load();
+  applyVolumes(); m134Load(); smpLoad();
   setInterval(() => { if (SETTINGS.sound && LOC.sets[LOC.cur].gulls && Math.random() < 0.35 && (state === 'play' || state === 'menu' || state === 'title')) sfx('gull'); }, 7000);
 }
 function applyVolumes(){
@@ -984,7 +984,7 @@ function sfx(name, vol = 1, pan = 0, own = false){
     case 'grenade':  tone(t, 0.14, {f: 320*r, f2: 90, vol: 0.45*v, out}); nz(t, 0.12, {f: 700, vol: 0.3*v, out}); break;
     case 'rpg':       playRec(t, SFX_REC.rpg, v, r, out); break;
     case 'rocket':    playRec(t, SFX_REC.rocket, v, r, out); break;
-    case 'hellfire':  playRec(t, SFX_REC.hellfire, v, r, out); break;
+    case 'hellfire':  if (SMP.missile.length){ playSmp(SMP.missile, t, v*0.55, out); playRec(t, SFX_REC.hellfire.slice(0, 1), v*0.6, r, out); } else playRec(t, SFX_REC.hellfire, v, r, out); break;
     // 30mm: mostly a sub-bass thump (~60% of the energy under 60 Hz), a short mid crack, then a long rough tail
     case 'cannon30': tone(t, 0.22, {f: 62*r, f2: 34, vol: 0.6*v, out}); tone(t, 0.12, {f: 180*r, f2: 85, type: 'triangle', vol: 0.55*v, out});
       nz(t, 0.09, {f: 1400*r, f2: 300, vol: 0.6*v, out}); nz(t, 0.035, {type: 'bandpass', f: 2200*r, q: 1.5, vol: 0.45*v, out}); nz(t + 0.02, 0.3, {type: 'bandpass', f: 600, q: 0.8, vol: 0.25*v, out}); break;
@@ -1064,6 +1064,18 @@ const _v0 = new THREE.Vector3();
 const M134 = {buf: {}, ready: false, loading: false, v: {}};
 const OWN_GUNS = new Set(['player', 'dg', 'hmdoor', 'hmw', 'df']);
 const M134_LOOP = {fire: [0.2, 6.082], spin: [0.2, 4.71]};
+// recorded one-shots (the missile launches are a friend's fire-bottle throws); the synth recipe stands in until they load
+const SMP = {missile: [], loading: false};
+function smpLoad(){
+  if (!AU.ctx || SMP.loading) return; SMP.loading = true;
+  for (let k = 1; k <= 5; k++) fetch('assets/missile_' + k + '.mp3').then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(b => new Promise((res, rej) => AU.ctx.decodeAudioData(b, res, rej))).then(b => SMP.missile.push(b)).catch(e => console.warn('missile sample', k, e));
+}
+function playSmp(list, t, vol, out){
+  const c = AU.ctx, s = c.createBufferSource(), g = c.createGain();
+  s.buffer = list[(Math.random()*list.length)|0]; s.playbackRate.value = 0.94 + Math.random()*0.12;
+  g.gain.value = vol; s.connect(g); g.connect(out); s.start(t);
+}
 function m134Load(){
   if (!AU.ctx || M134.loading) return; M134.loading = true;
   const names = ['fire', 'spin', 'windup', 'start', 'stop', 'spindown'];

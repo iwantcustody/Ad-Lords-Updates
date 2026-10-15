@@ -892,7 +892,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V72';
+const GAME_VERSION = 'V73';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -2252,7 +2252,7 @@ const REWARDS = [
 ];
 for (const r of REWARDS) if (!r.label) r.label = WEAPONS[r.id].name.toUpperCase();
 function pickReward(exclude){
-  const pool = REWARDS.filter(r => r.id !== exclude && (r.id !== 'pistolup' || wlv.pistol < pistolCap()) && (r.id !== 'gunner' || gunners.length < 5) && (!LAZY.has(r.id) || lazyReady[r.id]) && !(r.id === 'apache' && GS_.on));
+  const pool = REWARDS.filter(r => r.id !== exclude && r.id !== 'gunner' && (r.id !== 'pistolup' || wlv.pistol < pistolCap()) && (!LAZY.has(r.id) || lazyReady[r.id]) && !(r.id === 'apache' && GS_.on));
   const wt = r => r.id === 'pistolup' ? r.w*(wlv.pistol < 3 ? 1.6 : 1) : r.w;
   let sum = 0; for (const r of pool) sum += wt(r);
   let x = Math.random()*sum; for (const r of pool){ x -= wt(r); if (x <= 0) return r; } return pool[0];
@@ -3721,7 +3721,10 @@ $('introBtn').onclick = () => { $('intro').hidden = true; state = 'play'; if (ca
 const KNOCK_COST = [120, 240, 460, 900, 1750, 3400, 6700, 13000, 25500, 50000];
 // weapon levels: 100 first, ×5 each step, the last two steps ×2
 const WMAXLV = k => k === 'pistol' ? PISTOL_MAX : 5;
-function wUpCost(k){ const n = WMAXLV(k) - 1, step = wlv[k] - 1; let c = 100; for (let i = 1; i <= step; i++) c *= i >= n - 2 ? 2 : 5; return c; }
+// weapon upgrades get steep: each level costs ~3.6x the last, stronger guns start higher, and prices climb with the wave
+// (Lv 2 → 5 on the revolver at wave 15 is ~30k coins in total, it used to be ~3.6k)
+const W_UP_BASE = {smg: 140, ar: 180, revolver: 220, bailiff: 200, shotgun: 200, minigun: 260, sniper: 240, grenade: 240, rpg: 300};
+function wUpCost(k){ const step = wlv[k] - 1; return Math.round((W_UP_BASE[k] || 200)*Math.pow(3.6, step)*(1 + 0.08*Math.max(0, wave - 1))/10)*10; }
 const SHOP = [
   {sec: 'Upgrades', id: 'dmg', name: 'Sharper rounds', desc: '+15% damage for every gun and vehicle', cost: l => Math.round(50*Math.pow(1.6, l)), max: 15, buy(){ dmgMul *= 1.15; }},
   {sec: 'Upgrades', id: 'rate', name: 'Quick trigger', desc: '+10% fire rate', cost: l => Math.round(50*Math.pow(1.6, l)), max: 10, buy(){ rateMul *= 1.1; }},

@@ -1,0 +1,61 @@
+plugins {
+    id 'com.android.application'
+}
+
+// CI passes -PversionCode=<run number> and -PnativeHash=<hash of the Java/manifest/resources>
+def vc = (project.findProperty('versionCode') ?: '1') as int
+def nativeHash = (project.findProperty('nativeHash') ?: 'dev') as String
+def feed = (project.findProperty('updateFeed') ?: 'https://github.com/iwantcustody/Ad-Lords-Updates/releases/latest/download/update.json') as String
+def ksFile = file('release.jks')
+def ksPass = (System.getenv('KEYSTORE_PASS') ?: (rootProject.file('keystore.pass').exists() ? rootProject.file('keystore.pass').text.trim() : ''))
+
+android {
+    namespace 'com.adlords.game'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.adlords.game'
+        minSdk 24
+        targetSdk 34
+        versionCode vc
+        versionName "1." + vc
+        buildConfigField 'String', 'UPDATE_FEED', '"' + feed + '"'
+        buildConfigField 'String', 'NATIVE_HASH', '"' + nativeHash + '"'
+    }
+
+    buildFeatures { buildConfig true }
+
+    signingConfigs {
+        release {
+            if (ksFile.exists() && ksPass) {
+                storeFile ksFile
+                storePassword ksPass
+                keyAlias 'adlords'
+                keyPassword ksPass
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // one fixed key, so every new APK installs over the last one and keeps your saves
+            signingConfig (ksFile.exists() && ksPass ? signingConfigs.release : signingConfigs.debug)
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // the game's .json/.jpg/.webp models and textures are already compressed or small; keep them stored as-is
+    androidResources {
+        noCompress 'json', 'jpg', 'webp', 'png', 'mp3'
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.11.0'
+    implementation 'androidx.core:core:1.13.1'
+}

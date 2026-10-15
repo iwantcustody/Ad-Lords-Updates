@@ -300,7 +300,7 @@ button.ccard{cursor:pointer}
 #df .act button.on{background:rgba(232,251,255,.28)}
 #dfStick{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:2px solid rgba(232,251,255,.6);background:rgba(10,16,22,.18);display:none}
 #dfStick i{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(232,251,255,.6)}
-#dfExit{pointer-events:auto;margin-top:6px;font-family:var(--display);font-size:14px;color:#e8fbff;background:rgba(10,16,22,.6);border:1.5px solid #e8fbff;border-radius:6px;padding:8px 12px;cursor:pointer}
+#dfExit,#dfView{pointer-events:auto;margin-top:6px;font-family:var(--display);font-size:14px;color:#e8fbff;background:rgba(10,16,22,.6);border:1.5px solid #e8fbff;border-radius:6px;padding:8px 12px;cursor:pointer}
 #dgExit{pointer-events:auto;margin-top:6px;font-family:var(--display);font-size:14px;color:#ffd08a;background:rgba(20,12,0,.6);border:1.5px solid #ffd08a;border-radius:12px;padding:8px 12px;cursor:pointer}
 #gs .lock{position:absolute;width:46px;height:46px;border:2px solid #ff6b5b;border-radius:4px;transform:translate(-50%,-50%);display:none}
 /* gunship mode HUD */
@@ -427,7 +427,7 @@ body.pc .titleFs{display:none}
     <div class="hint" id="dgHint">Drag to aim · hold to fire<br><small>Pen: hover to aim · side button fires · the gun can't swing into the pods</small></div>
   </div>
   <div id="df" hidden>
-    <div class="top"><div>DAP · PILOT<div class="bar"><i id="dfTime"></i></div></div><div style="text-align:right"><span id="dfKills">0</span> KILLS<br><button class="landBtn" type="button" aria-label="Landscape">⤢</button> <button id="dfExit" type="button">Exit</button></div></div>
+    <div class="top"><div>DAP · PILOT<div class="bar"><i id="dfTime"></i></div></div><div style="text-align:right"><span id="dfKills">0</span> KILLS<br><button class="landBtn" type="button" aria-label="Landscape">⤢</button> <button id="dfView" type="button">View</button> <button id="dfExit" type="button">Exit</button></div></div>
     <svg class="ret" id="dfRet" viewBox="-60 -60 120 120" aria-hidden="true"><g stroke="#e8fbff" stroke-width="2" fill="none"><path d="M-16 -9v18M-11 -9v18M11 -9v18M16 -9v18"/></g></svg>
     <div id="dfStick"><i></i></div>
     <div class="hint" id="dfHint">Left thumb: fly · ▲▼ altitude · FIRE = rockets · the miniguns aim themselves</div>
@@ -510,6 +510,7 @@ body.pc .titleFs{display:none}
           <label for="sSkin">Enemy look</label><select id="sSkin"><option value="classic">Classic</option><option value="dust">Desert dust</option><option value="ghost">Ghost</option><option value="toxic">Toxic</option><option value="drew">Drew</option></select>
           <label for="sDap">DAP model</label><select id="sDap"><option value="pods">UH-60M with pods</option><option value="light">Light (faster)</option><option value="detailed">Detailed</option></select>
           <label for="sAutoLand">Landscape when you take a seat</label><input class="sw" type="checkbox" id="sAutoLand">
+          <label for="sAiSquad">AI runs your squad while you’re in a vehicle</label><input class="sw" type="checkbox" id="sAiSquad">
         </div>
         <h3 class="subh">Call-in hotbar</h3>
         <p class="fine">Pick what each slot holds. Slots stay in place and grey out when you have none.</p>
@@ -868,7 +869,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V65';
+const GAME_VERSION = 'V66';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -3075,12 +3076,14 @@ function dfStart(){
     mdx: 0, mdy: 0, lookYaw: 0, lookPitch: 0, camYaw: -v.yaw, camPitch: 0, hull: 100, noDmg: true, type: 'dap'} : null;
   $('dfHint').textContent = DF.P && tsTwin() ? 'Two sticks fly it like the gunship · ROCKETS / HELLFIRE to fire · the miniguns aim themselves' : DF.P ? 'Click to capture the mouse · mouse rolls & pitches · W nose down / S flare · A/D yaw · Shift/Ctrl collective · fire = rockets · F switch to Hellfire · V freelook · the miniguns aim themselves'
     : 'Left thumb: fly · ▲▼ altitude · FIRE = rockets · the miniguns aim themselves';
-  $('df').classList.toggle('sim', !!DF.P);
+  $('df').classList.toggle('sim', !!DF.P); $('dfView').hidden = !DF.P; DF.view = 'chase';
   $('df').hidden = false; $('hud').hidden = true; $('bottom').hidden = true; $('dfHint').style.opacity = 1; flash();
   if (DF.P && PC.on) heliCapture(); else autoLand();
 }
+function dfSwapView(){ if (!DF.on || !DF.P) return; DF.view = DF.view === 'cockpit' ? 'chase' : 'cockpit'; flash(); sfx('click'); toast(DF.view === 'cockpit' ? 'Cockpit' : 'Chase camera', '#c8ffd0'); }
 function dfEnd(){
   if (!DF.on) return;
+  if (DF.v && DF.v.crewHidden) dapCrew(DF.v, true); DF.view = 'chase'; camera.near = 0.08;
   if (LAND.on) toggleLandscape(false);
   const v = DF.v; DF.on = false; DF.v = null; DF.fire = false; $('dfStick').style.display = 'none';
   if (DF.P){ DF.P = null; HM.free = false; if (document.pointerLockElement === cv) document.exitPointerLock(); if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {}); if (v){ v.g.rotation.set(-0.06, v.yaw, 0); } }
@@ -3151,12 +3154,23 @@ function dfHellfire(){
 function dfCamera(){
   const v = DF.v; if (!v) return false;
   if (DF.P){
-    // same chase cam as the gunship: follows the airframe's full attitude, a beat behind
-    const P = DF.P, dt = Math.min(0.05, DF.dt || 1/60), far = camera.aspect < 1 ? 1.35 : 1;
-    chaseCam(P, v.g, false, CHASE.df, dt, far);
-    camera.fov = CHASE.fov; camera.updateProjectionMatrix();
+    const P = DF.P, dt = Math.min(0.05, DF.dt || 1/60), far = camera.aspect < 1 ? 1.35 : 1, ck = DF.view === 'cockpit' && v.hull;
+    if (ck){
+      // right seat of the DAP, pilots hidden; freelook turns your head
+      dapCrew(v, false); v.g.updateMatrixWorld(true);
+      camera.position.copy(_hmV.fromArray(DAP_EYE).applyMatrix4(v.hull.matrixWorld));
+      v.g.getWorldQuaternion(camera.quaternion);
+      _apE.set(-0.12 + (P.lookPitch || 0), -(P.lookYaw || 0), 0, 'YXZ'); camera.quaternion.multiply(_apQ.setFromEuler(_apE));
+      camera.fov = 80; if (camera.near !== 0.02) camera.near = 0.02;
+    } else {
+      if (v.crewHidden) dapCrew(v, true); if (camera.near !== 0.08) camera.near = 0.08;
+      // same chase cam as the gunship: follows the airframe's full attitude, a beat behind
+      chaseCam(P, v.g, false, CHASE.df, dt, far);
+      camera.fov = CHASE.fov;
+    }
+    camera.updateProjectionMatrix();
     const bp = dfBoresight(v).project(camera), g = SETTINGS.guided ? 'GUID ' : '';
-    bfHud({cockpit: false, aim: bp.z < 1 && Math.abs(bp.x) < 1.3 && Math.abs(bp.y) < 1.3 ? bp : null, msl: !!DF.sec, hdg: P.yaw*57.2958, alt: P.pos.y*3.3, kts: Math.hypot(P.vel.x, P.vel.z)*4.86, pitch: P.pitch, bank: P.bank || 0, flr: '—',
+    bfHud({cockpit: !!ck, aim: bp.z < 1 && Math.abs(bp.x) < 1.3 && Math.abs(bp.y) < 1.3 ? bp : null, msl: !!DF.sec, hdg: P.yaw*57.2958, alt: P.pos.y*3.3, kts: Math.hypot(P.vel.x, P.vel.z)*4.86, pitch: P.pitch, bank: P.bank || 0, flr: '—',
       lines: [(DF.sec ? '  ' : '▸ ') + g + 'RKT RDY', (DF.sec ? '▸ ' : '  ') + g + 'AT MSL ' + (DF.hf > 0 && DF.hfCd <= 0 ? 'RDY' : 'CDN')]});
     return true;
   }
@@ -3168,6 +3182,7 @@ function dfCamera(){
 }
 $('dfBtn').onclick = () => dfStart();
 $('dfExit').onclick = () => dfEnd();
+$('dfView').onclick = e => { e.stopPropagation(); dfSwapView(); };
 $('dfHf').onclick = () => dfHellfire();
 setTimeout(() => {      // holdBtn is defined further down
   holdBtn('dfRk', () => { DF.fire = true; }, () => { DF.fire = false; });
@@ -3804,6 +3819,7 @@ function actPress(a){
       if (a === 'fire' || a === 'hFire') DF.fire = true; else if (a === 'missile' || a === 'hSec') { if (a === 'hSec') DF.sec = true; else dfHellfire(); }
       else if (a === 'hSwitch'){ DF.sec = !DF.sec; sfx('click'); toast(DF.sec ? 'Hellfire selected' : 'Rockets selected', '#c8ffd0'); } else if (a === 'hPri') DF.sec = false;
       else if (a === 'hZoom') HM.zoom = true; else if (a === 'hFree') HM.free = true;
+      else if (a === 'hView' || a === 'view') dfSwapView();
       return;
     }
     if (a === 'missile') dfHellfire(); else if (a === 'fire') DF.fire = true; return; }
@@ -4094,10 +4110,59 @@ cv.addEventListener('pointermove', e => {
   const r = cv.getBoundingClientRect();
   tx = clamp(((e.clientX - r.left)/r.width - 0.5)*2*(MAIN - 0.6)*1.1, -MAIN + 0.6, MAIN - 0.6);
 });
+
+// ---- while you're in a vehicle the AI runs your squad on the pier: it slides to where the
+// biggest threat to the barricade is and switches to the gun that suits it ----
+const AIS = {t: 0, wT: 0, on: false, want: 0};
+function inVehicle(){ return MODE === 'def' && state === 'play' && (DG.on || DF.on || GS_.on); }
+function aiSquadTick(dt){
+  const on = inVehicle() && SETTINGS.aiSquad !== false;
+  if (on !== AIS.on){ AIS.on = on; AIS.t = 0; if (on) toast('AI is running your squad', '#c8ffd0'); }
+  if (!on) return;
+  const lim = MAIN - 0.6;
+  AIS.t -= dt; AIS.wT -= dt;
+  if (AIS.t <= 0){
+    AIS.t = 0.2;
+    // threat by lane: tougher and closer enemies count for more; bosses and incoming barrels too
+    const NB = 13, bins = new Float32Array(NB), bw = 2*lim/(NB - 1), n = Math.min(260, en);
+    let close = 0, total = 0;
+    for (let s2 = 0; s2 < n; s2++){
+      const i = en <= 260 ? s2 : (Math.random()*en)|0; if (eh[i] <= 0) continue;
+      const dz = BARRICADE_Z - ez[i]; if (dz < 0) continue;
+      const w = Math.min(eh[i], 40)/(1 + dz/5)*(en > 260 ? en/260 : 1);
+      const b = clamp(Math.round((ex[i] + lim)/bw), 0, NB - 1); bins[b] += w; total += w;
+      if (dz < 14 && Math.abs(ex[i] - cx) < 2.2) close++;
+    }
+    for (const bo of bosses){ const b = clamp(Math.round((bo.x + lim)/bw), 0, NB - 1); bins[b] += 60/(1 + (BARRICADE_Z - bo.z)/8); }
+    for (const br of barrels) if (br.z > -16){ const b = clamp(Math.round((br.x + lim)/bw), 0, NB - 1); bins[b] += 8; }
+    // smooth over neighbouring lanes (the stream of bullets is a couple of metres wide), prefer staying put a little
+    let best = -1, bx = cx;
+    for (let b = 0; b < NB; b++){
+      const v = bins[b] + 0.6*((bins[b - 1] || 0) + (bins[b + 1] || 0)) + 0.25*((bins[b - 2] || 0) + (bins[b + 2] || 0));
+      const x = -lim + b*bw, sc = v - Math.abs(x - cx)*0.15;
+      if (sc > best){ best = sc; bx = x; }
+    }
+    AIS.want = total > 0 ? bx : 0;
+    // gun choice, at most every couple of seconds
+    if (AIS.wT <= 0){
+      const has = k => owned[k] && ammo[k] > 0, boss = bosses.some(b => b.z > FAR + 10);
+      const order = boss ? ['rpg', 'sniper', 'grenade', 'minigun', 'ar', 'revolver']
+        : close > 18 ? ['minigun', 'shotgun', 'bailiff', 'smg', 'grenade', 'ar']
+        : close > 6 || total > 40 ? ['ar', 'smg', 'minigun', 'bailiff', 'revolver']
+        : ['pistol'];      // quiet: save the ammo
+      const pick = order.find(has) || 'pistol';
+      if (pick !== weapon && has(pick)){ setWeapon(pick); AIS.wT = 2.2; }
+    }
+  }
+  // slide like a thumb would: quick but not instant
+  const sp = 2 + MAIN*1.1, d = AIS.want - tx;
+  tx = clamp(tx + clamp(d, -sp*dt, sp*dt), -lim, lim);
+}
 // continuous controls from held keys and the controller sticks, every frame
 function inputTick(dt){
   gpPoll(dt); tsTick(); motionPoll(); tiltTick(); lsTick(dt); gyMeterTick();
   if (BH.on && performance.now() - BH.t > 150) bfHudHide();
+  aiSquadTick(dt);
   if (state !== 'play'){ gyroTake(); return; }
   gyroTick();
   const G = INPUT.gp, dz = v => Math.abs(v) < 0.18 ? 0 : (v - Math.sign(v)*0.18)/0.82;
@@ -6063,7 +6128,7 @@ document.querySelectorAll('#settings input[type=range]').forEach(rgWrap);
 // ---- new controls ----
 function bindNew(){
   const G = SETTINGS.gunner, A = SETTINGS.agi, F = SETTINGS.gyro.fly;
-  $('sGuided').checked = !!SETTINGS.guided; $('gnAim').value = G.aim; $('gnSide').value = G.side; $('gnFloat').checked = G.float; $('gnSwipe').value = G.swipe; $('gnStick').value = G.stick; $('gnExpo').value = G.expo; $('gnInv').checked = G.inv;
+  $('sGuided').checked = !!SETTINGS.guided; $('sAiSquad').checked = SETTINGS.aiSquad !== false; $('gnAim').value = G.aim; $('gnSide').value = G.side; $('gnFloat').checked = G.float; $('gnSwipe').value = G.swipe; $('gnStick').value = G.stick; $('gnExpo').value = G.expo; $('gnInv').checked = G.inv;
   $('agApache').value = A.apache; $('agDap').value = A.dap; $('agLittle').value = A.little;
   $('gfOn').checked = F.on; $('gfSens').value = F.sens; $('gfDead').value = F.dead; $('gfInvP').checked = F.invP; $('gfInvR').checked = F.invR;
   $('gyOn').checked = SETTINGS.gyro.on; $('gySens').value = SETTINGS.gyro.sens; $('gyInvX').checked = SETTINGS.gyro.invX; $('gyInvY').checked = SETTINGS.gyro.invY;
@@ -6071,7 +6136,7 @@ function bindNew(){
   $('appVer').textContent = 'Game ' + GAME_VERSION + (nv ? ' · App ' + nv : '');
 }
 for (const [id, get, key, kind] of [
-  ['sGuided', () => SETTINGS, 'guided', 'b'], ['gnAim', () => SETTINGS.gunner, 'aim', 's'], ['gnSide', () => SETTINGS.gunner, 'side', 's'], ['gnFloat', () => SETTINGS.gunner, 'float', 'b'],
+  ['sGuided', () => SETTINGS, 'guided', 'b'], ['sAiSquad', () => SETTINGS, 'aiSquad', 'b'], ['gnAim', () => SETTINGS.gunner, 'aim', 's'], ['gnSide', () => SETTINGS.gunner, 'side', 's'], ['gnFloat', () => SETTINGS.gunner, 'float', 'b'],
   ['gnSwipe', () => SETTINGS.gunner, 'swipe', 'n'], ['gnStick', () => SETTINGS.gunner, 'stick', 'n'], ['gnExpo', () => SETTINGS.gunner, 'expo', 'n'], ['gnInv', () => SETTINGS.gunner, 'inv', 'b'],
   ['agApache', () => SETTINGS.agi, 'apache', 'n'], ['agDap', () => SETTINGS.agi, 'dap', 'n'], ['agLittle', () => SETTINGS.agi, 'little', 'n'],
   ['gfSens', () => SETTINGS.gyro.fly, 'sens', 'n'], ['gfDead', () => SETTINGS.gyro.fly, 'dead', 'n'], ['gfInvP', () => SETTINGS.gyro.fly, 'invP', 'b'], ['gfInvR', () => SETTINGS.gyro.fly, 'invR', 'b']])

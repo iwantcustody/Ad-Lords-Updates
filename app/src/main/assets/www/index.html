@@ -177,7 +177,8 @@ body.pc #radar{width:140px;height:140px}
 #loTabs button{background:none;border:0;color:#9fb0b8;font:800 13px var(--body);letter-spacing:1.2px;text-transform:uppercase;padding:8px 14px;cursor:pointer;border-bottom:3px solid transparent}
 #loTabs button.on{color:#fff;border-bottom-color:var(--gold)}
 .loCard .bfKeys{opacity:.8;font-weight:800;letter-spacing:1px;color:var(--gold)}
-.loSlot{margin:14px 0 4px;text-align:left}.loSlotName{font:800 11px var(--body);letter-spacing:1.4px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.loSlot{margin:14px 0 4px;text-align:left}
+.gunSnd input[type=range]{accent-color:#f2c14e;width:100%}.gunSnd{display:grid;grid-template-columns:auto auto 1fr auto;gap:8px 10px;align-items:center;margin:6px 0 10px}.gunSnd b{font-size:13px}.gunSnd select{max-width:150px}.gunSnd label{font-size:12px;opacity:.8;display:flex;gap:4px;align-items:center}.loSlotName{font:800 11px var(--body);letter-spacing:1.4px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
 .loOpts{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
 .loOpt{text-align:left;padding:10px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:#141d23;color:#e6eef2;cursor:pointer;font:inherit;display:flex;flex-direction:column;gap:4px}
 .loOpt b{font-size:14px}.loOpt small{font-size:11.5px;opacity:.65;line-height:1.35}
@@ -736,6 +737,15 @@ body.pc .titleFs{display:none}
         </div>
       </section>
       <section class="bfPane" data-pane="hud">
+        <h3 class="subh">Tracers (helicopter and door guns)</h3>
+        <canvas id="trPrev" width="420" height="120" style="width:100%;max-width:420px;height:auto;border-radius:6px;display:block;margin:4px 0 8px"></canvas>
+        <div class="set">
+          <label for="trSize">Tracer size</label><input type="range" id="trSize" min="0.2" max="1.5" step="0.05">
+          <label for="trQty">Tracer share (how many rounds glow)</label><input type="range" id="trQty" min="0.1" max="1" step="0.05">
+          <label for="trSpeed">Round speed</label><input type="range" id="trSpeed" min="0.6" max="3" step="0.05">
+          <label for="trDens">Extra tracer density</label><input type="range" id="trDens" min="1" max="6" step="0.5">
+        </div>
+        <p class="fine">Rounds fly on until they hit the ground. Up close they kick up dust; far away only the tracer shows where they went. Extra density adds streaks that look like more rounds (best on PC).</p>
         <h3 class="subh">Minigun sight</h3>
         <div class="set">
           <label for="hdDot">Sight dot size</label><input type="range" id="hdDot" min="0.6" max="3" step="0.05">
@@ -750,6 +760,9 @@ body.pc .titleFs{display:none}
           <label for="sSfx">Effects</label><input type="range" id="sSfx" min="0" max="1" step="0.05">
           <label for="sAmb">Ambience (sea, wind, distant traffic)</label><input type="range" id="sAmb" min="0" max="1" step="0.05">
         </div>
+        <h3 class="subh">Weapon sounds</h3>
+        <p class="fine">Pick the recorded shot or the original game sound for each squad gun, its volume, or mute it.</p>
+        <div class="gunSnd" id="gunSndSet"></div>
       </section>
       <section class="bfPane" data-pane="keys">
         <h3 class="subh">Keyboard &amp; mouse</h3>
@@ -1007,7 +1020,7 @@ const hwOf = M => z => z >= MOUTH ? M : M + (MOUTH - z)*0.3;
 const STAGE_M = [MAIN0, MAIN_W, MAIN_W2];
 const stageFor = w => w >= 26 ? 2 : w >= 20 ? 1 : 0;
 const PIER = {stages: null, stage: 0, t: -1, hold: false, mode: 'slide', narrow: []};
-const ECAP = 600, BUCAP = 1000, PCAP = 900, DCAP = 120;
+const ECAP = 600, BUCAP = 2600, PCAP = 900, DCAP = 120;
 const NEAR_Z = -14, FRAMES = 8, MODEL_H = 1.2, BODY = 0.82;
 const SIZE = 2.1, GS = 1.3;   // enemy size multiplier, gunner size multiplier
 const rnd = (a,b) => a + Math.random()*(b-a);
@@ -1077,7 +1090,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V84';
+const GAME_VERSION = 'V85';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -1095,7 +1108,7 @@ function audioInit(){
     const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3900; lp.Q.value = 0.9;
     const pk = c.createBiquadFilter(); pk.type = 'peaking'; pk.frequency.value = 1700; pk.Q.value = 0.9; pk.gain.value = 5;
     const crush = c.createWaveShaper(); { const n = 4096, cv = new Float32Array(n), Q = 26; for (let i = 0; i < n; i++){ const x = i/(n - 1)*2 - 1; cv[i] = Math.round(Math.tanh(x*1.6)*Q)/Q; } crush.curve = cv; }
-    const clean = c.createGain(), dirty = c.createGain(); clean.gain.value = 0.7; dirty.gain.value = 0.45;
+    const clean = c.createGain(), dirty = c.createGain(); clean.gain.value = 0.85; dirty.gain.value = 0.12;
     const hc = c.createDynamicsCompressor(); hc.threshold.value = -26; hc.ratio.value = 6; hc.attack.value = 0.002; hc.release.value = 0.12;
     AU.master.connect(hp); hp.connect(lp); lp.connect(pk); pk.connect(clean); pk.connect(crush); crush.connect(dirty); clean.connect(hc); dirty.connect(hc); hc.connect(fx); fx.connect(comp);
     AU.earDry = dry; AU.earFx = fx;
@@ -1203,6 +1216,10 @@ function sfx(name, vol = 1, pan = 0, own = false, outNode = null){
   const bus = own || !AU.world ? AU.sfx : AU.world;
   let out = outNode || bus;
   if (!outNode && pan && c.createStereoPanner){ const p = c.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); p.connect(bus); out = p; }
+  // V85: each squad gun can use its recorded shot or the made-up one, at its own volume, or be muted (Settings > Audio)
+  { const G = SETTINGS.gunSnd && SETTINGS.gunSnd[name];
+    if (G){ if (G.mute) return; vol *= G.vol ?? 1; const R = REAL_SND[name];
+      if (G.mode === 'real' && R && SMP[R[0]] && SMP[R[0]].length){ playSmp(SMP[R[0]], t, vol*(SMP_VOL[R[0]] || 0.7), out, R[1]*rnd(0.97, 1.03)); return; } } }
   const v = vol, r = rnd(0.94, 1.06);
   if (SMP_VOL[name] !== undefined || name === 'agm'){ if (name === 'agm' && !SMP.agm.length){ playRec(t, SFX_REC.hellfire, v*1.2, r*0.9, out); return; } if (SMP[name] && SMP[name].length) playSmp(SMP[name], t, v*(SMP_VOL[name] || 0.7), out); return; }
   switch (name){
@@ -1301,8 +1318,8 @@ const OWN_GUNS = new Set(['player', 'dg', 'hmdoor', 'hmw', 'df']);
 const M134_LOOP = {fire: [0.2, 6.082], spin: [0.2, 4.71]};
 // recorded one-shots by Filip_Hancho_Unltd. (see Settings → Gameplay → Credits). Each bank holds a few takes;
 // one is picked at random with a slight pitch change. The synth recipes stand in until a bank loads.
-const SMP_DEF = {ambTraffic: 1, missile: 5, agm: 3, mpass: 6, whiz: 16, flareL: 6, flareB: 4, rocket: 5, imWood: 6, imConc: 6, imMetal: 5, debris: 4, wdebris: 4, downdraft: 2};
-const SMP_VOL = {mpass: 0.9, whiz: 0.55, imWood: 0.5, imConc: 0.5, imMetal: 0.55, debris: 0.45, wdebris: 0.45};
+const SMP_DEF = {real_pistol: 1, real_revolver: 1, real_shot: 1, real_auto: 1, ambTraffic: 1, missile: 5, agm: 3, mpass: 6, whiz: 16, flareL: 6, flareB: 4, rocket: 5, imWood: 6, imConc: 6, imMetal: 5, debris: 4, wdebris: 4, downdraft: 2};
+const SMP_VOL = {real_pistol: 0.75, real_revolver: 0.8, real_shot: 0.8, real_auto: 0.7, mpass: 0.9, whiz: 0.55, imWood: 0.5, imConc: 0.5, imMetal: 0.55, debris: 0.45, wdebris: 0.45};
 const SMP = {loading: false}; for (const k in SMP_DEF) SMP[k] = [];
 function smpLoad(){
   if (!AU.ctx || SMP.loading) return; SMP.loading = true;
@@ -1342,7 +1359,11 @@ const gunBuf = (v, n) => (v.bank && HS.buf[v.bank + '_' + n]) || M134.buf[n];
 const gunWhole = (v, n) => (v.bank && HS.buf[v.bank + '_' + n]) ? true : M134.whole[n];
 function m134Shot(v, name, vol){
   const c = AU.ctx, s = c.createBufferSource(), g = c.createGain(); s.buffer = gunBuf(v, name); if (!s.buffer) return null; s.playbackRate.value = v.rate;
-  g.gain.value = vol; s.connect(g); g.connect(v.out); s.start(); return s;
+  g.gain.value = vol; s.connect(g); g.connect(v.out); const t = c.currentTime; s.start(t);
+  // V85: the recorded "stop" runs on into a long hot-barrel hiss; keep only the end of the burst, then spool down
+  if (name === 'stop'){ g.gain.setValueAtTime(vol, t + 0.28); g.gain.linearRampToValueAtTime(0.0001, t + 0.5); s.stop(t + 0.55);
+    const b = gunBuf(v, 'spindown'); if (b){ const s2 = c.createBufferSource(), g2 = c.createGain(); s2.buffer = b; s2.playbackRate.value = v.rate; g2.gain.value = vol*0.8; s2.connect(g2); g2.connect(v.out); s2.start(t + 0.22); } }
+  return s;
 }
 function m134Loop(v, name){
   const c = AU.ctx, s = c.createBufferSource(), g = c.createGain(); s.buffer = gunBuf(v, name);
@@ -1354,8 +1375,13 @@ function m134Loop(v, name){
 }
 function m134Kill(l, fade = 0.05){ if (!l) return; const t = AU.ctx.currentTime; l.g.gain.cancelScheduledValues(t); l.g.gain.setValueAtTime(l.g.gain.value, t); l.g.gain.exponentialRampToValueAtTime(0.0001, t + fade); l.s.stop(t + fade + 0.02); }
 // want: 'fire' | 'spin'; call every frame the gun is busy. pan -1..1, vol 0..1 (distance etc.)
+const mineGun = id => id !== 'player' && (OWN_GUNS.has(id) || /^(hmai|dfc|dfw)/.test(id));
 function gunVoice(id, want, pan = 0, vol = 1, o = null){
   if (!AU.ctx || !M134.ready || !SETTINGS.sound || AU.ctx.state !== 'running') return false;
+  { const fp = inFirstPerson(), mine = mineGun(id);
+    if (mine && fp){ if (o && o.pos) o = Object.assign({}, o, {pos: null}); if (o && o.bank && o.bank.includes('_3p_')) o = Object.assign({}, o, {bank: null}); }
+    else if (id !== 'player' && id !== 'dg' && !(o && o.bank)) o = Object.assign({}, o || {}, {bank: 'lb_3p_mg'});
+    if (mine && fp && want === 'fire') AU.duckUntil = AU.ctx.currentTime + 0.3; }
   let v = M134.v[id];
   if (v && o && o.bank && v.bank !== o.bank && !HS.buf[o.bank + '_fire']) hsNeed(o.bank.slice(0, 5));
   if (!v){
@@ -1370,7 +1396,7 @@ function gunVoice(id, want, pan = 0, vol = 1, o = null){
   v.lpW = null; let wet = 0;
   if (o && o.pos){ const S = spatial(o.pos.x, o.pos.y, o.pos.z, o.ref || 14); pan = S.pan; vol *= S.vol; v.lpW = S.lp; wet = S.wet; }
   if (o && o.bank){ if (HS.buf[o.bank + '_fire']) v.bank = o.bank; else hsNeed(o.bank.slice(0, 5)); } else v.bank = null;
-  { const dest = v.bank && v.bank.includes('_1p_') && AU.raw ? AU.raw : v.base; if (v.dest !== dest){ v.lp.disconnect(); v.lp.connect(dest); if (v.send) v.lp.connect(v.send); v.dest = dest; } }
+  { const dest = AU.raw && ((v.bank && v.bank.includes('_1p_')) || (mineGun(id) && inFirstPerson())) ? AU.raw : v.base; if (v.dest !== dest){ v.lp.disconnect(); v.lp.connect(dest); if (v.send) v.lp.connect(v.send); v.dest = dest; } }
   if (v.send) v.send.gain.setTargetAtTime(wet*0.85, AU.ctx.currentTime, 0.1);
   v.seen = AU.ctx.currentTime; v.want = want; v.vol = vol; if (v.pan) v.pan.pan.value = clamp(pan, -1, 1);
   return true;
@@ -1474,6 +1500,8 @@ function hsBank(name){ if (HS.buf[name]) return [HS.buf[name]]; const L = []; fo
 const HS_ALT = {bh: {rkt: 'lb', volley: 'lb', tow: 'ap', '30mmb': 'ap'}, lb: {tow: 'ap'}, ap: {volley: 'lb'}};
 function hsShot(kind, persp, what, vol = 1, pan = 0, pos = null, ref = 16){
   if (!AU.ctx || !SETTINGS.sound || AU.ctx.state !== 'running') return false;
+  if (kind === 'bh' && persp === '1p' && what === 'flare') what = 'flare2';
+  if (persp === '1p' && !pos){ if (what === 'rkt') vol *= 1.9; if (what !== 'flare' && what !== 'flare2') AU.duckUntil = AU.ctx.currentTime + 0.45; }
   let k = kind, g = k + '_' + persp; hsNeed(g);
   let L = hsBank(g + '_' + what);
   if (!L.length && HS_ALT[kind] && HS_ALT[kind][what]){ k = HS_ALT[kind][what]; g = k + '_' + persp; hsNeed(g); L = hsBank(g + '_' + what); }
@@ -1514,6 +1542,7 @@ function hsVoice(id, kind, persp, pos, st){
   const rate = 1 + 0.035*ld + 0.025*sp - 0.04*dm*Math.max(0, Math.sin(now*1.7));
   for (const L of [v.hover, v.load, v.dmg, v.low, v.yawL, v.yawR]) if (L) L.s.playbackRate.setTargetAtTime(rate, now, 0.2);
   let vol = (st.vol ?? 1)*(v.own ? (persp === '1p' ? 0.95 : 0.85) : 1.3), lpf = 20000, wet = 0, pn = 0;
+  if (v.own && now < (AU.duckUntil || 0)) vol *= persp === '1p' ? 0.45 : 0.7;
   if (pos){ const S = spatial(pos.x, pos.y, pos.z, st.ref || 18); vol *= S.vol; lpf = S.lp; wet = S.wet; pn = S.pan; }
   v.mix.gain.setTargetAtTime(SETTINGS.sound ? vol : 0, now, now - (v.t0 || (v.t0 = now)) < 0.4 ? 0.04 : 0.12); v.lp.frequency.setTargetAtTime(lpf, now, 0.12); v.send.gain.setTargetAtTime(wet*0.8, now, 0.2);
   if (v.pan) v.pan.pan.setTargetAtTime(pn, now, 0.08);
@@ -1573,6 +1602,8 @@ function hsTick(dt){
 }
 function hsSeat(){ if (!AU.ctx) return; hsNeed('seat'); const L = hsBank('seat'); if (L.length) playSmp(L, AU.ctx.currentTime, 0.7, AU.raw || AU.sfx, 1); }
 
+const REAL_SND = {pistol: ['real_pistol', 1.05], revolver: ['real_revolver', 1], smg: ['real_auto', 1.12], ar: ['real_auto', 0.94], bailiff: ['real_shot', 1.05], shotgun: ['real_shot', 0.9], sniper: ['real_revolver', 0.78]};
+const GUN_SND_LIST = [['pistol', 'Pistol'], ['smg', 'SMG'], ['revolver', 'Revolver'], ['bailiff', 'Bailiff'], ['shotgun', 'Shotgun'], ['ar', 'Rifle'], ['sniper', 'Sniper'], ['minigun', 'Minigun']];
 const WSND = {ar: 'ar', pistol: 'pistol', smg: 'smg', revolver: 'revolver', bailiff: 'bailiff', shotgun: 'shotgun', minigun: 'minigun', sniper: 'sniper', grenade: 'grenade', rpg: 'rpg'};
 
 // ================= renderer / scene =================
@@ -3254,13 +3285,36 @@ function explode(x, z, r, dmg, quiet){
   if (!quiet) shake = Math.max(shake, 0.25 + r*0.06);
 }
 // shoot one bullet from (x,y,z) toward a point, used by vehicles
-function shoot(x, y, z, tx, tz, speed, dmg, pierce, kindIdx, life = 1.2, spread = 0.02, tr = 0){
+// V85: aircraft guns (SHOT_FAR) fire real 3D rounds: they fly on through the aim point until they hit the ground (dust where
+// they land) or run out ~1.5 km later, nothing culls them at the edge of the pier; their speed is the tracer-speed setting
+let SHOT_FAR = 0;
+const TRS = () => SETTINGS.hud;
+function shoot(x, y, z, tx, tz, speed, dmg, pierce, kindIdx, life = 1.2, spread = 0.02, tr = 0, ty = null){
   if (un >= BUCAP) return;
+  if (SHOT_FAR) speed *= TRS().trSpeed || 1;
   const a = Math.atan2(tx - x, -(tz - z)) + rnd(-spread, spread), d = Math.hypot(tx - x, tz - z), t = Math.max(0.05, d/speed);
   const i = un++;
-  ux[i] = x; uz[i] = z; uy[i] = y; uvx[i] = Math.sin(a)*speed; uvz[i] = -Math.cos(a)*speed; uvy[i] = y > 2.4 ? (1.0 - y)/t : 0;
-  if (tr >= 2) tr = Math.random() < SETTINGS.hud.trQty ? 3 : 2;      // the tracer share you set
-  ud[i] = NET.ghost ? 0 : dmg*dmgMul; upi[i] = pierce + apLv(); ul[i] = Math.max(life, t + 0.3); uk[i] = kindIdx; um[i] = 3; ulast[i] = 0; utr[i] = tr; uo[i] = SHOT_OWN;
+  ux[i] = x; uz[i] = z; uy[i] = y; uvx[i] = Math.sin(a)*speed; uvz[i] = -Math.cos(a)*speed; uvy[i] = ty !== null ? (ty - y)/t : y > 2.4 ? (1.0 - y)/t : 0;
+  if (tr >= 2) tr = Math.random() < TRS().trQty ? 3 : 2;      // the tracer share you set
+  ud[i] = NET.ghost ? 0 : dmg*dmgMul; upi[i] = pierce + apLv(); ul[i] = SHOT_FAR ? 7 : Math.max(life, t + 0.3); uk[i] = kindIdx; um[i] = 3; ulast[i] = 0; utr[i] = tr; uo[i] = SHOT_OWN; uf[i] = SHOT_FAR;
+  // extra tracer density (PC): cosmetic streaks alongside the real round, a few metres apart along the same line
+  if (SHOT_FAR && tr === 3){ let extra = (TRS().trDens || 1) - 1;
+    while (extra > 0 && un < BUCAP){ if (extra < 1 && Math.random() > extra) break; extra--;
+      const j = un++, b = a + rnd(-0.006, 0.006), back = rnd(0.004, 0.022);
+      ux[j] = x - uvx[i]*back; uz[j] = z - uvz[i]*back; uy[j] = y - uvy[i]*back; uvx[j] = Math.sin(b)*speed; uvz[j] = -Math.cos(b)*speed; uvy[j] = uvy[i]*rnd(0.99, 1.01);
+      ud[j] = 0; upi[j] = 0; ul[j] = 7; uk[j] = kindIdx; um[j] = 3; ulast[j] = 0; utr[j] = 3; uo[j] = 0; uf[j] = 2; } }
+}
+// where an aircraft round lands: dust you can lead your fire with; past ~250 m (PC) only the tracer shows where it went
+const FARP = {n: 0};
+function farImpact(x, z, cosmetic){
+  if (FARP.n > (PC.on ? 14 : 7)) return; FARP.n++;
+  const c = camera.position, d = Math.hypot(x - c.x, z - c.z, c.y), R = PC.on ? 260 : 140;
+  if (d > R){ if (Math.random() < 0.3) chips(x, 0.3, z, SPARK, 1, 1.5); return; }
+  const k = 0.75 + d*0.007, wet = LOC.cur !== 'airfield' && !surfAt(x, z);
+  fx(wet ? 'white' : 'dust', x, 0.35, z, k*rnd(0.8, 1.25));
+  if (!cosmetic && Math.random() < 0.35) fx(wet ? 'white' : 'dust', x + rnd(-0.5, 0.5), 0.5, z + rnd(-0.5, 0.5), k*rnd(1.1, 1.6));
+  if (!cosmetic && d < 90 && Math.random() < 0.4) chips(x, 0.4, z, surfAt(x, z) === 'imWood' ? WOOD : SPARK, 2, 3.5);
+  if (!cosmetic) impactSfx(x, z);
 }
 function nearestEnemy(x, z, maxZ = 2){
   let best = -1, bd = 1e9;
@@ -3514,6 +3568,7 @@ const _v3 = new THREE.Vector3();
 const _gv = new THREE.Vector3(), _gq = new THREE.Vector3(), _gd = new THREE.Vector3();
 // M134: 4,000 rounds a minute = one round every 0.015 s; each simulated bullet stands for two rounds
 const M134_STEP = 2*60/4000;
+const M134_RING = 3.2;      // V85: the widest your door-gun burst gets at any range (m)
 const wingLimits = (th, ph) => [clamp(th, -0.3, 0.3), clamp(ph, -0.95, -0.15)];
 // angles a gun needs to put rounds on ground point (x, z); null when it is outside the gun's limits
 // true when the line from the gun to a point (both in the airframe's own metres) passes through the fuselage or tail boom
@@ -3537,20 +3592,17 @@ const _gu = new THREE.Vector3(), _gw = new THREE.Vector3();
 let SHOT_OWN = 0;
 function gunFire(gun, speed, dmg, pierce, spread = 0.025, ahead = 0){
   gun.muzzle.getWorldPosition(_gq); _gd.set(0, 0, -1).transformDirection(gun.pitch.matrixWorld);
-  if (gun.own){
-    // your gun: every round goes somewhere inside a cone of half-angle M134_CONE, spreading apart with range
-    _gu.set(1, 0, 0).transformDirection(gun.pitch.matrixWorld); _gw.set(0, 1, 0).transformDirection(gun.pitch.matrixWorld);
-    const a = Math.random()*6.2832, r = M134_CONE*Math.sqrt(Math.random()); _gd.addScaledVector(_gu, Math.cos(a)*r).addScaledVector(_gw, Math.sin(a)*r).normalize();
-    spread = 0;
-  }
   if (ahead) _gq.addScaledVector(_gd, ahead);      // first-person: start tracers past the eye
-  let hx, hz;
-  if (_gd.y < -0.03){ const k = (_gq.y - 0.9)/(-_gd.y); hx = _gq.x + _gd.x*k; hz = _gq.z + _gd.z*k; } else { hx = _gq.x + _gd.x*45; hz = _gq.z + _gd.z*45; }
+  const gy = MODE === 'heli' ? 0 : 0.9;
+  let hx, hz, hy = null;
+  if (_gd.y < -0.01){ const k = Math.min(1500, (_gq.y - gy)/(-_gd.y)); hx = _gq.x + _gd.x*k; hz = _gq.z + _gd.z*k; hy = _gq.y + _gd.y*k; }
+  else { hx = _gq.x + _gd.x*900; hz = _gq.z + _gd.z*900; hy = _gq.y + _gd.y*900; }
+  const rng = Math.hypot(hx - _gq.x, hz - _gq.z, hy - _gq.y);
+  // spread: a cone (M134_CONE for your gun) that stops growing at M134_RING metres
+  { const a = Math.random()*6.2832, r = Math.min(rng*(gun.own ? M134_CONE : 0.02), gun.own ? M134_RING : 1.2)*Math.sqrt(Math.random()); hx += Math.cos(a)*r; hz += Math.sin(a)*r; }
   gun.tc = ((gun.tc || 0) + 1) & 1;
-  const jit = gun.own ? 0 : 0.25, ix = hx + rnd(-jit, jit), iz = hz + rnd(-jit, jit);
-  SHOT_OWN = gun.own ? 1 : 0; shoot(_gq.x, _gq.y, _gq.z, ix, iz, speed, dmg, pierce, 5, 1.6, spread, gun.tc ? 3 : 2); SHOT_OWN = 0;
-  if (gun.own){ gun.rng = Math.hypot(ix - _gq.x, iz - _gq.z, _gq.y - 0.9); if (gun.tc) hitPuff(ix, iz, gun.rng/speed, true); }
-  else if (Math.random() < 0.6) hitPuff(ix, iz, Math.hypot(ix - _gq.x, iz - _gq.z, _gq.y)/speed);
+  SHOT_OWN = gun.own ? 1 : 0; SHOT_FAR = 1; shoot(_gq.x, _gq.y, _gq.z, hx, hz, speed, dmg, pierce, 5, 1.6, 0, gun.tc ? 3 : 2, hy < gy + 0.5 ? gy - 0.05 : hy); SHOT_OWN = 0; SHOT_FAR = 0;
+  if (gun.own) gun.rng = rng;
   gun.flash.visible = true; gun.flashT = 0.035;
 }
 function gunTick(gun, dt){
@@ -3903,7 +3955,7 @@ function dfFlyWeapons(v, dt, lv){
     if (firing){ v.fireT -= dt; while (v.fireT <= 0){ v.fireT += M134_STEP/rateMul*(gau ? 1.8 : 1); v.gs = (v.gs || 0) ^ 1; gunFire(v.guns[v.gs], 60, (gau ? 2.1 : 1.15)*lv, gau ? 2 : 1, 0.015); } }
     else v.fireT = Math.max(0, v.fireT);
     for (const gun of v.guns){ gun.spinV += ((firing ? 1 : 0) - gun.spinV)*Math.min(1, dt*(firing ? 6 : 1.2)); gunTick(gun, dt); }
-    if (firing){ v.guns[0].muzzle.getWorldPosition(_gq); if (!gunVoice('lb' + v.uid, 'fire', 0, 1.1, persp === '1p' ? {bank: 'lb_1p'} : {pos: _gq, bank: 'lb_3p_mg'})) sfx('heliGun', 0.6); }
+    if (firing){ v.guns[0].muzzle.getWorldPosition(_gq); if (!gunVoice('lb' + v.uid, 'fire', 0, 1.1, persp === '1p' ? {bank: 'lb_1p_mg'} : {pos: _gq, bank: 'lb_3p_mg'})) sfx('heliGun', 0.6); }
     if (v.volley > 0){
       v.vt -= dt;
       while (v.vt <= 0 && v.volley > 0){ v.vt += 0.125; v.volley--; const from = v.pods[v.volley & 1].getWorldPosition(new THREE.Vector3()), to = dfBoresight(v); to.x += rnd(-1.4, 1.4); to.z += rnd(-1.4, 1.4);
@@ -4050,7 +4102,7 @@ function airShots(dt){
     if (hit){
       const x = sh.m.position.x, z = sh.m.position.z, before = kills;
       const gm = sh.ghost ? 0 : 1;
-      if (sh.kind === 'cannon') explode(x, z, CANNON.r, CANNON.dmg*dmgMul*gm, true);
+      if (sh.kind === 'cannon') explode(x, z, cannonR(), CANNON.dmg*dmgMul*gm, true);
       else if (sh.kind === 'rocket') explode(x, z, sh.aoe || 2.8, (sh.dmg || 24)*dmgMul*gm, true);
       else { explode(x, z, 4.4, 150*dmgMul*gm); }
       if (P.on) P.kills += kills - before;
@@ -4178,7 +4230,10 @@ function gsReset(){
 function flash(){ const f = $('flash'); f.style.transition = 'none'; f.style.opacity = 1; void f.offsetWidth; f.style.transition = 'opacity .35s'; f.style.opacity = 0; }
 // M230 30mm: 12-round bursts at 625 rpm, 2 s to cycle the next 12. Quick trigger speeds up both.
 // 30 mm: one round every 0.1 s, 14-round bursts and about a second to reload, the rhythm of the recorded gun
-const CANNON = {mag: 14, rate: 0.1, reload: 1.05, r: 1.6, dmg: 9};
+// V85: measured off the player's BF6 gunner clip (ammo counter, 10 fps): 12 rounds 0.1 s apart, 1.3 s from empty to full
+const CANNON = {mag: 12, rate: 0.1, reload: 1.3, r: 1.6, dmg: 9};
+// wave-mode damage upgrades widen the 30 mm splash too (the fire rate stays the recording's)
+const cannonR = () => CANNON.r*(1 + 0.3*Math.min(2, Math.log2(Math.max(1, dmgMul))));
 function cannonTick(P, dt){
   if (P.reload > 0){ P.reload -= dt; if (P.reload <= 0){ P.reload = 0; P.mag = CANNON.mag; } return false; }
   P.fireT -= dt; if (P.fireT > 0) return false;
@@ -4304,8 +4359,8 @@ const bulletMesh = new THREE.InstancedMesh(bulletGeo, new THREE.MeshBasicMateria
 bulletMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(BUCAP*3).fill(1), 3);
 bulletMesh.frustumCulled = false; bulletMesh.count = 0; scene.add(bulletMesh);
 // red tracer streaks (the BF door-gun look): a hot core inside a soft red glow, stretched along the round's flight path
-const TRC = {core: new THREE.MeshBasicMaterial({color: 0xff8a6a, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, toneMapped: false}),
-  halo: new THREE.MeshBasicMaterial({color: 0xff2810, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.55, depthWrite: false, toneMapped: false}),
+const TRC = {core: new THREE.MeshBasicMaterial({color: 0xff8a6a, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, toneMapped: false, fog: false}),
+  halo: new THREE.MeshBasicMaterial({color: 0xff2810, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.55, depthWrite: false, toneMapped: false, fog: false}),
   geo: new C(1, 1, 1, 6).rotateX(Math.PI/2)};
 const trCore = new THREE.InstancedMesh(TRC.geo, TRC.core, BUCAP), trHalo = new THREE.InstancedMesh(TRC.geo, TRC.halo, BUCAP);
 for (const m of [trCore, trHalo]){ m.frustumCulled = false; m.count = 0; m.renderOrder = 3; scene.add(m); }
@@ -4352,7 +4407,7 @@ function drawBossBar(boss, bossBar){
 // ================= state =================
 const ex = new Float32Array(ECAP), ez = new Float32Array(ECAP), eh = new Float32Array(ECAP), er = new Uint8Array(ECAP), eph = new Float32Array(ECAP), es = new Float32Array(ECAP), eyaw = new Float32Array(ECAP), ehit = new Float32Array(ECAP), eid = new Int32Array(ECAP), killBy = new Uint8Array(ECAP), elunge = new Uint8Array(ECAP), ebuff = new Uint8Array(ECAP), ehpMax = new Float32Array(ECAP), estag = new Float32Array(ECAP), ecmd = new Uint8Array(ECAP);
 let SPAWN_CMD = 0;      // set while a commander's units (or their boss's summons) are being spawned
-const ux = new Float32Array(BUCAP), uz = new Float32Array(BUCAP), uy = new Float32Array(BUCAP), uvx = new Float32Array(BUCAP), uvz = new Float32Array(BUCAP), uvy = new Float32Array(BUCAP), ud = new Float32Array(BUCAP), upi = new Int16Array(BUCAP), ul = new Float32Array(BUCAP), uk = new Uint8Array(BUCAP), um = new Uint8Array(BUCAP), ulast = new Int32Array(BUCAP), utr = new Uint8Array(BUCAP), uo = new Uint8Array(BUCAP);   // uo: 1 = your mounted gun (hit markers). utr: 0 normal, 1 slim tracer, 2 ball round (not drawn)
+const ux = new Float32Array(BUCAP), uz = new Float32Array(BUCAP), uy = new Float32Array(BUCAP), uvx = new Float32Array(BUCAP), uvz = new Float32Array(BUCAP), uvy = new Float32Array(BUCAP), ud = new Float32Array(BUCAP), upi = new Int16Array(BUCAP), ul = new Float32Array(BUCAP), uk = new Uint8Array(BUCAP), um = new Uint8Array(BUCAP), ulast = new Int32Array(BUCAP), utr = new Uint8Array(BUCAP), uo = new Uint8Array(BUCAP), uf = new Uint8Array(BUCAP);   // uo: 1 = your mounted gun (hit markers). utr: 0 normal, 1 slim tracer, 2 ball round (not drawn)
 const px = new Float32Array(PCAP), py = new Float32Array(PCAP), pz = new Float32Array(PCAP), pvx = new Float32Array(PCAP), pvy = new Float32Array(PCAP), pvz = new Float32Array(PCAP), pl = new Float32Array(PCAP);
 const dx_ = new Float32Array(DCAP), dz_ = new Float32Array(DCAP), dt_ = new Float32Array(DCAP), dr_ = new Uint8Array(DCAP), dyaw = new Float32Array(DCAP), dph = new Float32Array(DCAP);
 let dn = 0, pHead = 0, nextId = 1;
@@ -4896,7 +4951,7 @@ function gunnerLook(nx, ny){
   if (SETTINGS.gunner.inv) ny = -ny;
   if (DG.on && DG.gun){ DG.th -= nx*2.4; DG.ph -= ny*2.4; [DG.th, DG.ph] = (DG.gun.lim || gunLimits)(DG.th, DG.ph); }
   else if (MODE === 'heli' && HM.on && HM.seat !== 'pilot'){ const z = HM.zoom ? 0.45 : 1;
-    if (HM.type === 'dap'){ HM.th += nx*1.92*z; HM.ph -= ny*1.92*z; } else { HM.aimAz += nx*1.2*z; HM.aimEl = clamp(HM.aimEl - ny*1.2*z, -1.35, 0.25); } }
+    if (HM.type === 'dap'){ HM.th += nx*1.92*z*(HM.gside || 1); HM.ph -= ny*1.92*z; } else { HM.aimAz += nx*1.2*z; HM.aimEl = clamp(HM.aimEl - ny*1.2*z, -1.35, 0.25); } }
   else if (GS_.on && GS_.phase === 'gun'){ const w = cv.getBoundingClientRect().width; gsAim(nx*w, ny*w); }
 }
 const swipeFires = () => SETTINGS.gunner.aim === 'swipefire';
@@ -5240,7 +5295,7 @@ function fire(vol = 1){
       gn.flashT = 0.05; gn.lastShot = t;
     });
   }
-  if (!(weapon === 'minigun' && gunVoice('player', 'fire', cx/6, 0.75 + Math.min(0.25, gunners.length*0.05)))) sfx(WSND[weapon] || 'pistol', 0.6 + Math.min(0.5, gunners.length*0.1), cx/6);
+  { const G = SETTINGS.gunSnd.minigun; if (!(weapon === 'minigun' && (G.mute || (G.mode === 'real' && gunVoice('player', 'fire', cx/6, (0.75 + Math.min(0.25, gunners.length*0.05))*(G.vol ?? 1)))))) sfx(WSND[weapon] || 'pistol', 0.6 + Math.min(0.5, gunners.length*0.1), cx/6); }
   recoil = 1; viewFlashT = 0.06;
   if (ammo[weapon] <= 0){ const next = WKEYS.filter(k => k !== 'pistol' && owned[k] && ammo[k] > 0); weapon = next.length ? next[next.length - 1] : 'pistol'; syncGuns(); buildBar(); }
 }
@@ -5382,12 +5437,17 @@ function update(dt){
   }
 
   // bullets
+  FARP.n = 0;
   for (let i = 0; i < un; i++){
     if (ul[i] <= 0) continue;
     const x0 = ux[i], z0 = uz[i];
     ux[i] += uvx[i]*dt; uz[i] += uvz[i]*dt; uy[i] += uvy[i]*dt; ul[i] -= dt;
     const x1 = ux[i], z1 = uz[i];
-    if ((uy[i] < 2.6 && Math.abs(x1) > halfW(z1) + 0.1) || Math.abs(x1) > 30 || z1 < FAR - 4 || uy[i] < 0.05){ ul[i] = 0; continue; }
+    if (uf[i]){
+      if (uy[i] < 0.05){ ul[i] = 0; farImpact(x1, z1, uf[i] === 2); continue; }
+      if (Math.abs(x1) > 2500 || Math.abs(z1) > 2500 || uy[i] > 900){ ul[i] = 0; continue; }
+      if (uf[i] === 2 || Math.abs(x1) > halfW(z1) + 0.1 || z1 < FAR - 4) continue;      // cosmetic, or out over the water / sand: just flies
+    } else if ((uy[i] < 2.6 && Math.abs(x1) > halfW(z1) + 0.1) || Math.abs(x1) > 30 || z1 < FAR - 4 || uy[i] < 0.05){ ul[i] = 0; continue; }
     if (uy[i] > 2.6) continue;
     for (let k = 0; k < barrels.length && ul[i] > 0; k++){
       const b = barrels[k];
@@ -5408,14 +5468,13 @@ function update(dt){
         while (extra > 0 && un < BUCAP){
           const j = un++, a = a0 + rnd(-0.12, 0.12);
           ux[j] = x1 + rnd(-0.2, 0.2); uz[j] = z1; uy[j] = uy[i]; uvy[j] = uvy[i]; uvx[j] = Math.sin(a)*sp; uvz[j] = -Math.cos(a)*sp;
-          ud[j] = ud[i]; upi[j] = upi[i]; ul[j] = ul[i]; uk[j] = uk[i]; um[j] = um[i]; ulast[j] = 0; utr[j] = utr[i]; uo[j] = uo[i];
+          ud[j] = ud[i]; upi[j] = upi[i]; ul[j] = ul[i]; uk[j] = uk[i]; um[j] = um[i]; ulast[j] = 0; utr[j] = utr[i]; uo[j] = uo[i]; uf[j] = uf[i];
           extra--;
         }
         if (extra > 0) ud[i] *= (extra + 1);
       }
     }
     // a round that missed both gates runs out of steam at the second light pole; the sniper still reaches all the way
-    if (um[i] === 0 && z1 < GATE_REACH_Z && uk[i] !== SNIPER_K){ ul[i] = 0; if (Math.random() < 0.15) chips(x1, Math.max(0.3, uy[i]), z1, SPARK, 1, 1); continue; }
     const sx = x1 - x0, sz = z1 - z0, len2 = sx*sx + sz*sz || 1e-6;
     const gx = (x1 - X0)|0, gz0 = (Math.min(z0, z1) - Z0)|0, gz1 = (Math.max(z0, z1) - Z0)|0;
     for (let cz = gz0 - 1; cz <= gz1 + 1 && ul[i] > 0; cz++){
@@ -5462,7 +5521,7 @@ function update(dt){
     }
   }
   en = w; w = 0;
-  for (let i = 0; i < un; i++) if (ul[i] > 0){ if (w !== i){ ux[w]=ux[i]; uz[w]=uz[i]; uy[w]=uy[i]; uvx[w]=uvx[i]; uvz[w]=uvz[i]; uvy[w]=uvy[i]; ud[w]=ud[i]; upi[w]=upi[i]; ul[w]=ul[i]; uk[w]=uk[i]; um[w]=um[i]; ulast[w]=ulast[i]; utr[w]=utr[i]; uo[w]=uo[i]; } w++; }
+  for (let i = 0; i < un; i++) if (ul[i] > 0){ if (w !== i){ ux[w]=ux[i]; uz[w]=uz[i]; uy[w]=uy[i]; uvx[w]=uvx[i]; uvz[w]=uvz[i]; uvy[w]=uvy[i]; ud[w]=ud[i]; upi[w]=upi[i]; ul[w]=ul[i]; uk[w]=uk[i]; um[w]=um[i]; ulast[w]=ulast[i]; utr[w]=utr[i]; uo[w]=uo[i]; uf[w]=uf[i]; } w++; }
   un = w; w = 0;
   for (let i = 0; i < dn; i++){
     dt_[i] += dt;
@@ -5580,8 +5639,9 @@ function sync(dt){
   bulletMesh.count = un; bulletMesh.instanceMatrix.needsUpdate = true; bulletMesh.instanceColor.needsUpdate = true;
   let tn = 0;
   for (let i = 0; i < un; i++){ if (utr[i] !== 3) continue;
-    _trD.set(uvx[i], uvy[i], uvz[i]); const sp = _trD.length() || 1; _trD.multiplyScalar(1/sp); const len = Math.min(4.2, sp*0.03);
-    const ts = SETTINGS.hud.trSize; trSet(trCore, tn, ux[i], uy[i], uz[i], _trD, 0.03*ts, len*ts); trSet(trHalo, tn, ux[i], uy[i], uz[i], _trD, 0.1*ts, len*1.05*ts); tn++; }
+    _trD.set(uvx[i], uvy[i], uvz[i]); const sp = _trD.length() || 1; _trD.multiplyScalar(1/sp); const len = Math.min(6, sp*0.022);
+    const ts = SETTINGS.hud.trSize, cd = Math.hypot(ux[i] - camera.position.x, uy[i] - camera.position.y, uz[i] - camera.position.z), wm = Math.max(1, cd*0.0016/(0.03*ts)), lm = Math.max(1, cd*0.006/Math.max(0.1, len*ts));
+    trSet(trCore, tn, ux[i], uy[i], uz[i], _trD, 0.03*ts*wm, len*ts*lm); trSet(trHalo, tn, ux[i], uy[i], uz[i], _trD, 0.1*ts*wm, len*1.05*ts*lm); tn++; }
   trCore.count = trHalo.count = tn; if (tn){ trCore.instanceMatrix.needsUpdate = true; trHalo.instanceMatrix.needsUpdate = true; }
 
   const ca = chipMesh.instanceMatrix.array;
@@ -5815,16 +5875,17 @@ function hmStart(type = 'apache'){
   if (type === 'dap'){
     if (!HM.heliD){ HM.heliD = buildDap(); HM.heliD.hull.scale.setScalar(0.42*HB); HM.heliD.hull.position.y = 0; scene.add(HM.heliD.g); }
     HM.gside = 1; HM.dgun = HM.heliD.guns.find(g => g.side > 0); HM.dgun.flashBase = 0.42; HM.th = 0.5; HM.ph = -0.7;
-    HM.heli = HM.heliD; HM.rkMax = HM.rockets = 38;
+    HM.heli = HM.heliD; HM.rkMax = HM.rockets = RK_MAG.dap; HM.rkMag = true;
     if (!HM.vm){ HM.vm = buildM134(); HM.vm.g.scale.setScalar(0.55); HM.vm.g.position.set(0.16, -0.2, -0.42); HM.vm.post.visible = false; HM.vm.flash.scale.setScalar(0.2); HM.vm.g.traverse(o => { o.frustumCulled = false; }); camera.add(HM.vm.g); }
   } else if (type === 'little'){
     if (HM.heliL && !HM.heliL.model && loadedParts.little?.body){ scene.remove(HM.heliL.g); HM.heliL = null; }
     if (!HM.heliL){ HM.heliL = buildLittle(); HM.heliL.hull.scale.setScalar((HM.heliL.model ? 0.4 : 0.42)*HB); scene.add(HM.heliL.g); }
-    HM.heli = HM.heliL; HM.rkMax = HM.rockets = 28; HM.hellfire = 0;
+    HM.heli = HM.heliL; HM.rkMax = HM.rockets = 28; HM.hellfire = 0; HM.rkMag = false;
   } else {
     if (!HM.heliA){ HM.heliA = buildApache(); HM.heliA.g.scale.setScalar(HM_SCALE*HB); scene.add(HM.heliA.g); }
-    HM.heli = HM.heliA;
+    HM.heli = HM.heliA; HM.rkMax = HM.rockets = RK_MAG.apache; HM.rkMag = true;
   }
+  HM.rkRT = 0;
   if (HM.vm) HM.vm.g.visible = false;
   HM.heli.g.visible = true;
   { const g = HM.heli.g; g.position.set(0, 0, 0); g.rotation.set(0, 0, 0); g.updateMatrixWorld(true); const bb = new THREE.Box3();
@@ -5859,9 +5920,9 @@ function hmSeatUI(){
   $('hm').classList.toggle('doorgun', !pilot && HM.type === 'dap'); $('hm').classList.toggle('apgun', !pilot && HM.type === 'apache');
   const dap = HM.type === 'dap', lb = HM.type === 'little';
   $('hmHullName').textContent = dap ? 'DAP' : lb ? 'LITTLE BIRD' : 'APACHE';
-  $('hmSeatBtn').hidden = lb; $('hmMissile').firstChild.textContent = lb ? 'ROCKETS' : pilot ? 'HELLFIRE' : 'AGM';
+  $('hmSeatBtn').hidden = lb; $('hmMissile').firstChild.textContent = lb ? 'ROCKETS' : pilot ? (gSec(HM.type) ? 'TOW' : 'HELLFIRE') : 'AGM';
   $('hmSeat').textContent = (dap ? 'DAP · ' : lb ? 'LITTLE BIRD · ' : 'APACHE · ') + (pilot ? 'PILOT · ' + (HM.view === 'chase' ? 'CHASE CAM' : 'COCKPIT') : dap ? (HM.gside < 0 ? 'LEFT' : 'RIGHT') + ' DOOR GUN · M134' : 'GUNNER · 30MM');
-  $('hmFire').firstChild.textContent = pilot ? (HM.wsel === 'sec' ? (lb ? 'VOLLEY' : 'HELLFIRE') : lb ? 'MINIGUNS' : 'ROCKETS') : dap ? 'M134' : '30MM';
+  $('hmFire').firstChild.textContent = pilot ? (HM.wsel === 'sec' ? (lb ? 'VOLLEY' : gSec(HM.type) ? 'TOW' : 'HELLFIRE') : lb ? 'MINIGUNS' : 'ROCKETS') : dap ? 'M134' : '30MM';
   if (HM.vm) HM.vm.g.visible = false;
   if (dap && !pilot){ camera.near = 0.03; camera.updateProjectionMatrix(); }
   $('hmMissile').hidden = !pilot && HM.type !== 'apache';
@@ -5948,7 +6009,7 @@ function hmDamage(d){
 }
 function hmShoot(kind, from, dir, speed, extra){
   const m = kind === 'cannon' ? tracerObj(3.2, 0.08) : new THREE.Mesh(kind === 'hellfire' || kind === 'agm' ? missileGeo : shotGeo, kind === 'rocket' ? rocketMat : hfMat);
-  if (kind === 'rocket') m.scale.set(1.4, 1.4, 1.4); else if (kind === 'agm') m.scale.set(1.5, 1.5, 1.5);
+  if (kind === 'rocket') m.scale.set(0.8, 0.8, 0.8); else if (kind === 'agm') m.scale.set(0.9, 0.9, 0.9); else if (kind === 'hellfire') m.scale.set(0.7, 0.7, 0.7);
   m.position.copy(from); scene.add(m);
   if (kind === 'cannon'){ _trX.copy(dir).normalize(); m.position.addScaledVector(_trX, 3.6); m.lookAt(_trD.copy(m.position).sub(_trX)); }   // starts clear of the gun sight; streak trails behind the round
   if (kind !== 'cannon') m.lookAt(_trD.copy(m.position).add(dir));
@@ -6031,7 +6092,7 @@ function apAIGunner(P, dt){
 function hmFireAGM(P, to){
   P.agmCd = AGM.cd;
   const from = P.pos.clone(); from.y -= 0.9*HB;
-  hmShoot('agm', from, to.clone().sub(from), 30, {to: to.clone()}); sfx('agm', 1, 0, true);
+  hmShoot('agm', from, to.clone().sub(from), 30, {to: to.clone()}); if (!hsShot('ap', hmPersp(), 'tow', 1)) sfx('agm', 1, 0, true);
 }
 function hmGunnerAGM(){
   const P = HM; if (state !== 'play' || P.agmCd > 0) return;
@@ -6076,7 +6137,7 @@ function hmOnWave(){
 function hmWaveClear(){
   earnGems(2, 'for clearing wave ' + wave);
   const bonus = 200 + wave*50; HM.score += bonus;
-  HM.rockets = Math.min(76, HM.rockets + 20); HM.hellfire = Math.min(16, HM.hellfire + 4); HM.flares = Math.min(24, HM.flares + 6);
+  HM.rockets = HM.rkMag ? HM.rkMax : Math.min(76, HM.rockets + 20); HM.hellfire = Math.min(16, HM.hellfire + 4); HM.flares = Math.min(24, HM.flares + 6);
   HM.hull = Math.min(100, HM.hull + 25); wall = Math.min(100, wall + 15);
   toast('Wave ' + wave + ' cleared  +' + bonus, '#c8ffd0'); sfx('reward');
   HM.breakT = 3.5;
@@ -6211,16 +6272,17 @@ function hmSimGunner(P, dt){
   const mdx = P.mdx || 0, mdy = P.mdy || 0; P.mdx = P.mdy = 0;
   const ax = (act('hAimR') ? 1 : 0) - (act('hAimL') ? 1 : 0) + gpAx(2) + gpAx(0), ay = (act('hAimU') ? 1 : 0) - (act('hAimD') ? 1 : 0) - gpAx(3) - gpAx(1);
   const dx = (mdx*0.0026*sens + ax*1.1*dt)*z, dy = (-mdy*0.0026*sens*inv + ay*0.8*dt)*z;
-  if (P.type === 'dap'){ P.th += dx*1.6; P.ph += dy*1.6; } else { P.aimAz += dx; P.aimEl = clamp(P.aimEl + dy, -1.35, 0.25); }
+  if (P.type === 'dap'){ P.th += dx*1.05*(P.gside || 1); P.ph += dy*1.05; } else { P.aimAz += dx; P.aimEl = clamp(P.aimEl + dy, -1.35, 0.25); }
 }
-function hmSelect(w){ if (HM.seat !== 'pilot') return; HM.wsel = w; sfx('click'); toast(w === 'sec' ? (HM.type === 'little' ? 'Rocket volley selected' : 'Hellfire selected') : (HM.type === 'little' ? 'Miniguns selected' : 'Rockets selected'), '#c8ffd0'); hmSeatUI(); }
+function hmSelect(w){ if (HM.seat !== 'pilot') return; HM.wsel = w; sfx('click'); toast(w === 'sec' ? (HM.type === 'little' ? 'Rocket volley selected' : gSec(HM.type) ? 'TOW selected' : 'Hellfire selected') : (HM.type === 'little' ? 'Miniguns selected' : 'Rockets selected'), '#c8ffd0'); hmSeatUI(); }
 function hmUpdate(dt){
   const P = HM; heliAudioTick(P, dt);
   P.hfCd = Math.max(0, P.hfCd - dt); P.flCd = Math.max(0, P.flCd - dt); P.hintT -= dt;
   if (P.flPairs > 0){ P.flT -= dt; while (P.flT <= 0 && P.flPairs > 0){ P.flT += 0.35; P.flPairs--; hmFlarePair(); } }
   if (P.hfHold && P.hfCd <= 0 && P.wsel === 'sec') hmFireHellfire();
   // rocket pods reload on their own; Hellfires trickle back slowly
-  P.rkReload = (P.rkReload || 0) + dt*(P.firing && P.seat === 'pilot' ? 1.6 : 3.2)*(P.quick || 1); while (P.rkReload >= 1){ P.rkReload--; if (P.rockets < P.rkMax) P.rockets++; }
+  if (P.rkMag){ if (P.rockets <= 0){ P.rkRT = (P.rkRT || RK_MAG.reload) - dt*(P.quick || 1); if (P.rkRT <= 0){ P.rkRT = 0; P.rockets = P.rkMax; } } }
+  else { P.rkReload = (P.rkReload || 0) + dt*(P.firing && P.seat === 'pilot' ? 1.6 : 3.2)*(P.quick || 1); while (P.rkReload >= 1){ P.rkReload--; if (P.rockets < P.rkMax) P.rockets++; } }
   P.hfReload = (P.hfReload || 0) + dt/14*(P.quick || 1); if (P.hfReload >= 1){ P.hfReload = 0; if (P.hellfire < 8) P.hellfire++; }
   $('hmHint').style.opacity = P.hintT > 0 ? 1 : 0;
   // ---- flight ----
@@ -6259,21 +6321,22 @@ function hmUpdate(dt){
   P.fireT -= dt; P.gunT = (P.gunT || 0) - dt;
   if (P.seat === 'pilot'){
     if (P.firing && P.fireT <= 0 && P.rockets > 0 && !little){
-      const RK = loRkt(P.type), rx = {dmgK: RK.dmgK, aoeK: RK.aoeK};
-      P.rockets--; P.fireT = (dap ? (P.rockets % 2 ? 0.1 : 0.46) : 0.115)*RK.rateK; const side = right.clone().multiplyScalar((P.rockets % 2 ? 1 : -1)*(dap ? 1.2 : 1.5)*HB); const from = P.pos.clone().add(side); from.y -= (dap ? 0.2 : 0.7)*HB;
+      const RK = loRkt(P.type), rx = {dmgK: RK.dmgK*(dap ? 1.35 : 1), aoeK: RK.aoeK*(dap ? 1.6 : 1)};
+      P.rockets--; P.fireT = 0.115*RK.rateK; const side = right.clone().multiplyScalar((P.rockets % 2 ? 1 : -1)*(dap ? 1.2 : 1.5)*HB); const from = P.pos.clone().add(side); from.y -= (dap ? 0.2 : 0.7)*HB;
       if (heliSim()){ const tgt = hmAimPoint(new THREE.Vector3()); tgt.x += rnd(-0.6, 0.6); tgt.z += rnd(-0.6, 0.6); if (gPri(P.type)) hmShoot('rocket', from, hmNoseDir(new THREE.Vector3()), 42, Object.assign({follow: 'rocket'}, rx)); else hmShoot('rocket', from, tgt.sub(from), 42, rx); }
       else { const aim = hmBoresight(new THREE.Vector3()); aim.x += rnd(-1.2, 1.2); aim.z += rnd(-1.2, 1.2); hmShoot('rocket', from, aim.sub(from), 42, rx); }
-      if (!(dap && !(P.rockets % 2)) && !hsShot(HKIND(P.type), hmPersp(), 'rkt', 0.9, 0)) sfx('rocket', 0.8, P.rockets % 2 ? 0.4 : -0.4, true);
+      if (!hsShot('ap', hmPersp(), 'rkt', 0.9, 0)) sfx('rocket', 0.8, P.rockets % 2 ? 0.4 : -0.4, true);     // V85: the DAP uses the Apache's rocket recording
     }
     // Little Bird: the two fixed M134s are the pilot's (on the DAP the crew works every minigun)
     if (little && P.firing){
-      const aim = heliSim() ? hmImpact(new THREE.Vector3(), 170) : hmBoresight(new THREE.Vector3());
+      const aim = heliSim() ? hmAimPoint(new THREE.Vector3()) : hmBoresight(new THREE.Vector3());
       while (P.gunT <= 0){
         const gau = little && LO('little').pri === 'gau19';
         P.gunT += M134_STEP/rateMul/(little ? 2 : 1)*(gau ? 1.8 : 1); P.tc = ((P.tc || 0) + 1) & 3;     // Little Bird: two guns, each at full rate
         const from = P.pos.clone().addScaledVector(right, (P.tc & 1 ? 1 : -1)*(little ? 0.5 : 0.8)*HB); from.y -= (little ? 0.25 : 0.1)*HB;
         if (little){ const gg = P.heli.guns[P.tc & 1]; gg.flash.visible = true; gg.flashT = 0.035; }
-        { const ax = aim.x + rnd(-1.4, 1.4), az = aim.z + rnd(-1.4, 1.4); shoot(from.x, from.y, from.z, ax, az, 170, gau ? 2.9 : 1.6, gau ? 2 : 1, 5, 2.4, 0.01, P.tc & 2 ? 3 : 2); if (Math.random() < 0.5) hitPuff(ax, az, from.distanceTo(aim)/70); }
+        { const rr = Math.min(from.distanceTo(aim)*0.012, 2.2)*Math.sqrt(Math.random()), ra = Math.random()*6.2832, ax = aim.x + Math.cos(ra)*rr, az = aim.z + Math.sin(ra)*rr;
+          SHOT_FAR = 1; shoot(from.x, from.y, from.z, ax, az, 170, gau ? 2.9 : 1.6, gau ? 2 : 1, 5, 2.4, 0, P.tc & 2 ? 3 : 2, aim.y < 0.6 ? -0.05 : aim.y); SHOT_FAR = 0; }
         if ((P.tc & 3) === 0 && P.enemies.length){ const d = (heliSim() ? hmNoseDir(_gd) : _gd.copy(aim).sub(from)).normalize();
           for (const e of P.enemies){ if (e.hp <= 0) continue; const rel = _gq.copy(e.pos).sub(from), along = rel.dot(d); if (along > 0 && along < 90 && rel.addScaledVector(d, -along).length() < 2.2){ hmHitHelis(e.pos, 0, 2.4); break; } } }
       }
@@ -6292,13 +6355,12 @@ function hmUpdate(dt){
   } else if (!dap){
     // Apache 30mm: keeps reloading even when you let go of the trigger
     if (P.firing || P.reload > 0 || P.mag < CANNON.mag){
-      if (!P.firing && P.reload <= 0){ P.reload = CANNON.reload*(1 - P.mag/CANNON.mag); P.mag = 0; }   // top up the mag between bursts
       if (cannonTick(P, P.firing || P.reload > 0 ? dt : 0) && P.firing){ const d = hmGunDir(new THREE.Vector3()); d.x += rnd(-0.012, 0.012); d.y += rnd(-0.012, 0.012); d.z += rnd(-0.012, 0.012); hmShoot('cannon', P.gun, d, 85); if (!hsShot('ap', '1p', '30mmb', 0.95)) sfx('cannon30', 0.9, 0, true); }
     }
   } else {
     // DAP: starboard crew-chief-window M134, 4,000 rpm, tracer every fourth round
     const g = P.dgun;
-    P.th += P.sx*1.1*dt; P.ph += P.sy*0.8*dt; [P.th, P.ph] = dapLimits(P.th, P.ph);
+    P.th += P.sx*1.1*dt*(P.gside || 1); P.ph += P.sy*0.8*dt; [P.th, P.ph] = dapLimits(P.th, P.ph);
     aimGun(g, g.side, P.th, P.ph); P.heli.g.updateMatrixWorld(true);
     if (P.firing){
       while (P.gunT <= 0){
@@ -6326,16 +6388,16 @@ function hmUpdate(dt){
       sh.age = (sh.age || 0) + dt;
       if (sh.follow && !tgt && !sh.cosmetic){ if (P.seat === 'pilot') sh.to = hmAimPoint(sh.to || new THREE.Vector3()); if (sh.age > 0.15) steerVel(sh.v, _shA.copy(sh.to).sub(sh.m.position), GUIDE_RATE.hellfire, dt); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v)); }
       else { const want = sh.to.clone().sub(sh.m.position).normalize().multiplyScalar(30); sh.v.lerp(want, Math.min(1, dt*3.5)); sh.m.lookAt(sh.m.position.clone().add(sh.v)); }
-      if (Math.random() < 0.7) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.6);
+      if (Math.random() < 0.3) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.4);
     } else if (sh.kind === 'rocket'){
       // aim-guided: leaves along the nose, then bends toward the point under the centre dot
       // guided option: keeps steering for the point under the HUD reticle as the helicopter moves
       sh.age = (sh.age || 0) + dt;
       if (sh.follow && !sh.cosmetic && P.seat === 'pilot' && sh.age > 0.12){ const a = hmAimPoint(_shA); steerVel(sh.v, a.sub(sh.m.position), GUIDE_RATE[sh.follow] || 0.85, dt); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v)); }
-      if (Math.random() < 0.5) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.5);
+      if (Math.random() < 0.2) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.35);
     } else if (sh.kind === 'agm'){
       const want = sh.to.clone().sub(sh.m.position).normalize().multiplyScalar(36); sh.v.lerp(want, Math.min(1, dt*2.5)); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v));
-      if (Math.random() < 0.8) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.7);
+      if (Math.random() < 0.35) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.45);
     }
     sh.m.position.addScaledVector(sh.v, dt); sh.life -= dt;
     const p = sh.m.position;
@@ -6349,7 +6411,7 @@ function hmUpdate(dt){
       const before = kills, cm = sh.cosmetic ? 0 : 1;
       if (p.y < 6 && sh.cosmetic) explode(p.x, p.z, sh.kind === 'cannon' ? CANNON.r : 3, 0, true);
       else if (p.y < 6){
-        if (sh.kind === 'cannon') explode(p.x, p.z, CANNON.r, CANNON.dmg*1.1*dmgMul, true);
+        if (sh.kind === 'cannon') explode(p.x, p.z, cannonR(), CANNON.dmg*1.1*dmgMul, true);
         else if (sh.kind === 'rocket') explode(p.x, p.z, 3.0*(sh.aoeK || 1), 27*(sh.dmgK || 1)*dmgMul, true);
         else if (sh.kind === 'agm'){ explode(p.x, p.z, AGM.r, AGM.dmg*dmgMul); explode(p.x + rnd(-2, 2), p.z + rnd(-2, 2), AGM.r*0.6, 0, true); shake = Math.max(shake, 0.5); }
         else explode(p.x, p.z, 4.4, 150*dmgMul);
@@ -6478,7 +6540,7 @@ function chaseCam(P, g, apacheFrame, ch, dt, far){
 }
 // third-person framing from the BF clips: from behind, the rotor disc spans about half the screen width and the airframe
 // sits just below centre, seen from ~12° above. The camera trails heading and pitch with a short lag, then lines back up
-const CHASE = {apache: {d: 8.3, h: 1.75}, dap: {d: 9.2, h: 1.95}, df: {d: 7.9, h: 1.7}, little: {d: 6.4, h: 1.35}, fov: 45, tilt: 0.12, follow: 2.6, pmax: 1.35, arc: 0.75};
+const CHASE = {apache: {d: 8.3, h: 1.75}, dap: {d: 9.2, h: 1.95}, df: {d: 7.9, h: 1.7}, little: {d: 6.4, h: 1.35}, fov: 45, tilt: 0.12, follow: 3.8, pmax: 1.35, arc: 0.75};
 const _aimD = new THREE.Vector3(), _hmF = new THREE.Vector3(), _noseV = new THREE.Vector3(), _aimR = new THREE.Raycaster(), _aimC = new THREE.Vector2(0, 0);
 // classic flight: nose direction with pitch (where unguided rounds go) and the aim point under the screen-centre dot
 function simNose(P, out, dep = 0){
@@ -6491,6 +6553,17 @@ function hmNoseDir(out){ return simNose(HM, out, ROCKET_DEP); }
 // where the selected weapon's rounds actually land: they leave with the helicopter's own velocity, so the impact point
 // slides in the direction you're moving (the HUD I-beam shows it; the fixed cross is the nose)
 const HM_RSPD = {little: 170, apache: 42, dap: 42};
+const RK_MAG = {apache: 7, dap: 4, reload: 6};
+// V85: where an unguided rocket really comes down: it leaves the pods toward the aim point at 42 m/s plus the helicopter's own
+// velocity and flies straight, so the I-beam sits on that exact spot instead of an estimate
+const _rkF = new THREE.Vector3(), _rkV = new THREE.Vector3();
+function hmRocketImpact(out){
+  hmAimPoint(out); if (!heliSim() || !HM.vel) return out;
+  _rkF.copy(HM.pos); _rkF.y -= 0.7*HB;
+  _rkV.copy(out).sub(_rkF).normalize().multiplyScalar(42).add(HM.vel);
+  if (_rkV.y > -0.5) return out;
+  return out.copy(_rkF).addScaledVector(_rkV, (_rkF.y - 0.35)/(-_rkV.y));
+}
 function hmImpact(out, spd){
   hmAimPoint(out); if (!HM.vel || !heliSim()) return out;
   const v = spd || (HM.wsel === 'sec' ? 62 : HM_RSPD[HM.type] || 42), tof = Math.min(4, HM.pos.distanceTo(out)/v);
@@ -6619,7 +6692,8 @@ function hmCamera(dt){
   $('hmMissile').disabled = agmSeat ? P.agmCd > 0 : !(P.type === 'little' ? P.rockets : P.hellfire) || P.hfCd > 0 || P.volley > 0; $('hmFlare').disabled = !P.flares || P.flCd > 0;
   $('hmSound').textContent = SETTINGS.sound ? '🔊' : '🔇';
   if (P.seat === 'pilot'){
-    const ap = (heliSim() ? hmImpact(_hmV) : hmBoresight(_hmV)).project(camera), lb = P.type === 'little', hs = P.vel ? Math.hypot(P.vel.x, P.vel.z) : Math.abs(P.speed || 0);
+    const lb0 = P.type === 'little', ap = (heliSim() ? (lb0 || P.wsel === 'sec' || gPri(P.type) ? hmAimPoint(_hmV) : hmRocketImpact(_hmV)) : hmBoresight(_hmV)).project(camera), lb = lb0, hs = P.vel ? Math.hypot(P.vel.x, P.vel.z) : Math.abs(P.speed || 0);
+    { const k = 1 - Math.exp(-dt*12); if (!P.apS || Math.abs(ap.x - P.apS.x) > 0.5 || Math.abs(ap.y - P.apS.y) > 0.5) P.apS = {x: ap.x, y: ap.y}; else { P.apS.x += (ap.x - P.apS.x)*k; P.apS.y += (ap.y - P.apS.y)*k; } ap.x = P.apS.x; ap.y = P.apS.y; }
     const msl = P.wsel === 'sec' && !lb, rk = P.rockets > 0 ? 'RDY' : 'RLD', g = gPri(P.type) && heliSim() ? 'GUID ' : '', g2 = gSec(P.type) && heliSim() ? 'GUID ' : '';
     bfHud({cockpit: P.view === 'cockpit', frame: P.view === 'cockpit' && lb, aim: ap.z < 1 && Math.abs(ap.x) < 1.3 && Math.abs(ap.y) < 1.3 ? ap : null, msl,
       hdg: P.yaw*57.2958, alt: P.pos.y*3.3, kts: P.vel ? P.vel.length()*4.86 : hs*4.86, pitch: hudAtt(P).p, bank: hudAtt(P).b, flr: P.flares > 0 && P.flCd <= 0 ? 'RDY' : 'CDN',
@@ -7837,7 +7911,7 @@ function pauseGame(){
   if (state !== 'play') return;
   if (document.pointerLockElement && document.exitPointerLock) document.exitPointerLock();
   pausedFrom = state; state = 'paused'; $('pause').hidden = false;
-  $('pauseNote').textContent = MODE === 'heli' ? 'The Apache is holding its hover.' : 'Your run is saved each time you clear a wave' + (RUN ? ' (last: wave ' + RUN.wave + ').' : '.');
+  $('pauseNote').textContent = MODE === 'heli' ? 'The ' + ({apache: 'Apache', dap: 'Black Hawk', little: 'Little Bird'}[HM.type] || 'helicopter') + ' is holding its hover.' : 'Your run is saved each time you clear a wave' + (RUN ? ' (last: wave ' + RUN.wave + ').' : '.');
 }
 function resumeGame(){ $('pause').hidden = true; if (state === 'paused') state = pausedFrom || 'play'; last = performance.now(); flyRecapture(); }
 $('pauseBtn').onclick = pauseGame;
@@ -8059,7 +8133,17 @@ function gunSightHud(gun){
 }
 
 // ---- HUD settings ----
-SETTINGS.hud = Object.assign({dot: 1, cdot: 1, radar: true}, SETTINGS.hud || {}); SETTINGS.hud.trSize = 0.55; SETTINGS.hud.trQty = 0.85;   // tracers: small, dense, fast (not a setting)
+SETTINGS.hud = Object.assign({dot: 1, cdot: 1, radar: true}, SETTINGS.hud || {});
+SETTINGS.gunSnd = SETTINGS.gunSnd || {};
+for (const [k] of GUN_SND_LIST) SETTINGS.gunSnd[k] = Object.assign({mode: k === 'minigun' ? 'real' : 'synth', vol: k === 'pistol' ? 0.55 : 1, mute: false}, SETTINGS.gunSnd[k] || {});
+{ const box = $('gunSndSet'); let h = '';
+  for (const [k, n] of GUN_SND_LIST) h += `<b>${n}</b><select data-g="${k}" data-f="mode"><option value="real">Recorded</option><option value="synth">Original</option></select><input type="range" min="0" max="1.5" step="0.05" data-g="${k}" data-f="vol" aria-label="${n} volume"><label><input type="checkbox" data-g="${k}" data-f="mute">Mute</label>`;
+  box.innerHTML = h;
+  for (const el of box.querySelectorAll('[data-g]')){ const G = SETTINGS.gunSnd[el.dataset.g], f = el.dataset.f;
+    if (f === 'mute') el.checked = !!G.mute; else el.value = G[f];
+    el.addEventListener(f === 'vol' ? 'input' : 'change', () => { G[f] = f === 'mute' ? el.checked : f === 'vol' ? +el.value : el.value; saveSettings(); if (f !== 'mute' && !G.mute){ smpLoad(); sfx(el.dataset.g === 'minigun' ? 'minigun' : el.dataset.g, 0.8); } }); } }
+for (const [id, k] of [['trSize', 'trSize'], ['trQty', 'trQty'], ['trSpeed', 'trSpeed'], ['trDens', 'trDens']]){ const el = $(id); queueMicrotask(() => { el.value = SETTINGS.hud[k]; }); el.addEventListener('input', () => { SETTINGS.hud[k] = +el.value; saveSettings(); }); }
+if (!SETTINGS.hud.v85){ SETTINGS.hud.v85 = true; Object.assign(SETTINGS.hud, {trSize: 0.45, trQty: 0.9, trSpeed: 1.6, trDens: matchMedia('(pointer: fine)').matches ? 3 : 1}); }   // V85: tracers are settings again
 // ---- air radar: a green sweep, heading-up; enemy aircraft and incoming missiles light up as the beam passes ----
 const RAD = {cv: $('radar'), x: null, a: 0, on: false, range: 140};
 function radarHide(){ if (RAD.on){ RAD.on = false; RAD.cv.classList.remove('on'); } }
@@ -8125,11 +8209,11 @@ function apGunnerHud(rng, pitch, bank){
 }
 // ---- tracer preview: a burst from the bottom-left corner at the size and amount you picked ----
 const TPV = {cv: $('trPrev'), x: null, b: [], t: 0};
-function trPreviewTick(dt){ return;
+function trPreviewTick(dt){ if (!TPV.cv) return;
   if ($('settings').hidden || !document.querySelector('.bfPane.on[data-pane="hud"]')) return;
   const c = TPV.cv; if (!TPV.x) TPV.x = c.getContext('2d'); const x = TPV.x, W = c.width, H = c.height, S = SETTINGS.hud;
   TPV.t -= dt;
-  while (TPV.t <= 0){ TPV.t += 0.03; const a = -0.32 + rnd(-0.05, 0.05); TPV.b.push({x: 18, y: H - 18, vx: Math.cos(a)*520, vy: Math.sin(a)*520, tr: Math.random() < S.trQty, life: 0.75}); }
+  while (TPV.t <= 0){ TPV.t += 0.03/(S.trDens || 1); const a = -0.32 + rnd(-0.05, 0.05), sp = 420*(S.trSpeed || 1); TPV.b.push({x: 18, y: H - 18, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, tr: Math.random() < S.trQty, life: 1.2}); }
   x.fillStyle = 'rgba(10,16,21,.55)'; x.fillRect(0, 0, W, H);
   x.fillStyle = '#2b3a33'; x.fillRect(0, H - 10, W, 10);
   for (let k = TPV.b.length - 1; k >= 0; k--){
@@ -8169,7 +8253,7 @@ const LO_OPTS = {
         grkt: {name: 'Guided rockets', desc: 'Leave forward of the nose, then turn toward the reticle at a set rate. Too fast or too sharp and they miss.'},
         m134: {name: 'Twin M134', desc: 'Two fixed miniguns on the skids.'}},
   sec: {hellfire: {name: 'Hellfire', desc: 'Unguided against the ground: straight to the reticle spot. Locks enemy helicopters.'},
-        ghf: {name: 'Aim-guided Hellfire', desc: 'Leaves forward, then steers for wherever your reticle is, as it moves. Turns slower than a rocket.'},
+        ghf: {name: 'TOW', desc: 'Wire-guided: leaves forward, then flies wherever you keep the reticle. Turns slower than a rocket.'},
         volley: {name: 'Rocket volley', desc: '14 rockets in under a second, straight to the reticle spot.'},
         gvolley: {name: 'Guided volley', desc: '14 rockets that curve toward the reticle.'}},
   cm: {flares: {name: 'Flares', desc: 'Six pairs over 1.75 seconds. Missiles go for the newest pair.'}},
@@ -8187,7 +8271,7 @@ Object.assign(LO_OPTS.pri, {
   heavy: {name: 'Heavy rockets', sub: '127mm FFAR', desc: 'Unguided. Smaller volleys, but each rocket hits much harder with a bigger blast.'},
   gau19: {name: 'Heavy rotary MG', sub: '.50 cal rotary', desc: 'Two .50 cal rotary guns: slower than the M134, but every round hits far harder.'}});
 LO_OPTS.pri.hydra.sub = '70mm FFAR'; LO_OPTS.pri.grkt.sub = '70mm PGM'; LO_OPTS.pri.m134.sub = '7.62mm minigun';
-LO_OPTS.sec.hellfire.sub = 'AGM-114'; LO_OPTS.sec.ghf.sub = 'AGM-114, aim-guided'; LO_OPTS.sec.volley.sub = '70mm FFAR'; LO_OPTS.sec.gvolley.sub = '70mm PGM';
+LO_OPTS.sec.hellfire.sub = 'AGM-114'; LO_OPTS.sec.ghf.sub = 'BGM-71, wire-guided'; LO_OPTS.sec.volley.sub = '70mm FFAR'; LO_OPTS.sec.gvolley.sub = '70mm PGM';
 Object.assign(LO_OPTS.up, {
   warheads: {name: 'Heavy warheads', desc: 'Bigger rocket blasts. The aircraft is slightly less agile.'},
   durable: {name: 'Reactive armor', desc: 'Stays in the fight 40% longer.'},
@@ -8213,6 +8297,7 @@ Object.assign(LO_SLOTS, {technical: {gun: ['cal50', 'm134', 'mk19'], up: ['none'
 // rocket modifiers from the loadout: heavy rockets hit harder and fire slower; heavy warheads widen the blast
 function loRkt(t){ const L = SETTINGS.loadout[t] || {}, heavy = L.pri === 'heavy'; return {dmgK: heavy ? 2.2 : 1, aoeK: (heavy ? 1.4 : 1)*(L.up === 'warheads' ? 1.35 : 1), rateK: heavy ? 2.2 : 1}; }
 SETTINGS.loadout = SETTINGS.loadout || {};
+if (!SETTINGS.v85dap){ SETTINGS.v85dap = true; SETTINGS.loadout.dap = Object.assign({}, SETTINGS.loadout.dap || {}, {sec: 'ghf'}); }   // V85: the DAP carries TOWs
 for (const [t, sl] of Object.entries(LO_SLOTS)){ SETTINGS.loadout[t] = Object.assign({}, ...Object.entries(sl).map(([k, o]) => ({[k]: o[0]})), SETTINGS.loadout[t] || {});
   for (const k in sl) if (!sl[k].includes(SETTINGS.loadout[t][k])) SETTINGS.loadout[t][k] = sl[k][0]; }
 if (SETTINGS.guided){ for (const t of ['apache', 'dap']){ SETTINGS.loadout[t].pri = 'grkt'; SETTINGS.loadout[t].sec = 'ghf'; } SETTINGS.loadout.little.sec = 'gvolley'; delete SETTINGS.guided; }
@@ -8616,6 +8701,17 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V85', ['Apache 30mm: 12-round magazine, one round every 0.1 s and a 1.3 s reload, measured from your BF6 clip; it no longer tops up between bursts',
+           'Apache rockets: 7 per load, then a reload. Black Hawk / DAP: 4 per load with a bigger blast and the Apache rocket sound',
+           'Black Hawk secondary is now the TOW: steer it with your reticle. The Apache gunner AGM uses the TOW recording',
+           'Black Hawk left door gun no longer turns the wrong way; gunner mouse aim is calmer',
+           'Third-person rocket reticle: the I-beam now sits exactly where unguided rockets land, and sways less',
+           'Little Bird miniguns converge on the reticle; its cockpit minigun recording now plays',
+           'Tracers: settings are back (size, share, speed, extra density). Rounds fly on far past the map, kick up dust where they land up close, and the burst stops spreading past a set ring',
+           'Audio: your own guns play dry in first person and the rotor ducks while you fire, Battlefield-style; the long hot-barrel hiss after a burst is gone; louder first-person rockets; Black Hawk cabin flares use the cabin take; outside door guns use the Little Bird minigun recording',
+           'New Settings > Audio > Weapon sounds: recorded or original sound, volume or mute for each squad gun',
+           'Rounds that miss the gates no longer die at the second light pole',
+           'Smaller missiles with lighter smoke trails']],
   ['V84', ['PC: new Graphics quality setting. Ultra adds bloom, film colour grading, multisample anti-aliasing, 4K shadows, sharper textures and a longer view',
            'PC: Bloom strength and Film colour sliders in Settings > Graphics',
            'PC: touch sticks, on-screen buttons and the pen, gyro and touch settings are hidden; keyboard and mouse only',

@@ -70,6 +70,27 @@ body.pc .streak span{font-size:11px}
 @keyframes pop{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-90%) scale(1)}}
 .overlay{position:absolute;inset:0;display:flex;padding:16px;background:rgba(11,42,60,.5);overflow-y:auto;z-index:20}
 #heliPick{z-index:30}
+#mp{z-index:31}
+.mpCard{gap:12px}
+.mpField{display:flex;flex-direction:column;gap:4px;text-align:left;font-weight:800;font-size:13px}
+.mpField input,.mpField select,#mpModeSel,.mpJoin input{font:inherit;font-size:16px;padding:9px 10px;border-radius:10px;border:2px solid rgba(0,0,0,.15);background:#fff}
+#mpStart{display:flex;flex-direction:column;gap:10px}
+.mpJoin{display:grid;grid-template-columns:1fr auto;gap:8px}
+.mpJoin input{text-transform:uppercase;letter-spacing:6px;text-align:center;font-weight:900}
+.mpRoom{font-size:15px}.mpRoom b{font-size:30px;letter-spacing:8px;display:block}
+.mpMode{display:flex;flex-direction:column;gap:4px}.mpMode small{opacity:.8}
+#mpList{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;text-align:left}
+#mpList li{padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.06);border-left:6px solid var(--c,#999);display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+#mpList li i{font-style:normal;font-size:11px;font-weight:900;background:rgba(0,0,0,.12);padding:1px 6px;border-radius:6px}
+#mpList li span{margin-left:auto;font-size:12px;opacity:.8}
+#mpList li.open{opacity:.45;border-left-color:transparent}
+.mpStatus{min-height:1.2em}.mpStatus.bad{color:#c0392b;font-weight:800}
+#mpHud{position:absolute;left:50%;top:calc(42px + env(safe-area-inset-top, 0px));transform:translateX(-50%);z-index:6;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:92vw;padding:4px 10px;border-radius:10px;background:rgba(0,0,0,.42);color:#fff;font:800 12px/1.4 var(--body);pointer-events:none}
+#mpHud .cash{color:#ffe08a}
+#mpCmd{position:absolute;right:10px;bottom:calc(10px + env(safe-area-inset-bottom, 0px));z-index:7;width:min(320px,calc(100vw - 20px));background:rgba(8,20,30,.82);border-radius:12px;padding:10px;color:#fff;display:flex;flex-direction:column;gap:8px}
+.mpCmdTop{display:flex;justify-content:space-between;align-items:center;font-weight:800}.mpCmdTop b{font-size:20px;color:#ffe08a}
+#mpCmdBtns{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+#mpCmdBtns .btn{padding:6px 2px;font-size:12px;min-height:0}#mpCmdBtns .btn small{display:block;font-size:11px;opacity:.85}
 .subh{margin:12px 0 4px;font-size:15px}
 .fine{font-size:12px;opacity:.75;margin:6px 0 0}
 #penTapSet select{font:inherit;font-size:13px;padding:4px 6px;border-radius:6px;max-width:140px}
@@ -501,6 +522,7 @@ body.pc .titleFs{display:none}
       <button class="btn" id="continueBtn" type="button" hidden>Continue<small id="continueInfo">Wave 1</small></button>
       <button class="btn" id="newBtn" type="button">New game<small id="newInfo">Defend the pier</small></button>
       <button class="btn alt" id="heliBtn" type="button">Gunship<small id="heliInfo">Fly the Apache or the DAP yourself</small></button>
+      <button class="btn alt" id="mpBtn" type="button">Multiplayer<small>Up to 4 players · co-op, sky duels, wave commander</small></button>
       <div class="menuRow"><button class="btn gold" id="recruitBtn" type="button">Recruit<small><span class="gemN">0</span> 💎</small></button><button class="btn gold" id="squadBtn" type="button">Squad<small id="squadInfo">Harbor Guard</small></button></div>
       <div class="menuRow"><button class="btn ghost" id="settingsBtn" type="button">Settings</button><button class="btn ghost" id="howBtn" type="button">How to play</button></div>
     </div>
@@ -547,6 +569,7 @@ body.pc .titleFs{display:none}
         <h3 class="subh">Credits</h3>
         <p class="fine">Sound effects by Filip_Hancho_Unltd. · Instagram: <a href="https://www.instagram.com/filip_hancho/" target="_blank" rel="noopener">@filip_hancho</a></p>
         <p class="fine">Little Bird, Black Hawk, Apache and minigun recordings: recorded and cut by the Ad Lords developer</p>
+        <p class="fine">Animations: Universal Animation Library by Quaternius (CC0) · Character White rigged with Mixamo</p>
         <p class="fine" id="appVer"></p>
       </section>
       <section class="bfPane" data-pane="ctrl">
@@ -628,6 +651,7 @@ body.pc .titleFs{display:none}
           <label for="sHq">Sharp graphics</label><input class="sw" type="checkbox" id="sHq">
           <label for="sRadar">Air radar in helicopters</label><input class="sw" type="checkbox" id="sRadar">
           <label for="sLite">Light far crowd (faster, rougher)</label><input class="sw" type="checkbox" id="sLite">
+          <label for="sMocap">Motion-captured animation (applies on restart)</label><input class="sw" type="checkbox" id="sMocap">
           <label for="sPc">PC mode (landscape, sharper)</label><select id="sPc"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select>
         </div>
       </section>
@@ -695,6 +719,32 @@ body.pc .titleFs{display:none}
       <div class="bfBody" id="loSlots"></div>
     </div>
   </div>
+  <div class="overlay" id="mp" hidden>
+    <div class="card mpCard">
+      <div class="tag">Multiplayer</div>
+      <h2>Play together</h2>
+      <label class="mpField">Your name<input id="mpName" maxlength="14" autocomplete="off" spellcheck="false"></label>
+      <div id="mpStart">
+        <label class="mpField">Mode<select id="mpHostMode"></select></label>
+        <button class="btn" id="mpHostBtn" type="button">Host a room<small>You get a 4-letter code to share</small></button>
+        <div class="mpJoin"><input id="mpJoinCode" maxlength="4" placeholder="CODE" autocomplete="off" spellcheck="false"><button class="btn alt" id="mpJoinBtn" type="button">Join</button></div>
+      </div>
+      <div id="mpLobby" hidden>
+        <div class="mpRoom">Room <b id="mpCode"></b></div>
+        <div class="mpMode"><b id="mpModeName"></b><small id="mpModeDesc"></small><select id="mpModeSel"></select></div>
+        <ul id="mpList"></ul>
+        <label class="mpField" id="mpHeliRow">Your aircraft<select id="mpHeli"><option value="apache">AH-64 Apache</option><option value="dap">MH-60L DAP</option><option value="little">AH-6 Little Bird</option></select></label>
+        <label class="mpField" id="mpTeamRow">Your team<select id="mpTeam"><option value="0">Gold</option><option value="1">Blue</option></select></label>
+        <label class="mpField" id="mpSideRow">Your side<select id="mpSide"><option value="def">Defender (hold the pier)</option><option value="cmd">Commander (send the horde)</option></select></label>
+        <button class="btn" id="mpGo" type="button">Start</button>
+        <button class="btn soft" id="mpLeave" type="button">Leave room</button>
+      </div>
+      <p class="fine mpStatus" id="mpStatus"></p>
+      <button class="btn ghost" id="mpBack" type="button">Back</button>
+    </div>
+  </div>
+  <div id="mpHud" hidden></div>
+  <div id="mpCmd" hidden><div class="mpCmdTop">Budget <b id="mpCash">0</b><label>Lane <select id="mpLane"><option value="-1">Left</option><option value="0" selected>Middle</option><option value="1">Right</option></select></label></div><div id="mpCmdBtns"></div></div>
   <div class="overlay" id="heliPick" hidden>
     <div class="card">
       <div class="tag">Gunship</div>
@@ -914,7 +964,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V77';
+const GAME_VERSION = 'V78';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -1372,7 +1422,8 @@ function hsTick(dt){
   if (live && MODE === 'heli' && HM.on){
     const P = HM, persp = P.seat === 'pilot' && P.view === 'chase' ? '3p' : '1p', hs = P.vel ? Math.hypot(P.vel.x, P.vel.z) : Math.abs(P.speed || 0);
     em.push({id: 'hm', kind: HKIND(P.type), persp, pos: null, st: {load: clamp(Math.max(0, P.coll || P.climb || 0)*0.8 + (P.loadA || 0)*0.6, 0, 1), dmg: clamp(1 - (P.hull ?? 100)/100, 0, 1), yaw: clamp((P.wy || P.sx || 0)/1.1, -1, 1), speed: hs*4.86/120}});
-    for (const e of P.enemies || []) if (e.hp > 0 && e.pos) em.push({id: 'ebh' + e.uid, kind: 'bh', persp: '3p', pos: e.pos, st: {load: 0.3}});
+    for (const e of P.enemies || []) if (e.hp > 0 && e.pos) em.push({id: 'eh' + (e.uid || (e.uid = ++vehUid)), kind: e.remote ? HKIND(e.ty) : e.kind === 'bh' ? 'bh' : 'ap', persp: '3p', pos: e.pos, st: {load: 0.3}});
+    for (const A of NET.av.values()) if (A.friend && A.e && A.e.hp > 0) em.push({id: 'mp' + A.e.slot, kind: HKIND(A.e.ty), persp: '3p', pos: A.e.pos, st: {load: 0.3}});
   } else if (live && MODE === 'def'){
     for (const v of vehicles){
       if (v.done || !(v.type === 'blackhawk' || v.type === 'dap' || v.type === 'little') || !v.g) continue;
@@ -2078,7 +2129,7 @@ function loadSkinModels(name){
   if (SKIN_LOAD.sets[name] || SKIN_LOAD.busy[name] || !SKIN_LOAD.load) return;
   SKIN_LOAD.busy[name] = true; toast('Loading the new enemies…', '#e8fbff');
   const set = {crowd: {}, boss: {}};
-  Promise.all(Object.entries(S_.models).map(([role, url]) => SKIN_LOAD.load(url).then(g => { try { buildRole(role, g, set.crowd, set.boss); } catch(e){ console.warn('skin model failed', role, e); } })))
+  Promise.all(Object.entries(S_.models).map(([role, url]) => SKIN_LOAD.load(url).then(g => ualLoad().then(() => g)).then(g => { try { buildRole(role, g, set.crowd, set.boss); } catch(e){ console.warn('skin model failed', role, e); } })))
     .then(() => { SKIN_LOAD.sets[name] = set; SKIN_LOAD.busy[name] = false; for (const r in S_.cards || {}){ const im = new Image(); im.src = S_.cards[r]; } if (skinCur === name) applyEnemySkin(name); })
     .catch(e => { SKIN_LOAD.busy[name] = false; console.warn(e); toast('Could not load that enemy look', '#ffd2cc'); });
 }
@@ -2639,13 +2690,22 @@ function addGunner(){
   if (gunners.length >= 5) return;
   const g = new THREE.Group();
   let body;
-  if (loadedParts.player){ body = fitModel(loadedParts.player, MODEL_H*BODY, 'y'); body.rotation.y = Math.PI; body.traverse(o => { if (o.isMesh){ o.castShadow = true; o.material = new THREE.MeshToonMaterial({map: o.material.map, gradientMap: gradSoft, side: THREE.DoubleSide, color: new THREE.Color(0.8, 0.8, 0.82)}); } }); }
+  let anim = null;
+  if (loadedParts.playerAnim && SETTINGS.mocap !== false){
+    const A = loadedParts.playerAnim, inst = skClone(A.src); inst.scale.multiplyScalar(A.k); inst.position.copy(A.off);
+    body = new THREE.Group(); body.add(inst); body.rotation.y = Math.PI;
+    inst.traverse(o => { if (o.isMesh){ o.castShadow = true; o.frustumCulled = false; const mm = o.material; o.material = new THREE.MeshToonMaterial({map: mm.map, gradientMap: gradSoft, side: THREE.DoubleSide, skinning: !!o.isSkinnedMesh, color: mm.map ? new THREE.Color(0.8, 0.8, 0.82) : mm.color.clone()}); } });
+    const mixer = new THREE.AnimationMixer(inst), idle = mixer.clipAction(A.clips.idle), shot = mixer.clipAction(A.clips.fire);
+    idle.play(); shot.play(); shot.setEffectiveWeight(0); idle.time = Math.random()*A.clips.idle.duration;
+    anim = {mixer, idle, shot, w: 0, hand: A.hand ? inst.getObjectByName(A.hand) : null};
+  }
+  else if (loadedParts.player){ body = fitModel(loadedParts.player, MODEL_H*BODY, 'y'); body.rotation.y = Math.PI; body.traverse(o => { if (o.isMesh){ o.castShadow = true; const mm = o.material; o.material = new THREE.MeshToonMaterial({map: mm.map, gradientMap: gradSoft, side: THREE.DoubleSide, color: mm.map ? new THREE.Color(0.8, 0.8, 0.82) : mm.color.clone()}); } }); }
   else { body = new THREE.Mesh(gunnerGeoHi, CHAR); body.rotation.y = Math.PI; body.scale.setScalar(BODY); body.castShadow = true; }
   g.add(body);
   const flash = new THREE.Sprite(new THREE.SpriteMaterial({map: flashTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true}));
   flash.visible = false; g.add(flash);
   g.scale.setScalar(GS); scene.add(g);
-  gunners.push({g, body, flash, gun: null, gunType: '', ph: Math.random()*6, flashT: 0}); syncGuns();
+  gunners.push({g, body, flash, gun: null, gunType: '', ph: Math.random()*6, flashT: 0, anim, lastShot: -9}); syncGuns();
 }
 function syncGuns(){
   for (const gn of gunners){
@@ -2798,6 +2858,144 @@ function instMesh(geo, mat, cap){
   m.frustumCulled = false; m.count = 0; m.visible = false; scene.add(m); m.userData.n = 0; return m;
 }
 const BOSS = {};
+// ======================================================================
+// MOCAP (V78): the Universal Animation Library (Quaternius, CC0) retargeted onto our own rigs.
+// The library's clips are stored as bone rotations (assets/ual.json). Retargeting is by direction:
+// every limb segment of our rig is turned to point the same way the library's does, so it works
+// across different bone layouts and rest poses (A-pose, T-pose, chibi proportions). The hips and
+// head copy the library's rotation change instead.
+// ======================================================================
+const UAL = {data: null, loading: null, B: null, idx: null, align: new THREE.Quaternion(), rest: null};
+function ualLoad(){
+  if (!UAL.loading) UAL.loading = fetch('assets/ual.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(d => { UAL.data = d; ualPrep(); return d; }).catch(e => { console.warn('Animation library unavailable, using the built-in walk', e); return null; });
+  return UAL.loading;
+}
+const _uM = new THREE.Matrix4(), _uQ = new THREE.Quaternion(), _uQ2 = new THREE.Quaternion(), _uV = new THREE.Vector3(), _uV2 = new THREE.Vector3(), _uS = new THREE.Vector3(1, 1, 1), _uY = new THREE.Vector3(0, 1, 0);
+function ualPrep(){
+  const D = UAL.data; UAL.B = D.bones; UAL.idx = {}; D.bones.forEach((b, i) => { UAL.idx[b.n] = i; b.pi = b.p ? D.bones.findIndex(o => o.n === b.p) : -1; });
+  UAL.base = new THREE.Matrix4().fromArray(D.base);
+  UAL.align.identity();
+  const R = ualPose(null, 0);
+  // face +z with the left side on +x, like our rigs
+  const L = R.P[UAL.idx.thigh_l], Rt = R.P[UAL.idx.thigh_r], lr = _uV.copy(L).sub(Rt); lr.y = 0; lr.normalize();
+  const face = _uV2.crossVectors(lr, _uY).normalize(), ang = Math.atan2(face.x, face.z);
+  UAL.align.setFromAxisAngle(_uY, -ang);
+  UAL.rest = ualPose(null, 0);
+}
+// the library skeleton at time t of a clip (null = bind pose): world positions P and rotations Q, already turned to face +z
+function ualPose(clip, t, out){
+  const D = UAL.data, B = D.bones, n = B.length;
+  out = out || {P: B.map(() => new THREE.Vector3()), Q: B.map(() => new THREE.Quaternion()), W: B.map(() => new THREE.Matrix4())};
+  let f0 = 0, f1 = 0, u = 0;
+  if (clip){ const fr = ((t % clip.dur) + clip.dur) % clip.dur*D.fps; f0 = Math.min(clip.n - 1, Math.floor(fr)); f1 = Math.min(clip.n - 1, f0 + 1); u = fr - f0; }
+  for (let i = 0; i < n; i++){
+    const b = B[i], q = clip && clip.q[b.n], p = clip && clip.p[b.n];
+    if (q){ _uQ.fromArray(q, f0*4); _uQ2.fromArray(q, f1*4); _uQ.slerp(_uQ2, u); } else _uQ.fromArray(b.r);
+    if (p){ _uV.fromArray(p, f0*3); _uV2.fromArray(p, f1*3); _uV.lerp(_uV2, u); } else _uV.fromArray(b.t);
+    _uM.compose(_uV, _uQ, _uS.fromArray(b.s));
+    out.W[i].multiplyMatrices(b.pi >= 0 ? out.W[b.pi] : UAL.base, _uM);
+  }
+  for (let i = 0; i < n; i++){ out.W[i].decompose(out.P[i], out.Q[i], _uV2); out.P[i].applyQuaternion(UAL.align); out.Q[i].premultiply(UAL.align); }
+  return out;
+}
+// which of our bones play which part, found from the rig analyzeRig() already made
+function ualMap(rig){
+  if (rig.ual) return rig.ual;
+  for (const b of rig.allBones || []) if (!b.userData.p0) b.userData.p0 = b.position.clone();
+  const isB = o => o && o.isBone, kids = b => b ? b.children.filter(isB) : [];
+  const far = b => { let m = 0; b.traverse(o => { if (o.isBone) m = Math.max(m, Math.abs(o.userData.p.x)); }); return m; };
+  const low = b => { let m = 9; b.traverse(o => { if (o.isBone) m = Math.min(m, o.userData.p.y); }); return m; };
+  const chain = (b, score) => { const L = [b]; let c = b; for (let k = 0; k < 6; k++){ const ch = kids(c); if (!ch.length) break; c = ch.sort((a, d) => score(d) - score(a))[0]; L.push(c); } return L; };
+  const arm = a => { if (!a) return null; const C = chain(a, far), P = C.map(o => o.userData.p);
+    const seg = k => P[k + 1] ? P[k + 1].distanceTo(P[k]) : 0, clav = C.length >= 4 && seg(0) < 0.55*seg(1);
+    const o = clav ? {clav: C[0], up: C[1], lo: C[2], hand: C[3], tip: C[4]} : {up: C[0], lo: C[1], hand: C[2], tip: C[3]};
+    return o.up && o.lo && o.hand ? o : null; };
+  const leg = t => { if (!t) return null; const C = chain(t, b => -low(b)); return C.length >= 3 ? {th: C[0], sh: C[1], ft: C[2], toe: C[3]} : null; };
+  const spine = []; for (let b = rig.neck; isB(b) && b !== rig.hips; b = b.parent) spine.unshift(b);
+  const M = {spine: spine.slice(0, -1), neck: rig.neck, head: rig.head, L: arm(rig.la), R: arm(rig.ra), LL: leg(rig.lt), RL: leg(rig.rt)};
+  // the library's left must land on our +x side; swap if its facing came out mirrored
+  const r0 = UAL.rest, I = UAL.idx; M.swap = r0.P[I.thigh_l].x < r0.P[I.thigh_r].x;
+  M.hipsH = rig.hips.userData.p.y - Math.min(...[M.LL, M.RL].filter(Boolean).map(l => (l.toe || l.ft).userData.p.y));
+  { const s = r0.P[I.pelvis].y - Math.min(r0.P[I.ball_l].y, r0.P[I.ball_r].y); M.k = s > 0 ? M.hipsH/s : 1; }
+  rig.hips.updateWorldMatrix(true, false); M.hipsQ0 = rig.hips.getWorldQuaternion(new THREE.Quaternion()); M.hipsP0 = rig.hips.getWorldPosition(new THREE.Vector3());
+  // spine, neck and head copy the library's rotation change (its spine curve and neck lean don't suit a chibi)
+  M.trunk = [...M.spine, M.neck, M.head].filter(Boolean).filter((b, i, a) => a.indexOf(b) === i && b !== rig.hips);
+  M.q0 = new Map(M.trunk.map(b => { b.updateWorldMatrix(true, false); return [b, b.getWorldQuaternion(new THREE.Quaternion())]; }));
+  return rig.ual = M;
+}
+const _ua = new THREE.Vector3(), _ub = new THREE.Vector3(), _uc = new THREE.Vector3(), _ud = new THREE.Vector3(), _uq = new THREE.Quaternion(), _uq2 = new THREE.Quaternion(), _uq3 = new THREE.Quaternion();
+let _uPose = null;
+// turn bone b so the segment b -> joint points along the library's from -> to
+function ualAim(b, joint, S, from, to){
+  if (!b || !joint) return;
+  b.getWorldPosition(_ua); joint.getWorldPosition(_ub); _uc.subVectors(_ub, _ua); if (_uc.lengthSq() < 1e-10) return; _uc.normalize();
+  _ud.subVectors(S.P[to], S.P[from]); if (_ud.lengthSq() < 1e-10) return; _ud.normalize();
+  _uq.setFromUnitVectors(_uc, _ud); b.getWorldQuaternion(_uq2); _uq.multiply(_uq2);
+  b.parent.getWorldQuaternion(_uq3); b.quaternion.copy(_uq3.invert().multiply(_uq)); b.updateMatrixWorld(true);
+}
+// pose a rig (bones at rest first) to clip name at time t
+function ualApply(rig, name, t, weight = 1){
+  const clip = UAL.data && UAL.data.clips[name]; if (!clip) return false;
+  const M = ualMap(rig), S = _uPose = ualPose(clip, t, _uPose), I = UAL.idx, R = UAL.rest;
+  const l = M.swap ? '_r' : '_l', r = M.swap ? '_l' : '_r';
+  // hips: the library's turn and bob
+  { const h = rig.hips; _uq.copy(S.Q[I.pelvis]).multiply(_uq2.copy(R.Q[I.pelvis]).invert()).multiply(M.hipsQ0);
+    h.parent.updateWorldMatrix(true, false); h.parent.getWorldQuaternion(_uq3); h.quaternion.copy(_uq3.invert().multiply(_uq));
+    _ua.copy(M.hipsP0); _ua.y += (S.P[I.pelvis].y - R.P[I.pelvis].y)*M.k*weight; h.position.copy(h.parent.worldToLocal(_ua)); h.updateMatrixWorld(true); }
+  // trunk: our spine bones take the library's spine turns by height (neck and head their own), as rotation changes
+  const SJ = [I.spine_01, I.spine_02, I.spine_03];
+  M.trunk.forEach(b => {
+    const k = M.spine.indexOf(b), src = b === M.head ? I.Head : b === M.neck ? I.neck_01 : SJ[Math.min(2, Math.floor((k + 0.5)/Math.max(1, M.spine.length)*3))];
+    _uq.copy(S.Q[src]).multiply(_uq2.copy(R.Q[src]).invert()); if (weight < 1) _uq.slerp(_uq2.identity(), 1 - weight); _uq.multiply(M.q0.get(b));
+    b.parent.getWorldQuaternion(_uq3); b.quaternion.copy(_uq3.invert().multiply(_uq)); b.updateMatrixWorld(true);
+  });
+  for (const [A, s] of [[M.L, l], [M.R, r]]){
+    if (!A) continue;
+    if (A.clav) ualAim(A.clav, A.up, S, I['clavicle' + s], I['upperarm' + s]);
+    ualAim(A.up, A.lo, S, I['upperarm' + s], I['lowerarm' + s]);
+    ualAim(A.lo, A.hand, S, I['lowerarm' + s], I['hand' + s]);
+    if (A.tip) ualAim(A.hand, A.tip, S, I['hand' + s], I['middle_01' + s]);
+  }
+  for (const [G, s] of [[M.LL, l], [M.RL, r]]){
+    if (!G) continue;
+    ualAim(G.th, G.sh, S, I['thigh' + s], I['calf' + s]);
+    ualAim(G.sh, G.ft, S, I['calf' + s], I['foot' + s]);
+    if (G.toe) ualAim(G.ft, G.toe, S, I['foot' + s], I['ball' + s]);
+  }
+  return true;
+}
+// a THREE.AnimationClip for one of our skinned models (sampled at 30 fps), so a live SkinnedMesh can play it
+function ualClip(rig, name, rename){
+  const clip = UAL.data && UAL.data.clips[name]; if (!clip) return null;
+  const M = ualMap(rig), bones = new Set([rig.hips, ...M.spine, M.neck, M.head]);
+  for (const A of [M.L, M.R]) if (A) for (const k of ['clav', 'up', 'lo', 'hand']) if (A[k]) bones.add(A[k]);
+  for (const G of [M.LL, M.RL]) if (G) for (const k of ['th', 'sh', 'ft']) if (G[k]) bones.add(G[k]);
+  bones.delete(undefined); bones.delete(null);
+  const list = [...bones], n = clip.n, times = new Float32Array(n), Q = list.map(() => new Float32Array(n*4)), HP = new Float32Array(n*3);
+  for (let f = 0; f < n; f++){
+    times[f] = f/UAL.data.fps;
+    for (const b of rig.allBones){ b.quaternion.copy(b.userData.q0); if (b.userData.p0) b.position.copy(b.userData.p0); }
+    rig.root.updateMatrixWorld(true);
+    ualApply(rig, name, times[f]);
+    list.forEach((b, k) => b.quaternion.toArray(Q[k], f*4)); rig.hips.position.toArray(HP, f*3);
+  }
+  for (const b of rig.allBones){ b.quaternion.copy(b.userData.q0); if (b.userData.p0) b.position.copy(b.userData.p0); }
+  rig.root.updateMatrixWorld(true);
+  const tracks = list.map((b, k) => new THREE.QuaternionKeyframeTrack(b.name + '.quaternion', times, Q[k]));
+  tracks.push(new THREE.VectorKeyframeTrack(rig.hips.name + '.position', times, HP));
+  return new THREE.AnimationClip(rename || name, clip.dur, tracks);
+}
+// skinned clone with its own skeleton (Object3D.clone shares the bones)
+function skClone(src){
+  const c = src.clone(true), a = [], b = []; src.traverse(o => a.push(o)); c.traverse(o => b.push(o));
+  const map = new Map(a.map((o, i) => [o, b[i]]));
+  b.forEach((o, i) => { if (o.isSkinnedMesh){ const s = a[i]; o.bind(new THREE.Skeleton(s.skeleton.bones.map(x => map.get(x)), s.skeleton.boneInverses), s.bindMatrix); } });
+  return c;
+}
+// which library clip plays each crowd gait (procedural hair/tail/skirt sway stays on top)
+const UAL_GAIT = {walk: 'Walk_Loop', run: 'Jog_Fwd_Loop', shuffle: 'Walk_Formal_Loop'};
+const mocapOn = () => SETTINGS.mocap !== false && !!UAL.data;
 function buildRole(role, gltf, target = CROWD, bossInto = BOSS){
   let sm = null; gltf.scene.traverse(o => { if (o.isSkinnedMesh && !sm) sm = o; });
   const rig = analyzeRig(gltf.scene, sm); rig.root = gltf.scene; rig.allBones = sm.skeleton.bones;
@@ -2822,6 +3020,7 @@ function buildRole(role, gltf, target = CROWD, bossInto = BOSS){
   const norm = new THREE.Matrix4().makeScale(k, k, k).multiply(new THREE.Matrix4().makeTranslation(-sx/n, -minY, -sz/n));
   const index = sm.geometry.index.array, uvAttr = sm.geometry.attributes.uv;
   const restN = bakeFrame(rig, sm, norm);
+  if (mocapOn()) try { ualMap(rig); } catch(e){ console.warn('mocap map failed', role, e); }
   const farIdx = clusterIndex(restN.op, index, 0.05, uvAttr.array), xfarIdx = clusterIndex(restN.op, index, 0.16, uvAttr.array, 6);
   const idxAttr = new THREE.BufferAttribute(new Uint32Array(index), 1), farAttr = new THREE.BufferAttribute(new Uint32Array(farIdx), 1), xfarAttr = new THREE.BufferAttribute(new Uint32Array(xfarIdx), 1);
   const gaits = [ROLES[role].gait]; if (ROLES[role].lunge) gaits.push('run');
@@ -2830,6 +3029,8 @@ function buildRole(role, gltf, target = CROWD, bossInto = BOSS){
     const frames = [];
     for (let f = 0; f < FRAMES; f++){
       poseRig(rig, gait, f/FRAMES*Math.PI*2);
+      // motion-captured body on top of the procedural hair / tail / skirt sway
+      if (rig.ual && mocapOn()){ const c = UAL.data.clips[UAL_GAIT[gait]]; if (c) try { ualApply(rig, UAL_GAIT[gait], f/FRAMES*c.dur); } catch(e){ console.warn('mocap pose failed', e); rig.ual = null; } }
       const {op, on} = bakeFrame(rig, sm, norm);
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.BufferAttribute(op, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(on, 3)); geo.setAttribute('uv', uvAttr);
@@ -3897,6 +4098,7 @@ function spawnEnemy(role, z, x){
 }
 function hurtEnemy(i, d){
   if (eh[i] <= 0) return;
+  if (NET.mirror){ if (d > 0){ NET.hitQ.push([eid[i], +d.toFixed(2)]); eh[i] -= d; ehit[i] = 1; if (eh[i] > 0) sfx('hit', 0.5); else { killBy[i] = 1; sfx('pop', 0.8, ex[i]/8); } } return; }
   eh[i] -= d; ehit[i] = 1;
   if (eh[i] > 0) sfx('hit', 0.5);
   if (eh[i] <= 0){ kills++; killBy[i] = 1; sfx('pop', 0.8, ex[i]/8); coins += ROLES[ROLE_ORDER[er[i]]].coin*(1 + 0.03*wave)*(1 + PERK.coins); }
@@ -4038,7 +4240,7 @@ function renderShop(flashId){
     grid.appendChild(b);
   }
 }
-$('shopGo').onclick = () => { $('shop').hidden = true; startWave(); };
+$('shopGo').onclick = () => { $('shop').hidden = true; if (NET.on && NET.started && !netMode().pvp){ netShopDone(); return; } startWave(); };
 // when a vehicle choice is opened from the shop, return there afterwards
 const _choiceA = $('choiceA').onclick, _choiceB = $('choiceB').onclick;
 $('choiceA').onclick = () => { _choiceA(); if (state === 'shop'){ $('shop').hidden = false; renderShop(); } };
@@ -4724,7 +4926,7 @@ function fire(vol = 1){
     gunners.forEach((gn, k) => {
       const x = gunnerX(k) + gunnerHand(k)*0.28*GS, a = rnd(-W.spread, W.spread);
       launch(W.kind, x, gunnerZ(k) - (0.3 + W.tip*1.6)*GS, Math.sin(a)*W.speed, -Math.cos(a)*W.speed, dmg, W.aoe*(1 + 0.1*(lv - 1)));
-      gn.flashT = 0.07;
+      gn.flashT = 0.07; gn.lastShot = t;
     });
   } else {
     const shots = gunners.length*pel*vol, room = BUCAP - un;
@@ -4742,7 +4944,7 @@ function fire(vol = 1){
         if (q){ ux[i] += uvx[i]*q*0.006; uz[i] += uvz[i]*q*0.006; }   // stagger rounds fired in the same frame along the line
         }
       }
-      gn.flashT = 0.05;
+      gn.flashT = 0.05; gn.lastShot = t;
     });
   }
   if (!(weapon === 'minigun' && gunVoice('player', 'fire', cx/6, 0.75 + Math.min(0.25, gunners.length*0.05)))) sfx(WSND[weapon] || 'pistol', 0.6 + Math.min(0.5, gunners.length*0.1), cx/6);
@@ -4759,7 +4961,7 @@ function update(dt){
   const roles = unlockedRoles();
 
   // spawning: this wave's budget, spread over its duration
-  if (!frozen && !PIER.hold && spawned < budget){
+  if (!frozen && !PIER.hold && spawned < budget && !NET.mirror){
     spawnAcc += budget/waveDur*dt;
     let guard = 0;
     while (spawnAcc > 0 && spawned < budget && guard++ < 20){
@@ -4778,21 +4980,21 @@ function update(dt){
       spawnAcc -= cost; spawned += cost;
     }
   }
-  if (bossPending && waveT > bossNextT && !PIER.hold){
+  if (bossPending && waveT > bossNextT && !PIER.hold && !NET.mirror){
     const first = !bosses.length && bossNextT <= 6;
     bossPending--; bossNextT = waveT + 4.5;
     const max = Math.round(70*Math.pow(wave, 2.0)), hw = halfW(FAR + 2) - 2.5;
     bosses.push({x: bosses.length || bossPending ? rnd(-hw, hw) : 0, z: FAR + 2, hp: max, max, hit: 0, dirty: true, ph: rnd(0, 6)});
     if (first) toast(bossPending ? (bossPending + 1) + ' bosses incoming' : 'Boss incoming', '#ff9a90'); sfx('boss');
   }
-  if (bosses.length && !frozen){
+  if (bosses.length && !frozen && !NET.mirror){
     summonT -= dt;
     if (summonT <= 0){ summonT = 2.6; const per = Math.ceil((3 + wave)/Math.sqrt(bosses.length)); for (const boss of bosses) for (let k = 0; k < per; k++) spawnEnemy(k % 3 ? 'normal' : 'swarm', boss.z + rnd(-1, 1), boss.x + rnd(-2.5, 2.5)); }
   }
 
   // barrels arrive in pairs: choose which one to break
   barrelT -= dt;
-  if (MODE === 'def' && barrelT <= 0 && barrels.length < 2 && spawned < budget){ barrelT = rnd(9, 12); spawnBarrelPair(); }
+  if (MODE === 'def' && barrelT <= 0 && barrels.length < 2 && spawned < budget && !NET.mirror){ barrelT = rnd(9, 12); spawnBarrelPair(); }
   for (let k = barrels.length - 1; k >= 0; k--){
     const b = barrels[k];
     if (!frozen){ b.z += 1.5*dt; b.spin.rotation.y -= 1.5*dt/0.7; }
@@ -4804,7 +5006,7 @@ function update(dt){
 
   // fire
   fireT -= dt; recoil = Math.max(0, recoil - dt*10); viewFlashT = Math.max(0, viewFlashT - dt);
-  if (MODE === 'def' && fireT <= 0){
+  if (MODE === 'def' && fireT <= 0 && gunners.length){
     const W = WEAPONS[weapon];
     const step = ((weapon === 'minigun' || weapon === 'smg') ? W.rate/(1 + 0.15*(wlv[weapon] - 1)) : weapon === 'pistol' && wlv.pistol >= 5 ? W.rate*0.72 : W.rate)/rateMul/(1 + PERK.rate);
     let n = 0; while (fireT <= 0 && n < 14){ fireT += step; n++; }      // e.g. 16,000 rpm = ~4-5 volleys every frame
@@ -4830,6 +5032,7 @@ function update(dt){
     if (R.lunge && !elunge[i] && ez[i] > -10){ elunge[i] = 1; }
     if (estag[i] > 0) estag[i] -= dt;
     let sp = es[i]*(ebuff[i] ? 1.45 : 1)*(elunge[i] ? R.lunge/R.speed : 1)*(estag[i] > 0 ? 0.25 : 1);
+    if (NET.mirror){ eph[i] += dt*sp*(R.gait === 'run' || elunge[i] ? 2.6 : 3.4); continue; }      // positions come from the host
     if (!frozen){ ez[i] += sp*dt; ex[i] += Math.sin(t*1.3 + eph[i])*0.4*dt; eph[i] += dt*sp*(R.gait === 'run' || elunge[i] ? 2.6 : 3.4); }
     const hw = halfW(ez[i]) - R.r*1.5;
     ex[i] = clamp(ex[i], -hw, hw);
@@ -4842,7 +5045,7 @@ function update(dt){
     }
     if (eh[i] > 0 && ez[i] > BARRICADE_Z - 0.3){ sfx('thud', 0.7, ex[i]/6); wall -= R.dmg*(MODE === 'heli' ? 0.45 : 1)*(1 - PERK.wall); eh[i] = 0; killBy[i] = 2; hurt = 0.35; shake = Math.max(shake, 0.15); chips(ex[i], 0.6, ez[i], RED, 3); }
   }
-  for (const boss of bosses.slice()){
+  for (const boss of NET.mirror ? [] : bosses.slice()){
     const z0 = boss.z;
     if (!frozen) boss.z += 1.0*dt;
     { const hw = halfW(boss.z) - 1.3; boss.x += (clamp(boss.x, -hw, hw) - boss.x)*Math.min(1, dt*2); }
@@ -4971,19 +5174,21 @@ function update(dt){
   dn = w;
 
   shake = Math.max(0, shake - dt); hurt = Math.max(0, hurt - dt);
-  if (wall <= 0) return gameOver();
+  if (wall <= 0 && !NET.mirror) return gameOver();
   // wave cleared -> shop
-  if (spawned >= budget && !bossPending && !bosses.length && en === 0 && waveT > 3 && !(GS_.on && GS_.phase !== 'leave')){
+  if (!NET.mirror && !NET.noWaves && spawned >= budget && !bossPending && !bosses.length && en === 0 && waveT > 3 && !(GS_.on && GS_.phase !== 'leave')){
     if (MODE === 'heli'){ if (HM.breakT <= 0 && !HM.toSpawn && !HM.enemies.some(e => e.hp > 0)) hmWaveClear(); }
     else {
     while (barrels.length) removeBarrel(barrels[0]);
     un = 0;
-    openShop();
+    if (NET.on && NET.started){ NET.shopOpen = true; netAll({t: 'shop'}); if (NET.side === 'cmd'){ state = 'shop'; netCheckReady(); } else openShop(); }
+    else openShop();
     }
   }
 }
 
 function gameOver(){
+  if (NET.on && NET.started && netGameOver()) return;
   gsReset(); dgEnd(); dfEnd();
   if (MODE === 'heli'){
     state = 'over';
@@ -5093,8 +5298,17 @@ function sync(dt){
   gunners.forEach((gn, k) => {
     { const [gx, gz] = gunnerSlot(k); gn.g.position.set(gx, 0, gz); gn.g.scale.set(GS*(gx < -0.15 ? -1 : 1), GS, GS); }
     gn.g.visible = !(fp && k === me);
+    if (gn.anim){
+      // fire pose while shooting, back to the idle a moment after; the gun rides in the right hand, pointing up the pier
+      const A = gn.anim, want = t - gn.lastShot < 0.3 ? 1 : 0; A.w += (want - A.w)*Math.min(1, dt*(want ? 14 : 5));
+      A.shot.setEffectiveWeight(A.w); A.idle.setEffectiveWeight(1 - A.w); A.mixer.update(dt);
+      if (gn.gun && A.hand){ gn.g.updateMatrixWorld(true); A.hand.getWorldPosition(_v3); gn.g.worldToLocal(_v3); gn.gun.position.set(_v3.x, _v3.y + 0.02, _v3.z - 0.12 + recoil*0.06);
+        gn.flash.position.set(_v3.x, _v3.y + 0.07, _v3.z - 0.12 - WEAPONS[weapon].tip*1.6); }
+      else if (gn.gun) gn.gun.position.z = -0.3 + recoil*0.1;
+    } else {
     gn.body.position.y = Math.abs(Math.sin(t*3 + gn.ph))*0.02;
     if (gn.gun) gn.gun.position.z = -0.3 + recoil*0.1;
+    }
     if (gn.gun?.userData.spin) gn.gun.userData.spin.rotation.z += dt*(recoil > 0.2 ? 45 : 8);
     gn.flashT = Math.max(0, gn.flashT - dt);
     gn.flash.visible = gn.flashT > 0; gn.flash.material.rotation = Math.random()*6;
@@ -5202,7 +5416,7 @@ function frame(now){
     }
   } else t += dt*0.0;
   sync(state === 'play' || state === 'title' || state === 'dying' ? dt : 0);
-  hsTick(dt);
+  hsTick(dt); netTick(dt);
   heliLodTick();
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
@@ -5372,7 +5586,11 @@ function hmShoot(kind, from, dir, speed, extra){
   m.position.copy(from); scene.add(m);
   if (kind === 'cannon'){ _trX.copy(dir).normalize(); m.position.addScaledVector(_trX, 3.6); m.lookAt(_trD.copy(m.position).sub(_trX)); }   // starts clear of the gun sight; streak trails behind the round
   if (kind !== 'cannon') m.lookAt(_trD.copy(m.position).add(dir));
-  HM.shots.push({kind, m, v: dir.clone().normalize().multiplyScalar(speed), life: kind === 'hellfire' || kind === 'agm' ? 6 : kind === 'rocket' ? 3.4 : 3, ...extra});
+  const vv = dir.clone().normalize().multiplyScalar(speed);
+  if (heliSim() && HM.vel && !(extra && extra.cosmetic) && HM.on && from.distanceTo(HM.pos) < 8) vv.add(HM.vel);
+  HM.shots.push({kind, m, v: vv, life: kind === 'hellfire' || kind === 'agm' ? 6 : kind === 'rocket' ? 3.4 : 3, ...extra});
+  // everyone else sees the same round leave (for show; this side decides what it hits)
+  if (NET.on && NET.started && !(extra && extra.cosmetic)){ const r2 = v => Math.round(v*100)/100; netUp({t: 'shot', s: NET.me, k: kind, f: [r2(from.x), r2(from.y), r2(from.z)], d: [r2(vv.x), r2(vv.y), r2(vv.z)], sp: +vv.length().toFixed(2)}); }
 }
 function hmBoresight(out){
   // where the nose rockets would land: a ray pitched down from the nose
@@ -5486,7 +5704,7 @@ function hmFlarePair(){
   for (const mi of P.emiss) if (mi.missile) mi.decoy = P.pos.clone().add(new THREE.Vector3(rnd(-8, 8), -4, rnd(-8, 8)));
 }
 function hmOnWave(){
-  HM.toSpawn = wave >= 2 ? Math.min(4, Math.floor(wave/2)) : 0;
+  HM.toSpawn = wave >= 2 && !NET.noWaves && !NET.mirror ? Math.min(4, Math.floor(wave/2)) : 0;
   HM.heliSpawnT = 5;
 }
 function hmWaveClear(){
@@ -5501,6 +5719,8 @@ function hmHitHelis(p, r, dmg){
   let hit = false;
   for (const e of HM.enemies){
     if (e.hp <= 0) continue;
+    // another player: they take the damage on their side (and tell everyone if it brought them down)
+    if (e.remote){ if (e.pos.distanceTo(p) < r + 2.4*HB){ hit = true; e.hit = 0.1; chips(p.x, p.y, p.z, SPARK, 3, 3); fx('white', p.x, p.y, p.z, rnd(0.7, 1.1)); sfxAt('imMetal', p.x, p.y, p.z, 1, 14); hitMark(false); netUp({t: 'dmg', to: e.slot, d: dmg, by: NET.me}); } continue; }
     if (e.pos.distanceTo(p) < r + 2.4*HB){ e.hp -= dmg; e.hit = 0.1; hit = true; chips(p.x, p.y, p.z, SPARK, 3, 3); fx('white', p.x, p.y, p.z, rnd(0.7, 1.1)); sfxAt('imMetal', p.x, p.y, p.z, 1, 14);
       if (e.hp <= 0){ HM.score += 250; kills++; coins += 20; explode(e.pos.x, e.pos.z, 0.1, 0, true); chips(e.pos.x, e.pos.y, e.pos.z, ORANGE, 40, 7); chips(e.pos.x, e.pos.y, e.pos.z, SMOKE, 30, 5); sfx('bigboom'); e.fall = 0; toast('Apache down  +250', '#ffe28a'); }
     }
@@ -5518,7 +5738,11 @@ function hmHitHelis(p, r, dmg){
 // damps motion along its own axis, so a nose-down dive with the collective down is barely damped (216 kts on the way in)
 // V77: loops (pitch is no longer capped, like roll), roll ~40% gentler, the collective climbs slower than it sinks (gravity helps the way down),
 // and the rotor disc damps motion along its own axis, so a nose-down dive turns height into airspeed: ~170 kts Apache, ~150 Black Hawk
-const SIM = {g: 3.92, drag: 0.02, drag2: 0.0024, vne: 27, vneK: 0.04, vdrag: 0.6, vdragDown: 0.36, collUp: 0.95, collDown: 1.0, collRise: 1.1, collFall: 1.8, rollK: 0.6, discUp: 0.68, discDown: 0.3, align: 0.9, alignLoss: 0, dive: 0.4, landSafe: 12, roll: 0.0032, mouseK: 0.0041, mouseDamp: 4, keyPitchAcc: 2.2, maxRoll: 1.15, maxPitch: 0.9, yawRoll: 0.35, yawSpin: 2.5, keyPitch: 1.1, yaw: 0.96, bankTurn: 1.4, slip: 0.8, idleLift: 1.0,
+// V78, fitted to the player's BF6 Little Bird clips (HUD airspeed / altitude read frame by frame): full collective climbs ~16.5 m/s;
+// full collective down pushes the rotor the other way (~0.3 g) so a hover drops to ~100 kts in 3.6 s and ~215 kts by the ground;
+// collective down with the nose well down gains ~35 kts/s; powered flight tops out ~120 kts; W/S pitch ~60 deg/s, fast mouse roll
+// ~85 deg/s, pedal turn in a hover ~120 deg/s; rotation and flight path both carry momentum when you let go
+const SIM = {g: 3.92, drag: 0.02, drag2: 0.0024, vne: 23, vneK: 0.045, vdrag: 0.6, vdragDown: 0.36, collUp: 0.95, collDown: 2.0, collRise: 1.6, collFall: 1.8, rollK: 0.6, discUp: 0.68, discDown: 0.05, align: 0.9, alignLoss: 0, dive: 2.4, landSafe: 12, roll: 0.0032, mouseK: 0.00226, mouseDamp: 2.2, keyPitchAcc: 1.65, maxRoll: 1.15, maxPitch: 1.1, yawRoll: 0.35, yawSpin: 2.0, keyPitch: 1.1, yaw: 1.5, bankTurn: 1.4, slip: 0.55, idleLift: 1.0,
   noseDown: 0.0203, pitchDamp: 0.0992, speedPitch: 0.0011, liftKick: -0.19, kickDelay: 2.85, tlift: 0.035};
 // hands off, the nose creeps down on its own and the creep grows the further it tips (the clip: level for ~20 s, then into the sand by ~45 s)
 const wrapPi = a => a > Math.PI ? a - 2*Math.PI : a < -Math.PI ? a + 2*Math.PI : a;
@@ -5545,7 +5769,7 @@ function hmSimFlight(P, f, dt){
   P.wp += (kp - gpAx(1) + TS.ax.pitch + GF.pitch)*SIM.keyPitchAcc*AG.rate*dt; P.wr -= ky*SIM.yawRoll*dt;
   P.wr -= P.wr*Math.min(1, SIM.mouseDamp*dt); P.wp -= P.wp*Math.min(1, SIM.mouseDamp*dt);
   // roll clip: flat-out mouse in BF takes ~5.5 s for a full barrel roll, so roll rate tops out ~65 deg/s (pitch ~50 deg/s)
-  P.wr = clamp(P.wr, -SIM.maxRoll*AG.rate*SIM.rollK*1.25, SIM.maxRoll*AG.rate*SIM.rollK*1.25); P.wp = clamp(P.wp, -SIM.maxPitch*AG.rate, SIM.maxPitch*AG.rate);
+  P.wr = clamp(P.wr, -SIM.maxRoll*AG.rate*0.95, SIM.maxRoll*AG.rate*0.95); P.wp = clamp(P.wp, -SIM.maxPitch*AG.rate, SIM.maxPitch*AG.rate);
   // no pitch limit either: hold W or S (or the mouse) and she goes all the way round in a loop
   P.pitch = wrapPi(P.pitch + P.wp*dt);
   // no roll limit: you can go all the way over (it takes a while). Upside down the rotor pulls you toward the ground,
@@ -5576,7 +5800,8 @@ function hmSimFlight(P, f, dt){
       if (fwdish){ const step = clamp(da, -SIM.slip*dt, SIM.slip*dt), na = va + step, m2 = h2*(1 - Math.abs(step)*0.06); P.vel.x = Math.sin(na)*m2; P.vel.z = -Math.cos(na)*m2; } } }
   P.coll = (P.coll || 0) + (kc - (P.coll || 0))*Math.min(1, dt*(kc ? SIM.collRise : SIM.collFall));
   // past ~130 kts the retreating blade runs out of lift: powered flight tops out there, only a dive goes faster
-  const T = SIM.g*Math.max(0, SIM.idleLift + P.coll*(P.coll > 0 ? SIM.collUp*AG.lift : SIM.collDown))*(1 + SIM.tlift*Math.min(hs, 10))*Math.max(0.35, 1 - SIM.vneK*Math.max(0, hs - SIM.vne)), r = _simR.set(-f.z, 0, f.x);
+  const lift0 = SIM.idleLift + P.coll*(P.coll > 0 ? SIM.collUp*AG.lift : SIM.collDown), lift = lift0 >= 0 ? lift0 : lift0*clamp(1 - (Math.abs(P.pitch) - 0.45)/0.6, 0, 1);
+  const T = SIM.g*lift*(1 + SIM.tlift*Math.min(hs, 10))*Math.max(0.35, 1 - SIM.vneK*Math.max(0, hs - SIM.vne)), r = _simR.set(-f.z, 0, f.x);
   // rotor disc axis = the airframe's up, the same rotation the model gets (yaw, then roll, then pitch about the body)
   const cp = Math.cos(P.pitch), sp = Math.sin(P.pitch), cb = Math.cos(P.bank), sb = Math.sin(P.bank);
   const nx = f.x*sp - r.x*cp*sb, nz = f.z*sp - r.z*cp*sb, ny = cp*cb;
@@ -5590,7 +5815,7 @@ function hmSimFlight(P, f, dt){
     // trades its sink for airspeed instead of just dropping (only ever pulls the path up toward the nose, never down)
     const ne = Math.asin(clamp(-sp*cb, -1, 1)), hv = Math.hypot(P.vel.x, P.vel.z), sv = Math.hypot(hv, P.vel.y), ge = Math.atan2(P.vel.y, hv);
     // nose well down: the airframe slices into the dive (BF-like), so the speed comes on harder than gravity alone would give
-    if (ne < -0.5 && cb > 0.2){ const k = SIM.dive*SIM.g*clamp((-ne - 0.5)/0.5, 0, 1)*dt, nX = sp*sb*r.x + cp*f.x, nZ = sp*sb*r.z + cp*f.z, nY = -sp*cb; P.vel.x += nX*k; P.vel.y += nY*k; P.vel.z += nZ*k; }
+    if (ne < -0.35 && cb > 0.2){ const k = SIM.dive*SIM.g*clamp((-ne - 0.35)/0.6, 0, 1)*clamp(-P.coll*1.5, 0, 1)*dt, nX = sp*sb*r.x + cp*f.x, nZ = sp*sb*r.z + cp*f.z, nY = -sp*cb; P.vel.x += nX*k; P.vel.y += nY*k; P.vel.z += nZ*k; }
     if (sv > 3 && ge < ne && ne < -0.2 && Math.abs(P.pitch) < 1.45 && cb > 0.2){
       const a = Math.min(1, SIM.align*dt*clamp((sv - 3)/8, 0, 1)*clamp((-ne - 0.2)/0.3, 0, 1)), e2 = ge + (ne - ge)*a, keep = sv*(1 - SIM.alignLoss*a);
       const hx = hv > 0.05 ? P.vel.x/hv : f.x, hz = hv > 0.05 ? P.vel.z/hv : f.z, h2 = Math.cos(e2)*keep;
@@ -5611,9 +5836,9 @@ function hmSimFlight(P, f, dt){
   P.speed = P.vel.x*f.x + P.vel.z*f.z; P.alt = P.pos.y;
 }
 // Little Bird: lighter and quicker — faster rates in roll, pitch and yaw, more lift, less drag (higher top speed)
-const LB_AGI = {rate: 1.35, yaw: 1.4, lift: 1.18, drag: 1.02, sink: 1, top: 153};
+const LB_AGI = {rate: 1.35, yaw: 1.4, lift: 1.32, drag: 1.02, sink: 1, top: 195};
 // per airframe: the Black Hawk is heavier (a bit slower in the climb, the dive and the turns), the Apache is the reference
-const HELI_AGI = {apache: {rate: 1, yaw: 1, lift: 1, drag: 1, sink: 1, top: 163}, dap: {rate: 0.88, yaw: 0.9, lift: 0.94, drag: 1.3, sink: 1.05, top: 144}, little: LB_AGI};
+const HELI_AGI = {apache: {rate: 1, yaw: 1, lift: 1, drag: 1, sink: 1, top: 150}, dap: {rate: 0.88, yaw: 0.9, lift: 0.94, drag: 1.3, sink: 1.05, top: 135}, little: LB_AGI};
 const _simR = new THREE.Vector3(), _simE = new THREE.Euler(), _simQ = new THREE.Quaternion(), _simQ2 = new THREE.Quaternion(), _simO = new THREE.Vector3(), _simX = new THREE.Vector3(1, 0, 0);
 function hmSimGunner(P, dt){
   const sens = SETTINGS.heliSens || 1, inv = SETTINGS.heliInvert ? -1 : 1, z = P.zoom ? 0.45 : 1;
@@ -5675,12 +5900,14 @@ function hmUpdate(dt){
     }
     // Little Bird: the two fixed M134s are the pilot's (on the DAP the crew works every minigun)
     if (little && P.firing){
-      const aim = heliSim() ? hmAimPoint(new THREE.Vector3()) : hmBoresight(new THREE.Vector3());
+      const aim = heliSim() ? hmImpact(new THREE.Vector3(), 170) : hmBoresight(new THREE.Vector3());
       while (P.gunT <= 0){
         P.gunT += M134_STEP/rateMul/(little ? 2 : 1); P.tc = ((P.tc || 0) + 1) & 3;     // Little Bird: two guns, each at full rate
         const from = P.pos.clone().addScaledVector(right, (P.tc & 1 ? 1 : -1)*(little ? 0.5 : 0.8)*HB); from.y -= (little ? 0.25 : 0.1)*HB;
         if (little){ const gg = P.heli.guns[P.tc & 1]; gg.flash.visible = true; gg.flashT = 0.035; }
         { const ax = aim.x + rnd(-1.4, 1.4), az = aim.z + rnd(-1.4, 1.4); shoot(from.x, from.y, from.z, ax, az, 170, 1.6, 1, 5, 2.4, 0.01, P.tc & 2 ? 3 : 2); if (Math.random() < 0.5) hitPuff(ax, az, from.distanceTo(aim)/70); }
+        if ((P.tc & 3) === 0 && P.enemies.length){ const d = (heliSim() ? hmNoseDir(_gd) : _gd.copy(aim).sub(from)).normalize();
+          for (const e of P.enemies){ if (e.hp <= 0) continue; const rel = _gq.copy(e.pos).sub(from), along = rel.dot(d); if (along > 0 && along < 90 && rel.addScaledVector(d, -along).length() < 2.2){ hmHitHelis(e.pos, 0, 2.4); break; } } }
       }
       if (little){ const bk = 'lb_' + hmPersp() + '_mg'; gunVoice('hmw', 'fire', 0, 1, {bank: bk}); if (!HS.buf[bk + '_fire']) gunVoice('hmw2', 'fire', 0.25, 0.9); }
       else gunVoice('hmw', 'fire', 0, 0.9);
@@ -5729,14 +5956,14 @@ function hmUpdate(dt){
       else if (sh.id){ for (let i = 0; i < en; i++) if (eid[i] === sh.id && eh[i] > 0){ tgt = new THREE.Vector3(ex[i], 1.2, ez[i]); break; } }
       if (tgt) sh.to = tgt;
       sh.age = (sh.age || 0) + dt;
-      if (sh.follow && !tgt){ if (P.seat === 'pilot') sh.to = hmAimPoint(sh.to || new THREE.Vector3()); if (sh.age > 0.15) steerVel(sh.v, _shA.copy(sh.to).sub(sh.m.position), GUIDE_RATE.hellfire, dt); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v)); }
+      if (sh.follow && !tgt && !sh.cosmetic){ if (P.seat === 'pilot') sh.to = hmAimPoint(sh.to || new THREE.Vector3()); if (sh.age > 0.15) steerVel(sh.v, _shA.copy(sh.to).sub(sh.m.position), GUIDE_RATE.hellfire, dt); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v)); }
       else { const want = sh.to.clone().sub(sh.m.position).normalize().multiplyScalar(30); sh.v.lerp(want, Math.min(1, dt*3.5)); sh.m.lookAt(sh.m.position.clone().add(sh.v)); }
       if (Math.random() < 0.7) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.6);
     } else if (sh.kind === 'rocket'){
       // aim-guided: leaves along the nose, then bends toward the point under the centre dot
       // guided option: keeps steering for the point under the HUD reticle as the helicopter moves
       sh.age = (sh.age || 0) + dt;
-      if (sh.follow && P.seat === 'pilot' && sh.age > 0.12){ const a = hmAimPoint(_shA); steerVel(sh.v, a.sub(sh.m.position), GUIDE_RATE[sh.follow] || 0.85, dt); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v)); }
+      if (sh.follow && !sh.cosmetic && P.seat === 'pilot' && sh.age > 0.12){ const a = hmAimPoint(_shA); steerVel(sh.v, a.sub(sh.m.position), GUIDE_RATE[sh.follow] || 0.85, dt); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v)); }
       if (Math.random() < 0.5) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.5);
     } else if (sh.kind === 'agm'){
       const want = sh.to.clone().sub(sh.m.position).normalize().multiplyScalar(36); sh.v.lerp(want, Math.min(1, dt*2.5)); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v));
@@ -5746,12 +5973,14 @@ function hmUpdate(dt){
     const p = sh.m.position;
     if (sh.life <= 0 && p.y > 1.2){ scene.remove(sh.m); P.shots.splice(k, 1); continue; }     // too far: it just goes
     let hit = p.y <= 0.35 || sh.life <= 0 || ((sh.kind === 'hellfire' || sh.kind === 'agm') && sh.to && p.distanceTo(sh.to) < 1.2);
-    if (!hit) hit = hmHitHelis(p, sh.kind === 'cannon' ? 0.6 : 0.5, sh.kind === 'cannon' ? 6 : sh.kind === 'rocket' ? 18 : 110);
+    if (!hit && !sh.cosmetic) hit = hmHitHelis(p, sh.kind === 'cannon' ? 0.6 : 0.5, sh.kind === 'cannon' ? 6 : sh.kind === 'rocket' ? 18 : 110);
+    if (!hit && sh.cosmetic) for (const e of HM.enemies) if (!e.remote && e.hp > 0 && e.pos.distanceTo(p) < 2.4*HB){ hit = true; break; }
     if (!hit && p.y < 6 && bosses.some(b => Math.hypot(b.x - p.x, b.z - p.z) < 2.4)) hit = true;
     if (!hit && p.y < 3){ for (let i = 0; i < en; i++){ if (eh[i] > 0 && Math.abs(ex[i] - p.x) < 0.7 && Math.abs(ez[i] - p.z) < 0.7){ hit = true; break; } } }
     if (hit){
-      const before = kills;
-      if (p.y < 6){
+      const before = kills, cm = sh.cosmetic ? 0 : 1;
+      if (p.y < 6 && sh.cosmetic) explode(p.x, p.z, sh.kind === 'cannon' ? CANNON.r : 3, 0, true);
+      else if (p.y < 6){
         if (sh.kind === 'cannon') explode(p.x, p.z, CANNON.r, CANNON.dmg*1.1*dmgMul, true);
         else if (sh.kind === 'rocket') explode(p.x, p.z, 3.0, 27*dmgMul, true);
         else if (sh.kind === 'agm'){ explode(p.x, p.z, AGM.r, AGM.dmg*dmgMul); explode(p.x + rnd(-2, 2), p.z + rnd(-2, 2), AGM.r*0.6, 0, true); shake = Math.max(shake, 0.5); }
@@ -5762,9 +5991,10 @@ function hmUpdate(dt){
     }
   }
   // ---- enemy Apaches ----
-  if (P.toSpawn > 0 && P.breakT <= 0){ P.heliSpawnT -= dt; if (P.heliSpawnT <= 0 && P.enemies.filter(e => e.hp > 0).length < 3){ P.toSpawn--; P.heliSpawnT = rnd(7, 11); if (wave >= 2 && lazyReady.blackhawk && Math.random() < 0.45) hmSpawnBH(); else hmSpawnEnemy(); } }
+  if (P.toSpawn > 0 && P.breakT <= 0 && !NET.mirror && !NET.noWaves){ P.heliSpawnT -= dt; if (P.heliSpawnT <= 0 && P.enemies.filter(e => e.hp > 0).length < 3){ P.toSpawn--; P.heliSpawnT = rnd(7, 11); if (wave >= 2 && lazyReady.blackhawk && Math.random() < 0.45) hmSpawnBH(); else hmSpawnEnemy(); } }
   for (let k = P.enemies.length - 1; k >= 0; k--){
     const e = P.enemies[k];
+    if (e.remote || e.mirror){ netHeliAvatarTick(e, dt); continue; }
     if (e.hp <= 0){
       e.fall += dt; e.pos.y -= dt*(4 + e.fall*8); e.g.rotation.y += dt*4; e.g.position.copy(e.pos);
       if (Math.random() < 0.8) chips(e.pos.x, e.pos.y, e.pos.z, SMOKE, 1, 1.5);
@@ -5890,6 +6120,14 @@ function simNose(P, out, dep = 0){
 }
 const ROCKET_DEP = 0.04;
 function hmNoseDir(out){ return simNose(HM, out, ROCKET_DEP); }
+// where the selected weapon's rounds actually land: they leave with the helicopter's own velocity, so the impact point
+// slides in the direction you're moving (the HUD I-beam shows it; the fixed cross is the nose)
+const HM_RSPD = {little: 170, apache: 42, dap: 42};
+function hmImpact(out, spd){
+  hmAimPoint(out); if (!HM.vel || !heliSim()) return out;
+  const v = spd || (HM.wsel === 'sec' ? 62 : HM_RSPD[HM.type] || 42), tof = Math.min(4, HM.pos.distanceTo(out)/v);
+  out.x += HM.vel.x*tof; out.z += HM.vel.z*tof; return out;
+}
 function hmAimPoint(out){
   // BF: the aim stays on the nose; only freelook lets you aim with the camera instead
   let o, d;
@@ -6013,7 +6251,7 @@ function hmCamera(dt){
   $('hmMissile').disabled = agmSeat ? P.agmCd > 0 : !(P.type === 'little' ? P.rockets : P.hellfire) || P.hfCd > 0 || P.volley > 0; $('hmFlare').disabled = !P.flares || P.flCd > 0;
   $('hmSound').textContent = SETTINGS.sound ? '🔊' : '🔇';
   if (P.seat === 'pilot'){
-    const ap = (heliSim() ? hmAimPoint(_hmV) : hmBoresight(_hmV)).project(camera), lb = P.type === 'little', hs = P.vel ? Math.hypot(P.vel.x, P.vel.z) : Math.abs(P.speed || 0);
+    const ap = (heliSim() ? hmImpact(_hmV) : hmBoresight(_hmV)).project(camera), lb = P.type === 'little', hs = P.vel ? Math.hypot(P.vel.x, P.vel.z) : Math.abs(P.speed || 0);
     const msl = P.wsel === 'sec' && !lb, rk = P.rockets > 0 ? 'RDY' : 'RLD', g = gPri(P.type) && heliSim() ? 'GUID ' : '', g2 = gSec(P.type) && heliSim() ? 'GUID ' : '';
     bfHud({cockpit: P.view === 'cockpit', frame: P.view === 'cockpit' && lb, aim: ap.z < 1 && Math.abs(ap.x) < 1.3 && Math.abs(ap.y) < 1.3 ? ap : null, msl,
       hdg: P.yaw*57.2958, alt: P.pos.y*3.3, kts: P.vel ? P.vel.length()*4.86 : hs*4.86, pitch: hudAtt(P).p, bank: hudAtt(P).b, flr: P.flares > 0 && P.flCd <= 0 ? 'RDY' : 'CDN',
@@ -6311,6 +6549,8 @@ const CHARS = {
   bear:    {name: 'Bear Drew',     rar: 'SR',  model: 'assets/drew_bear.json',   card: 'assets/card_drew_bear.webp',   perk: {wall: 0.15}, line: 'Gives the barricade a big hug.'},
   cape:    {name: 'Captain Drew',  rar: 'SSR', model: 'assets/drew_cape.json',   card: 'assets/card_drew_cape.webp',   perk: {dmg: 0.10, rate: 0.08}, line: 'Points dramatically. Squad shoots harder.'},
   leo:     {name: 'Master Leo',    rar: 'SSR', model: 'assets/drew_robe.json',   card: 'assets/card_drew_robe.webp',   perk: {knock: 0.35, dmg: 0.06}, line: 'Shoves the horde with his mind.'},
+  // Mixamo-rigged, with his own rifle animations (aim / fire / reload)
+  white:   {name: 'Character White', rar: 'SR', model: 'assets/c_white.json', anims: {idle: 'aim', fire: 'fire', reload: 'reload'}, hand: 'mixamorigRightHand', perk: {rate: 0.05, dmg: 0.05}, line: 'All in white. Shoulders the rifle and doesn’t blink.'},
 };
 const PERK_TXT = {dmg: v => '+' + Math.round(v*100) + '% damage', rate: v => '+' + Math.round(v*100) + '% fire rate', coins: v => '+' + Math.round(v*100) + '% coins',
   ammo: v => '+' + Math.round(v*100) + '% ammo from pickups', wall: v => '−' + Math.round(v*100) + '% barricade damage', knock: v => '+' + Math.round(v*100) + '% knockback'};
@@ -6333,10 +6573,19 @@ function refreshGems(){ for (const el of document.querySelectorAll('.gemN')) el.
 
 // ---- the leader's look: every gunner wears the equipped character ----
 const CHAR_MODEL = {};
-function charStatic(scene){
+function charStatic(scene, pose){
   // rigged characters get posed (arms down) and baked into a static mesh; static ones are used as they are
   let sm = null; scene.traverse(o => { if (o.isSkinnedMesh && !sm) sm = o; });
   if (!sm) return scene;
+  if (pose && pose.clip){
+    // a character with its own animations: bake the first frame of its idle, every skinned part with its own material
+    const mx = new THREE.AnimationMixer(scene); mx.clipAction(pose.clip).play(); mx.setTime(pose.t || 0); scene.updateMatrixWorld(true);
+    const g = new THREE.Group(), I4 = new THREE.Matrix4();
+    scene.traverse(o => { if (!o.isSkinnedMesh) return; const {op, on} = bakeFrame(null, o, I4), geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(op, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(on, 3)); if (o.geometry.attributes.uv) geo.setAttribute('uv', o.geometry.attributes.uv); geo.setIndex(o.geometry.index);
+      for (const gr of o.geometry.groups) geo.addGroup(gr.start, gr.count, gr.materialIndex); g.add(new THREE.Mesh(geo, o.material)); });
+    mx.stopAllAction(); return g;
+  }
   try {
     const rig = analyzeRig(scene, sm); rig.root = scene; rig.allBones = sm.skeleton.bones;
     poseRig(rig, 'walk', 0.15);
@@ -6352,14 +6601,37 @@ function loadCharModel(id){
   if (CHAR_MODEL[id]) return Promise.resolve(CHAR_MODEL[id]);
   if (!SKIN_LOAD.fresh) return Promise.resolve(null);
   // a fresh load: the enemy builder may already own the cached copy of this glTF
-  return SKIN_LOAD.fresh(c.model).then(g => (CHAR_MODEL[id] = charStatic(g.scene)));
+  return SKIN_LOAD.fresh(c.model).then(g => (CHAR_MODEL[id] = charStatic(g.scene, c.anims ? {clip: g.animations.find(a => a.name === c.anims.idle) || g.animations[0]} : null)));
+}
+// ---- animated squad (V78): a live skinned copy per gunner, playing idle and fire ----
+// characters with their own clips use them; our other rigged characters get the animation library's pistol clips
+const CHAR_ANIM = {};
+function loadCharAnim(id){
+  const c = CHARS[id];
+  if (!c.model || SETTINGS.mocap === false || !SKIN_LOAD.fresh) return Promise.resolve(null);
+  if (CHAR_ANIM[id]) return Promise.resolve(CHAR_ANIM[id]);
+  return SKIN_LOAD.fresh(c.model).then(g => {
+    let sm = null; g.scene.traverse(o => { if (o.isSkinnedMesh && !sm) sm = o; }); if (!sm) return null;
+    let clips, hand;
+    if (c.anims){ const f = n => g.animations.find(a => a.name === n); clips = {idle: f(c.anims.idle), fire: f(c.anims.fire)}; hand = c.hand; }
+    else {
+      if (!UAL.data) return null;
+      const rig = analyzeRig(g.scene, sm); rig.root = g.scene; rig.allBones = sm.skeleton.bones; ualMap(rig);
+      clips = {idle: ualClip(rig, 'Pistol_Idle_Loop', 'idle'), fire: ualClip(rig, 'Pistol_Shoot', 'fire')}; hand = rig.ual.R && rig.ual.R.hand && rig.ual.R.hand.name;
+    }
+    if (!clips.idle || !clips.fire) return null;
+    // size it like the static squad: MODEL_H*BODY tall, feet on the ground, centred
+    const st = CHAR_MODEL[id] || charStatic(g.scene, c.anims ? {clip: clips.idle} : null), box = new THREE.Box3().setFromObject(st), ct = box.getCenter(new THREE.Vector3());
+    const k = MODEL_H*BODY/Math.max(1e-6, box.max.y - box.min.y);
+    return (CHAR_ANIM[id] = {src: g.scene, clips, hand, k, off: new THREE.Vector3(-ct.x*k, -box.min.y*k, -ct.z*k)});
+  }).catch(e => { console.warn('animated squad unavailable', e); return null; });
 }
 function equipChar(id){
   if (!PROFILE.owned[id]) return;
   PROFILE.equipped = id; saveProfile(); applyPerk();
-  loadCharModel(id).then(m => {
+  loadCharModel(id).then(m => loadCharAnim(id).then(a => [m, a])).then(([m, a]) => {
     if (PROFILE.equipped !== id) return;
-    loadedParts.player = m || null;
+    loadedParts.player = m || null; loadedParts.playerAnim = a || null;
     // rebuild the squad in the new look (same headcount)
     const n = gunners.length; clearGunners(); for (let k = 0; k < Math.max(1, n); k++) addGunner();
   }).catch(e => console.warn(e));
@@ -6513,13 +6785,549 @@ $('newBtn').onclick = () => {
   if (RUN) askConfirm('Start over?', 'Your saved run (wave ' + (RUN.wave + 1) + ') will be replaced.', 'Start over', go); else go();
 };
 $('heliBtn').onclick = () => { $('pickDap').disabled = !lazyReady.dap; $('pickDapInfo').textContent = lazyReady.dap ? 'Wing guns + rockets · M134 door gun' : 'Still loading…'; $('heliPick').hidden = false; };
+// ======================================================================
+// MULTIPLAYER (V78): rooms with a 4-letter code, up to 4 players, peer to peer over WebRTC data channels.
+// Finding each other goes through the free PeerJS cloud broker (only the handshake; the game data then
+// flows straight between the players). The host runs the world — waves, the horde, bosses, enemy
+// helicopters — and streams it to everyone ~10x a second; the others mirror it and send their hits back.
+// Every player flies / shoots locally, so their own aircraft and guns never lag.
+// Modes are entries in MP_MODES; each says which game it runs ('def' pier or 'heli' sky) and its rules.
+// ======================================================================
+const MP_MODES = {
+  coop:    {name: 'Co-op Defense',   kind: 'def',  max: 4, desc: 'Up to 4 squads hold the same pier behind one shared barricade.'},
+  coopsky: {name: 'Co-op Sky',       kind: 'heli', max: 4, desc: 'Up to 4 helicopters against the waves and the enemy helicopters.'},
+  duel:    {name: 'Sky Duel',        kind: 'heli', max: 4, pvp: true, noWaves: true, desc: 'Every helicopter for itself. First to 10 kills wins.'},
+  duel2:   {name: 'Sky Duel 2v2',    kind: 'heli', max: 4, pvp: true, teams: true, noWaves: true, desc: 'Two teams of two helicopters. First team to 15 kills.'},
+  cmd:     {name: 'Wave Commander',  kind: 'def',  max: 4, cmd: true, desc: 'Defenders hold the pier for 10 waves; commanders spend their budget sending the horde. 1v1 or 2v2.'},
+};
+const MP_SIG = () => SETTINGS.mpServer || 'wss://0.peerjs.com/peerjs';
+const MP_ICE = [{urls: 'stun:stun.l.google.com:19302'}, {urls: 'stun:stun1.l.google.com:19302'}, {urls: 'stun:global.stun.twilio.com:3478'}];
+const MP_COLS = ['#ffd166', '#6fd3ff', '#a6ff8a', '#ff8ad8'];
+const MP_UNITS = {normal: {cost: 3}, fast: {cost: 4}, swarm: {cost: 8}, charger: {cost: 9}, captain: {cost: 14}, tank: {cost: 18}, boss: {cost: 120, wave: 3}};
+const NET = {on: false, host: false, started: false, code: '', id: '', ws: null, hb: null, peers: new Map(), me: 0, mode: 'coop', players: [],
+  mirror: false, noWaves: false, hitQ: [], snap: null, snapT: 0, poseT: 0, pose: {}, av: new Map(), friends: new Map(), score: {}, cash: 0, side: 'def',
+  lastBy: -1, ready: new Set(), status: '', joinT: null, mtx: new Float32Array(ECAP), mtz: new Float32Array(ECAP)};
+const netMode = () => MP_MODES[NET.mode] || MP_MODES.coop;
+const netMe = () => NET.players.find(p => p.slot === NET.me) || {slot: NET.me, name: mpName(), heli: SETTINGS.mpHeli || 'apache', team: 0, side: 'def'};
+const mpName = () => (SETTINGS.mpName || 'Player').slice(0, 14);
+function netStatus(s, bad){ NET.status = s; const el = $('mpStatus'); if (el){ el.textContent = s; el.classList.toggle('bad', !!bad); } }
+
+// ---------- matchmaking server (PeerJS protocol) ----------
+function netSigOpen(id){
+  return new Promise((res, rej) => {
+    const url = MP_SIG() + '?key=peerjs&id=' + encodeURIComponent(id) + '&token=' + Math.random().toString(36).slice(2, 12) + '&version=1.5.4';
+    let ws; try { ws = new WebSocket(url); } catch(e){ rej(e); return; }
+    let opened = false; const to = setTimeout(() => { if (!opened){ try { ws.close(); } catch(_){} rej(new Error('Could not reach the matchmaking server')); } }, 10000);
+    ws.onmessage = ev => {
+      let m; try { m = JSON.parse(ev.data); } catch(_){ return; }
+      if (m.type === 'OPEN'){ opened = true; clearTimeout(to); NET.ws = ws; clearInterval(NET.hb); NET.hb = setInterval(() => netSig({type: 'HEARTBEAT'}), 5000); res(); return; }
+      if (m.type === 'ID-TAKEN'){ clearTimeout(to); try { ws.close(); } catch(_){} rej(new Error('taken')); return; }
+      if (m.type === 'ERROR'){ if (!opened){ clearTimeout(to); rej(new Error((m.payload && m.payload.msg) || 'Matchmaking error')); } return; }
+      netSigMsg(m).catch(e => console.warn('signal', e));
+    };
+    ws.onerror = () => { if (!opened){ clearTimeout(to); rej(new Error('Could not reach the matchmaking server')); } };
+    ws.onclose = () => { if (NET.ws === ws){ NET.ws = null; clearInterval(NET.hb); if (NET.on && !NET.started) netStatus('Lost the matchmaking server', true); } };
+  });
+}
+const netSig = m => { if (NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(m)); };
+async function netSigMsg(m){
+  const src = m.src, pl = m.payload || {};
+  if (m.type === 'OFFER'){
+    if (!NET.host) return;
+    if (NET.started || NET.players.length >= netMode().max){ netSig({type: 'LEAVE', dst: src}); return; }
+    const P = netPeer(src, false);
+    await P.pc.setRemoteDescription(pl.sdp);
+    await P.pc.setLocalDescription(await P.pc.createAnswer());
+    netSig({type: 'ANSWER', dst: src, payload: {sdp: P.pc.localDescription, type: 'data', connectionId: pl.connectionId, browser: 'adlords'}});
+    netFlushIce(P);
+  } else if (m.type === 'ANSWER'){
+    const P = NET.peers.get(src); if (!P) return;
+    await P.pc.setRemoteDescription(pl.sdp); netFlushIce(P);
+  } else if (m.type === 'CANDIDATE'){
+    const P = NET.peers.get(src); if (!P || !pl.candidate) return;
+    if (P.pc.remoteDescription && P.pc.remoteDescription.type) P.pc.addIceCandidate(pl.candidate).catch(() => {}); else (P.pend = P.pend || []).push(pl.candidate);
+  } else if (m.type === 'LEAVE' || m.type === 'EXPIRE'){
+    const P = NET.peers.get(src);
+    if (!NET.host && !NET.started && src === 'adlords-' + NET.code){ netStatus(m.type === 'EXPIRE' ? 'No room with that code' : 'That room is full or already playing', true); netLeave(true); return; }
+    if (P) netDrop(P);
+  }
+}
+function netFlushIce(P){ for (const c of P.pend || []) P.pc.addIceCandidate(c).catch(() => {}); P.pend = null; }
+
+// ---------- peers and channels: 'g' reliable (events), 's' unreliable (positions, world snapshots) ----------
+function netPeer(id, initiator){
+  const pc = new RTCPeerConnection({iceServers: MP_ICE});
+  const P = {id, pc, g: null, s: null, slot: -1, open: false, cid: 'dc_' + Math.random().toString(36).slice(2, 10), ping: 0, pend: null};
+  NET.peers.set(id, P);
+  pc.onicecandidate = e => { if (e.candidate) netSig({type: 'CANDIDATE', dst: id, payload: {candidate: e.candidate, type: 'data', connectionId: P.cid}}); };
+  pc.onconnectionstatechange = () => { const s = pc.connectionState; if (s === 'failed' || s === 'closed') netDrop(P); else if (s === 'disconnected') setTimeout(() => { if (pc.connectionState === 'disconnected') netDrop(P); }, 5000); };
+  const wire = ch => {
+    ch.binaryType = 'arraybuffer';
+    if (ch.label === 'g'){ P.g = ch; ch.onopen = () => netPeerOpen(P); ch.onmessage = e => { try { netOnG(P, JSON.parse(e.data)); } catch(err){ console.warn('mp msg', err); } }; ch.onclose = () => netDrop(P); }
+    else { P.s = ch; ch.onmessage = e => netOnS(P, e.data); }
+  };
+  if (initiator){ wire(pc.createDataChannel('g', {ordered: true})); wire(pc.createDataChannel('s', {ordered: false, maxRetransmits: 0})); }
+  else pc.ondatachannel = e => wire(e.channel);
+  return P;
+}
+const netSend = (P, m) => { if (P && P.g && P.g.readyState === 'open') try { P.g.send(JSON.stringify(m)); } catch(_){} };
+const netSendS = (P, d) => { if (P && P.s && P.s.readyState === 'open' && P.s.bufferedAmount < 256*1024) try { P.s.send(d); } catch(_){} };
+function netAll(m, except){ for (const P of NET.peers.values()) if (P !== except && P.slot >= 0) netSend(P, m); }
+function netAllS(d, except){ for (const P of NET.peers.values()) if (P !== except && P.slot >= 0) netSendS(P, d); }
+const netHostPeer = () => NET.peers.get('adlords-' + NET.code);
+// to the host (clients) or to everyone (host)
+const netUp = m => NET.host ? netAll(m) : netSend(netHostPeer(), m);
+const netPeerOf = slot => [...NET.peers.values()].find(P => P.slot === slot);
+
+function netPeerOpen(P){
+  P.open = true;
+  if (!NET.host){ clearTimeout(NET.joinT); P.slot = 0; netStatus('Connected · joining…'); netSend(P, {t: 'hello', name: mpName(), ver: GAME_VERSION, heli: SETTINGS.mpHeli || 'apache', ch: PROFILE.equipped}); }
+}
+function netDrop(P){
+  if (!NET.peers.has(P.id)) return;
+  NET.peers.delete(P.id); try { P.pc.close(); } catch(_){}
+  if (NET.host){
+    const pl = NET.players.find(p => p.slot === P.slot);
+    if (pl){ NET.players = NET.players.filter(p => p !== pl); netAvatarRemove(P.slot); netAll({t: 'roster', players: NET.players, mode: NET.mode}); netAll({t: 'left', slot: P.slot, name: pl.name}); toast(pl.name + ' left', '#ffd2cc'); NET.ready.delete(P.slot); netCheckReady(); }
+    mpRender();
+  } else if (P.slot === 0){
+    // the host is gone: the session is over
+    toast('The host left the game', '#ffd2cc'); netLeave(true); if (NET.started) netEndToMenu();
+  }
+}
+
+// ---------- rooms ----------
+const netCode = () => { const L = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let s = ''; for (let i = 0; i < 4; i++) s += L[(Math.random()*L.length)|0]; return s; };
+async function netHost(mode){
+  netLeave(true);
+  NET.mode = MP_MODES[mode] ? mode : 'coop'; NET.host = true; NET.on = true; NET.me = 0;
+  netStatus('Opening a room…');
+  for (let tries = 0; tries < 4; tries++){
+    NET.code = netCode(); NET.id = 'adlords-' + NET.code;
+    try { await netSigOpen(NET.id); break; } catch(e){ if (e.message !== 'taken' || tries === 3){ netStatus(e.message === 'taken' ? 'Try again' : e.message + '. Check your connection.', true); NET.on = false; mpRender(); return; } }
+  }
+  NET.players = [{slot: 0, name: mpName(), heli: SETTINGS.mpHeli || 'apache', team: 0, side: 'def', ch: PROFILE.equipped, me: true}];
+  netStatus('Room open. Tell your friends the code.'); mpRender();
+}
+async function netJoin(code){
+  netLeave(true);
+  code = String(code || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+  if (code.length !== 4){ netStatus('Room codes are 4 letters', true); return; }
+  NET.host = false; NET.on = true; NET.code = code; NET.id = 'adlords-' + code + '-' + Math.random().toString(36).slice(2, 8);
+  netStatus('Looking for room ' + code + '…');
+  try { await netSigOpen(NET.id); } catch(e){ netStatus(e.message + '. Check your connection.', true); NET.on = false; mpRender(); return; }
+  const P = netPeer('adlords-' + code, true); P.slot = 0;
+  await P.pc.setLocalDescription(await P.pc.createOffer());
+  netSig({type: 'OFFER', dst: P.id, payload: {sdp: P.pc.localDescription, type: 'data', connectionId: P.cid, label: 'g', reliable: true, serialization: 'json', browser: 'adlords'}});
+  clearTimeout(NET.joinT); NET.joinT = setTimeout(() => { if (!P.open){ netStatus('Could not connect to room ' + code + '. Check the code; some networks block direct connections.', true); netLeave(true); mpRender(); } }, 20000);
+}
+function netLeave(quiet){
+  clearTimeout(NET.joinT);
+  if (NET.on && !quiet) netAll({t: 'bye'});
+  for (const P of [...NET.peers.values()]){ try { P.pc.close(); } catch(_){} } NET.peers.clear();
+  if (NET.ws){ try { NET.ws.close(); } catch(_){} NET.ws = null; } clearInterval(NET.hb);
+  for (const s of [...NET.av.keys()]) netAvatarRemove(s);
+  Object.assign(NET, {on: false, host: false, started: false, players: [], mirror: false, noWaves: false, hitQ: [], snap: null, pose: {}, score: {}, ready: new Set(), cash: 0});
+  $('mpHud').hidden = true; $('mpCmd').hidden = true; mpRender();
+}
+
+// ---------- messages ----------
+function netOnG(P, m){
+  if (NET.host && P.slot < 0 && m.t !== 'hello') return;
+  switch (m.t){
+    case 'hello': {
+      if (!NET.host) return;
+      if (NET.started || NET.players.length >= netMode().max){ netSend(P, {t: 'full'}); setTimeout(() => netDrop(P), 300); return; }
+      let slot = 1; while (NET.players.some(p => p.slot === slot)) slot++;
+      P.slot = slot;
+      NET.players.push({slot, name: String(m.name || 'Player').slice(0, 14), heli: m.heli || 'apache', team: slot % 2, side: NET.players.filter(p => p.side === 'cmd').length < NET.players.filter(p => p.side === 'def').length ? 'cmd' : 'def', ch: m.ch, ver: m.ver});
+      netSend(P, {t: 'welcome', slot, code: NET.code, mode: NET.mode, ver: GAME_VERSION});
+      netAll({t: 'roster', players: NET.players, mode: NET.mode});
+      toast(m.name + ' joined', '#c8ffd0'); sfx('reward'); mpRender();
+      if (m.ver && m.ver !== GAME_VERSION) netSend(P, {t: 'note', msg: 'Your game is ' + m.ver + ', the host has ' + GAME_VERSION + '. Update both to the same version.'});
+      return;
+    }
+    case 'welcome': NET.me = m.slot; NET.mode = m.mode; netStatus('In room ' + m.code + '. Waiting for the host to start.'); mpRender(); return;
+    case 'full': netStatus('That room is full or already playing', true); netLeave(true); mpRender(); return;
+    case 'note': toast(m.msg, '#ffe6a0'); return;
+    case 'roster': NET.players = m.players; NET.mode = m.mode; mpRender(); return;
+    case 'set': if (NET.host){ const p = NET.players.find(q => q.slot === P.slot); if (p){ for (const k of ['heli', 'team', 'side', 'ch']) if (m[k] !== undefined) p[k] = m[k]; netAll({t: 'roster', players: NET.players, mode: NET.mode}); mpRender(); } } return;
+    case 'start': netBegin(m); return;
+    case 'bye': netDrop(P); return;
+    case 'left': netAvatarRemove(m.slot); toast(m.name + ' left', '#ffd2cc'); return;
+    // ---- world, from the host ----
+    case 'wave': if (!NET.host){ $('shop').hidden = true; NET.waitShop = false; wave = m.wave - 1; startWave(); } return;
+    case 'shop': if (!NET.host && MODE === 'def' && NET.side === 'def'){ un = 0; openShop(); } if (!NET.host && NET.side === 'cmd'){ NET.cash += 25 + 5*wave; toast('Wave ' + wave + ' held · +' + (25 + 5*wave) + ' budget', '#ffe6a0'); } return;
+    case 'kill': if (!NET.host){ kills++; coins += ROLES[m.role] ? ROLES[m.role].coin*(1 + 0.03*wave)*(1 + PERK.coins) : 0; } return;
+    case 'over': netOver(m); return;
+    // ---- hits on the host's world (clients -> host) ----
+    case 'hit': if (NET.host) netApplyHits(P, m.h); return;
+    case 'bd': if (NET.host){ const b = bosses.find(o => o.id === m.id); if (b){ b.hp -= m.d; b.hit = 0.08; b.dirty = true; checkBoss(); } } return;
+    case 'hd': if (NET.host && MODE === 'heli'){ const e = HM.enemies.find(o => o.uid === m.id && !o.remote); if (e && e.hp > 0){ hmHitHelis(e.pos, 0.01, m.d); } } return;
+    case 'ready': if (NET.host){ NET.ready.add(P.slot); netCheckReady(); } return;
+    case 'send': if (NET.host) netSpawnUnits(P.slot, m); return;
+    // ---- player vs player ----
+    case 'shot': if (NET.host) netAll(m, P); netRemoteShot(m); return;
+    case 'dmg': if (NET.host && m.to !== NET.me) { netSend(netPeerOf(m.to), m); return; } if (m.to === NET.me) netTakeDamage(m); return;
+    case 'down': if (NET.host){ netAll(m, P); netScoreDown(m); } else netScoreDown(m); return;
+    case 'score': NET.score = m.score; mpHud(); return;
+  }
+}
+function netOnS(P, d){
+  if (typeof d === 'string'){
+    let m; try { m = JSON.parse(d); } catch(_){ return; }
+    if (m.t === 'p'){ if (NET.host && P.slot >= 0){ m.s = P.slot; netAllS(JSON.stringify(m), P); } NET.pose[m.s] = m; m.at = performance.now(); }
+    return;
+  }
+  if (!NET.host) NET.snap = d;      // newest world snapshot wins; applied once per frame
+}
+
+// ---------- lobby -> game ----------
+function netStart(){
+  if (!NET.host || NET.started) return;
+  const M = netMode();
+  if (M.cmd && !NET.players.some(p => p.side === 'cmd')){ netStatus('Wave Commander needs at least one commander', true); return; }
+  const msg = {t: 'start', mode: NET.mode, players: NET.players};
+  netAll(msg); netBegin(msg);
+}
+function netBegin(m){
+  NET.started = true; NET.mode = m.mode; NET.players = m.players; NET.ready.clear(); NET.score = {}; NET.cash = 30; NET.lastBy = -1;
+  for (const p of NET.players) NET.score[p.slot] = {k: 0, d: 0};
+  const M = netMode(), me = netMe();
+  NET.side = M.cmd ? me.side : 'def';
+  NET.mirror = !NET.host && !M.pvp;           // pvp: nothing shared but the aircraft
+  NET.noWaves = !!M.noWaves;
+  $('mp').hidden = true; $('title').hidden = true; RUN = null;
+  if (M.kind === 'heli'){
+    SETTINGS.heliFlight = SETTINGS.heliFlight || 'auto';
+    hmStart(me.heli === 'dap' && !lazyReady.dap ? 'apache' : me.heli || 'apache');
+    // spread the starting points so nobody spawns inside someone else
+    HM.pos.set((NET.me - 1.5)*22, 14, 18 - (NET.me % 2)*10);
+    if (NET.noWaves){ budget = 0; spawned = 0; bossPending = 0; HM.toSpawn = 0; cardQueue.length = 0; $('intro').hidden = true; state = 'play'; }
+  } else {
+    MODE = 'def'; reset();
+    if (NET.side === 'cmd'){ clearGunners(); $('bottom').hidden = true; $('mpCmd').hidden = false; mpCmdRender(); }
+    if (NET.mirror){ budget = 0; bossPending = 0; }
+  }
+  $('mpHud').hidden = false; mpHud();
+  toast(M.name + ' · ' + NET.players.length + ' players', '#c8ffd0');
+}
+// shop between waves (co-op / commander): everyone shops, the next wave starts when all defenders are ready
+function netShopDone(){
+  if (NET.host){ NET.ready.add(0); netCheckReady(); if (!netAllReady()) toast('Waiting for the others to finish shopping…', '#e8fbff'); }
+  else { netSend(netHostPeer(), {t: 'ready'}); toast('Waiting for the others…', '#e8fbff'); NET.waitShop = true; }
+}
+const netAllReady = () => NET.players.filter(p => p.side !== 'cmd' || !netMode().cmd).every(p => NET.ready.has(p.slot));
+function netCheckReady(){
+  if (!NET.host || !NET.started || !NET.shopOpen || !netAllReady()) return;
+  NET.shopOpen = false; NET.ready.clear(); $('shop').hidden = true;
+  if (netMode().cmd && wave >= 10){ netOver({t: 'over', win: 'def', msg: 'The defenders held all 10 waves'}, true); return; }
+  startWave(); netAll({t: 'wave', wave});
+}
+
+// ---------- every frame ----------
+function netTick(dt){
+  if (!NET.on || !NET.started) return;
+  const now = performance.now();
+  // my position, ~15 times a second
+  NET.poseT -= dt;
+  if (NET.poseT <= 0){
+    NET.poseT = 1/15;
+    let p;
+    if (MODE === 'heli' && HM.on) p = {t: 'p', s: NET.me, m: 'h', ty: HM.type, x: +HM.pos.x.toFixed(2), y: +HM.pos.y.toFixed(2), z: +HM.pos.z.toFixed(2), vx: +(HM.vel ? HM.vel.x : 0).toFixed(2), vy: +(HM.vel ? HM.vel.y : 0).toFixed(2), vz: +(HM.vel ? HM.vel.z : 0).toFixed(2),
+      yw: +HM.yaw.toFixed(3), pi: +HM.pitch.toFixed(3), b: +(HM.bank || 0).toFixed(3), hp: Math.round(HM.hull), f: HM.firing ? 1 : 0, dead: state === 'dying' ? 1 : 0};
+    else p = {t: 'p', s: NET.me, m: NET.side === 'cmd' ? 'c' : 'd', cx: +cx.toFixed(2), w: weapon, n: gunners.length, f: state === 'play' && gunners.length ? 1 : 0};
+    const js = JSON.stringify(p); if (NET.host) netAllS(js); else netSendS(netHostPeer(), js);
+  }
+  // the host streams the world
+  if (NET.host && !netMode().pvp){ NET.snapT -= dt; if (NET.snapT <= 0){ NET.snapT = 0.1; netAllS(netSnapshot()); } }
+  // mirrors: apply the newest snapshot, send my hits
+  if (NET.mirror){
+    // my hits first (bosses and enemy helicopters by how much their health dropped here), then the host's newest world
+    for (const b of bosses) if (b.id && b._hp !== undefined && b.hp < b._hp - 0.01){ netSend(netHostPeer(), {t: 'bd', id: b.id, d: +(b._hp - b.hp).toFixed(2)}); b._hp = b.hp; }
+    if (MODE === 'heli') for (const e of HM.enemies) if (e.mirror && e._hp !== undefined && e.hp < e._hp - 0.01){ netSend(netHostPeer(), {t: 'hd', id: e.uid, d: +(e._hp - e.hp).toFixed(2)}); e._hp = e.hp; }
+    if (NET.hitQ.length){ netSend(netHostPeer(), {t: 'hit', h: NET.hitQ}); NET.hitQ = []; }
+    if (NET.snap){ netApplySnapshot(NET.snap); NET.snap = null; }
+    for (let i = 0; i < en; i++){ ex[i] += (NET.mtx[i] - ex[i])*Math.min(1, dt*8); ez[i] += (NET.mtz[i] - ez[i])*Math.min(1, dt*8); }
+  }
+  netAvatars(dt, now);
+  if (NET.side === 'cmd'){ NET.cash += dt*(3 + 0.6*wave); NET.cmdT = (NET.cmdT || 0) - dt; if (NET.cmdT <= 0){ NET.cmdT = 0.25; mpCmdRender(); } }
+  NET.hudT = (NET.hudT || 0) - dt; if (NET.hudT <= 0){ NET.hudT = 0.5; mpHud(); }
+}
+
+// ---------- world snapshot (host -> mirrors), binary ----------
+// header: kind u8, wave u16, wall f32, en u16, bosses u8, helis u8; enemy: id i32, x i16, z i16, role u8, hp u8; boss: id i32, x z hp max f32; heli: uid i32, kind u8, x y z yaw hp max f32
+function netSnapshot(){
+  const hel = MODE === 'heli' ? HM.enemies.filter(e => !e.remote && e.pos) : [];
+  const n = Math.min(en, 1200), buf = new ArrayBuffer(11 + n*10 + bosses.length*20 + hel.length*29), v = new DataView(buf); let o = 0;
+  v.setUint8(o, 1); o++; v.setUint16(o, wave); o += 2; v.setFloat32(o, wall); o += 4; v.setUint16(o, n); o += 2; v.setUint8(o, bosses.length); o++; v.setUint8(o, hel.length); o++;
+  for (let i = 0; i < n; i++){ v.setInt32(o, eid[i]); v.setInt16(o + 4, Math.round(ex[i]*100)); v.setInt16(o + 6, Math.round(clamp(ez[i], -320, 320)*100)); v.setUint8(o + 8, er[i]); v.setUint8(o + 9, Math.round(clamp(eh[i]/(ehpMax[i] || 1), 0, 1)*255)); o += 10; }
+  for (const b of bosses){ if (!b.id) b.id = nextId++; v.setInt32(o, b.id); v.setFloat32(o + 4, b.x); v.setFloat32(o + 8, b.z); v.setFloat32(o + 12, b.hp); v.setFloat32(o + 16, b.max); o += 20; }
+  for (const e of hel){ if (!e.uid) e.uid = ++vehUid; v.setInt32(o, e.uid); v.setUint8(o + 4, e.kind === 'bh' ? 1 : 0); v.setFloat32(o + 5, e.pos.x); v.setFloat32(o + 9, e.pos.y); v.setFloat32(o + 13, e.pos.z); v.setFloat32(o + 17, e.g ? e.g.rotation.y : 0); v.setFloat32(o + 21, e.hp); v.setFloat32(o + 25, e.max); o += 29; }
+  return buf;
+}
+const _nIdx = new Map();
+function netApplySnapshot(buf){
+  const v = new DataView(buf); let o = 0;
+  if (v.getUint8(o) !== 1) return; o++;
+  const w = v.getUint16(o); o += 2; wall = v.getFloat32(o); o += 4; const n = v.getUint16(o); o += 2; const nb = v.getUint8(o); o++; const nh = v.getUint8(o); o++;
+  if (w !== wave && w > 0){ wave = w; }
+  _nIdx.clear(); for (let i = 0; i < en; i++) _nIdx.set(eid[i], i);
+  // rebuild the horde in the host's order, keeping each girl's walk phase so she doesn't stutter
+  const old = {ex: ex.slice(0, en), ez: ez.slice(0, en), eph: eph.slice(0, en), eyaw: eyaw.slice(0, en), es: es.slice(0, en), ehit: ehit.slice(0, en)};
+  for (let k = 0; k < n; k++){
+    const id = v.getInt32(o), x = v.getInt16(o + 4)/100, z = v.getInt16(o + 6)/100, r = v.getUint8(o + 8), hp = v.getUint8(o + 9)/255; o += 10;
+    const j = _nIdx.get(id), R = ROLES[ROLE_ORDER[r]] || ROLES.normal, max = R.hp*hpScale();
+    if (j !== undefined){ ex[k] = old.ex[j]; ez[k] = old.ez[j]; eph[k] = old.eph[j]; eyaw[k] = old.eyaw[j]; es[k] = old.es[j]; ehit[k] = old.ehit[j]; }
+    else { ex[k] = x; ez[k] = z; eph[k] = rnd(0, 6.28); eyaw[k] = rnd(-0.2, 0.2); es[k] = R.speed; ehit[k] = 0; }
+    NET.mtx[k] = x; NET.mtz[k] = z; eid[k] = id; er[k] = r; ehpMax[k] = max; eh[k] = Math.max(0.01, hp*max); killBy[k] = 0; elunge[k] = 0; ebuff[k] = 0; estag[k] = 0;
+  }
+  en = n;
+  // bosses
+  const keep = [];
+  for (let k = 0; k < nb; k++){
+    const id = v.getInt32(o), x = v.getFloat32(o + 4), z = v.getFloat32(o + 8), hp = v.getFloat32(o + 12), max = v.getFloat32(o + 16); o += 20;
+    let b = bosses.find(q => q.id === id); if (!b){ b = {id, x, z, hp, max, hit: 0, dirty: true, ph: rnd(0, 6)}; }
+    b.x += (x - b.x)*0.5; b.z += (z - b.z)*0.5; b.hp = hp; b._hp = hp; b.max = max; b.dirty = true; keep.push(b);
+  }
+  if (keep.length !== bosses.length || keep.some((b, i) => b !== bosses[i])){ bosses.length = 0; bosses.push(...keep); if (!bosses.length) hideBosses(); }
+  // enemy helicopters (co-op sky)
+  if (MODE === 'heli'){
+    const seenH = new Set();
+    for (let k = 0; k < nh; k++){
+      const uid = v.getInt32(o), kind = v.getUint8(o + 4) ? 'bh' : 'ap', x = v.getFloat32(o + 5), y = v.getFloat32(o + 9), z = v.getFloat32(o + 13), yaw = v.getFloat32(o + 17), hp = v.getFloat32(o + 21), max = v.getFloat32(o + 25); o += 29;
+      seenH.add(uid);
+      let e = HM.enemies.find(q => q.mirror && q.uid === uid);
+      if (!e){ e = netMirrorHeli(kind, uid); if (!e) continue; e.pos.set(x, y, z); }
+      e.tgt = e.tgt || new THREE.Vector3(); e.tgt.set(x, y, z); e.yaw = yaw; e.max = max; e.hp = e._hp = hp;
+    }
+    for (let k = HM.enemies.length - 1; k >= 0; k--){ const e = HM.enemies[k]; if (e.mirror && !seenH.has(e.uid)){ if (e.hp > 0){ e.hp = 0; e.fall = 0; } } }
+  }
+}
+function netMirrorHeli(kind, uid){
+  if (kind === 'bh' && !lazyReady.blackhawk) return null;
+  let e;
+  if (kind === 'bh'){ const b = buildUH60(false); b.hull.scale.setScalar(0.42*HB); scene.add(b.g); e = {kind: 'bh', g: b.g, rotor: b.rotor, tail: b.tail, guns: b.guns}; }
+  else { const b = buildApache(); tintify(b.g, 1.9, 0.75, 0.7); b.g.scale.setScalar(HM_SCALE*0.9*HB); scene.add(b.g); e = {kind: 'ap', g: b.g, rotor: b.rotor, tail: b.tail}; }
+  Object.assign(e, {mirror: true, uid, hp: 1, max: 1, pos: new THREE.Vector3(), hit: 0, fall: 0});
+  HM.enemies.push(e); return e;
+}
+// mirrored enemy helicopters and other players' aircraft: no AI here, they follow what we're told
+function netHeliAvatarTick(e, dt){
+  if (e.hp <= 0){
+    e.fall = (e.fall || 0) + dt; e.pos.y -= dt*(4 + e.fall*8); e.g.rotation.y += dt*4; e.g.position.copy(e.pos);
+    if (Math.random() < 0.8) chips(e.pos.x, e.pos.y, e.pos.z, SMOKE, 1, 1.5);
+    if (e.pos.y < -1){ if (e.mirror){ explode(e.pos.x, e.pos.z, 0.1, 0, true); scene.remove(e.g); HM.enemies.splice(HM.enemies.indexOf(e), 1); } else e.g.visible = false; }
+    return;
+  }
+  e.hit = Math.max(0, (e.hit || 0) - dt);
+  if (e.tgt){ e.pos.lerp(e.tgt, Math.min(1, dt*6)); }
+  e.g.visible = true; e.g.position.copy(e.pos);
+  if (e.remote){ netPoseHeli(e.g, e.ty, e.yw, e.pi, e.b); }
+  else if (e.yaw !== undefined) e.g.rotation.y = e.yaw;
+  if (e.rotor) e.rotor.rotation.y += dt*28; if (e.tail) e.tail.rotation[e.ty === 'apache' || e.kind === 'ap' ? 'z' : 'x'] += dt*60;
+}
+function netPoseHeli(g, ty, yaw, pitch, bank){
+  if (ty !== 'apache'){ g.rotation.set(0, -yaw, 0); g.rotateZ(bank); g.rotateX(-pitch); }
+  else { g.rotation.set(0, -yaw - Math.PI/2, 0); g.rotateX(bank); g.rotateZ(pitch); }
+}
+
+// ---------- hits from mirrors (host side) ----------
+function netApplyHits(P, list){
+  if (!Array.isArray(list)) return;
+  _nIdx.clear(); for (let i = 0; i < en; i++) _nIdx.set(eid[i], i);
+  for (const [id, d] of list){
+    const i = _nIdx.get(id); if (i === undefined || eh[i] <= 0) continue;
+    const kb = kills, c0 = coins; hurtEnemy(i, +d || 0);
+    if (eh[i] <= 0){ kills = kb; coins = c0; netSend(P, {t: 'kill', role: ROLE_ORDER[er[i]]}); NET.score[P.slot] = NET.score[P.slot] || {k: 0, d: 0}; NET.score[P.slot].k++; }     // the kill (and its coins) are theirs
+  }
+}
+// commander: units bought on the other side arrive at the far end of the pier
+function netSpawnUnits(slot, m){
+  const U = MP_UNITS[m.role]; if (!U) return;
+  if (m.role === 'boss'){ const max = Math.round(70*Math.pow(Math.max(3, wave), 2.0)); bosses.push({x: clamp(+m.x || 0, -halfW(FAR + 2) + 2.5, halfW(FAR + 2) - 2.5), z: FAR + 2, hp: max, max, hit: 0, dirty: true, ph: rnd(0, 6), id: nextId++}); sfx('boss'); toast('A commander sent a boss!', '#ff9a90'); return; }
+  const R = ROLES[m.role], n = Math.min(12, Math.max(1, m.n | 0))*(R.pack || 1), x0 = clamp(+m.x || 0, -halfW(FAR) + 1, halfW(FAR) - 1);
+  for (let k = 0; k < n; k++) spawnEnemy(m.role, FAR - rnd(0, 3), x0 + rnd(-1.5, 1.5));
+}
+
+// ---------- player vs player ----------
+function netTakeDamage(m){
+  if (MODE !== 'heli' || !HM.on || HM.hull <= 0) return;
+  NET.lastBy = m.by; hmDamage(m.d);
+}
+function netScoreDown(m){
+  const S = NET.score; S[m.slot] = S[m.slot] || {k: 0, d: 0}; S[m.slot].d++;
+  if (m.by >= 0 && m.by !== m.slot){ S[m.by] = S[m.by] || {k: 0, d: 0}; S[m.by].k++; }
+  const nm = s => (NET.players.find(p => p.slot === s) || {name: 'Someone'}).name;
+  toast(m.by >= 0 && m.by !== m.slot ? nm(m.by) + ' shot down ' + nm(m.slot) : nm(m.slot) + ' went down', m.by === NET.me ? '#c8ffd0' : '#ffd2cc');
+  mpHud();
+  if (NET.host){
+    netAll({t: 'score', score: S});
+    const M = netMode(), goal = M.teams ? 15 : 10;
+    if (M.pvp){
+      if (M.teams){ for (const tm of [0, 1]){ const k = NET.players.filter(p => p.team === tm).reduce((s, p) => s + ((S[p.slot] || {}).k || 0), 0); if (k >= goal){ netOver({t: 'over', win: 'team' + tm, msg: 'Team ' + (tm ? 'Blue' : 'Gold') + ' wins'}, true); return; } } }
+      else for (const p of NET.players) if (((S[p.slot] || {}).k || 0) >= goal){ netOver({t: 'over', win: 'slot' + p.slot, msg: p.name + ' wins'}, true); return; }
+    }
+  }
+}
+// someone else fired: same projectile here, for show only (the shooter decides what it hit)
+function netRemoteShot(m){
+  if (MODE !== 'heli' || !HM.on || m.s === NET.me) return;
+  const from = new THREE.Vector3().fromArray(m.f), dir = new THREE.Vector3().fromArray(m.d); hmShoot(m.k, from, dir, m.sp, {cosmetic: true, to: from.clone().addScaledVector(dir.clone().normalize(), 70)});
+  const ty = (NET.players.find(p => p.slot === m.s) || {}).heli || 'apache';
+  hsShot(HKIND(ty), '3p', m.k === 'rocket' ? 'rkt' : m.k === 'cannon' ? '30mmb' : 'tow', 0.9, 0, from, 18);
+}
+// our helicopter went down
+function netGameOver(){
+  const M = netMode();
+  if (MODE === 'heli' && M.pvp){
+    netUp({t: 'down', slot: NET.me, by: NET.lastBy}); if (NET.host) netScoreDown({slot: NET.me, by: NET.lastBy});
+    // back in the fight after a short pause, somewhere else
+    state = 'play'; HM.hull = 100; HM.vel && HM.vel.set(0, 0, 0); HM.pos.set(rnd(-40, 40), 16, rnd(-20, 20)); HM.pitch = HM.bank = 0; HM.flares = Math.max(HM.flares, 6); NET.lastBy = -1;
+    toast('Respawned', '#e8fbff'); return true;
+  }
+  if (!NET.host && NET.mirror) return true;          // the host decides when the pier falls
+  if (NET.host){ netOver({t: 'over', win: M.cmd ? 'cmd' : 'none', msg: M.cmd ? 'The commanders broke the barricade' : 'The pier fell'}, true); return true; }
+  return false;
+}
+function netOver(m, mine){
+  if (mine && NET.host) netAll(m);
+  NET.started = false; NET.mirror = false; NET.noWaves = false;
+  $('mpCmd').hidden = true;
+  const S = NET.score, rows = NET.players.map(p => p.name + (netMode().pvp ? '  ' + ((S[p.slot] || {}).k || 0) + ' kills / ' + ((S[p.slot] || {}).d || 0) + ' deaths' : netMode().cmd ? '  (' + (p.side === 'cmd' ? 'commander' : 'defender') + ')' : '')).join(' · ');
+  if (MODE === 'heli' && HM.on) hmStop();
+  state = 'over';
+  $('over').querySelector('.tag').textContent = 'Multiplayer'; $('over').querySelector('h2').textContent = m.msg || 'Game over';
+  $('oWave').textContent = wave; $('oKills').textContent = fmt(kills); $('oTime').textContent = ''; $('oTimeL').textContent = '';
+  $('oBest').textContent = rows; $('retryBtn').hidden = true; $('againBtn').textContent = 'Back to the room';
+  $('over').hidden = false; $('hud').hidden = true; $('bottom').hidden = true; $('mpHud').hidden = true;
+  NET.backToRoom = true;
+}
+function netEndToMenu(){ if (MODE === 'heli' && HM.on) hmStop(); $('mpHud').hidden = true; $('mpCmd').hidden = true; MODE = 'def'; reset(true); openTitle(); }
+
+// ---------- other players on screen ----------
+function netNameTag(name, col){
+  const c = document.createElement('canvas'); c.width = 256; c.height = 64; const x = c.getContext('2d');
+  x.font = '800 30px system-ui, sans-serif'; x.textAlign = 'center'; x.lineWidth = 6; x.strokeStyle = 'rgba(0,0,0,.75)'; x.strokeText(name, 128, 42); x.fillStyle = col; x.fillText(name, 128, 42);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(c), depthTest: false, transparent: true})); s.scale.set(2.4, 0.6, 1); s.renderOrder = 9; return s;
+}
+function netAvatarRemove(slot){
+  const A = NET.av.get(slot); if (!A) return;
+  if (A.e){ const i = HM.enemies.indexOf(A.e); if (i >= 0) HM.enemies.splice(i, 1); }
+  if (A.g) scene.remove(A.g); if (A.e && A.e.g) scene.remove(A.e.g);
+  NET.av.delete(slot); delete NET.pose[slot];
+}
+function netAvatars(dt, now){
+  const M = netMode();
+  for (const p of NET.players){
+    if (p.slot === NET.me) continue;
+    const ps = NET.pose[p.slot]; if (!ps) continue;
+    let A = NET.av.get(p.slot);
+    const want = ps.m;
+    if (A && A.m !== want){ netAvatarRemove(p.slot); A = null; }
+    if (!A){
+      A = {m: want}; NET.av.set(p.slot, A);
+      const col = MP_COLS[p.slot % 4];
+      if (want === 'h' && MODE === 'heli'){
+        const ty = ps.ty || 'apache';
+        const b = ty === 'little' ? buildLittle() : ty === 'dap' ? buildDap() : buildApache();
+        if (ty === 'apache') b.g.scale.setScalar(HM_SCALE*HB); else b.hull.scale.setScalar((ty === 'little' && b.model ? 0.4 : 0.42)*HB);
+        if (ty === 'dap') b.hull.position.y = 0;
+        scene.add(b.g);
+        const tag = netNameTag(p.name, col); tag.position.y = 3.2/(b.g.scale.y || 1); b.g.add(tag); tag.scale.multiplyScalar(1/(b.g.scale.y || 1));
+        const foe = M.pvp && !(M.teams && p.team === netMe().team);
+        A.e = {remote: true, slot: p.slot, ty, g: b.g, rotor: b.rotor, tail: b.tail, guns: b.guns, hp: 100, max: 100, pos: new THREE.Vector3(ps.x, ps.y, ps.z), tgt: new THREE.Vector3(ps.x, ps.y, ps.z), hit: 0, kind: 'remote', uid: 9000 + p.slot};
+        if (foe) HM.enemies.push(A.e); else A.friend = true;
+      } else if (want === 'd' && MODE === 'def'){
+        A.g = new THREE.Group(); scene.add(A.g);
+        const mat = new THREE.MeshToonMaterial({gradientMap: gradSoft, color: new THREE.Color(col)});
+        A.bodies = []; for (let k = 0; k < 5; k++){ const m = new THREE.Mesh(gunnerGeoHi, mat); m.rotation.y = Math.PI; m.scale.setScalar(BODY*GS*0.92); m.visible = false; A.g.add(m); A.bodies.push(m); }
+        const tag = netNameTag(p.name, col); tag.position.y = 2.6; A.g.add(tag); A.fireT = 0;
+      }
+    }
+    if (A.e){
+      const e = A.e, lag = Math.min(0.25, (now - (ps.at || now))/1000);
+      e.tgt.set(ps.x + (ps.vx || 0)*lag, ps.y + (ps.vy || 0)*lag, ps.z + (ps.vz || 0)*lag); e.yw = ps.yw; e.pi = ps.pi; e.b = ps.b; e.ty = ps.ty;
+      if (!e.dead && ps.dead){ e.hp = 0; e.fall = 0; } else if (!ps.dead && e.hp <= 0 && ps.hp > 50){ e.hp = ps.hp; e.pos.copy(e.tgt); e.g.visible = true; } else if (!ps.dead) e.hp = Math.max(1, ps.hp);
+      e.dead = !!ps.dead;
+      if (A.friend) netHeliAvatarTick(e, dt);
+      // their guns: sound from where they are
+      if (ps.f && e.hp > 0 && ps.ty === 'little') gunVoice('mp' + p.slot, 'fire', 0, 1, {pos: e.pos, bank: 'lb_3p_mg', ref: 16});
+    } else if (A.g){
+      const n = clamp(ps.n | 0, 1, 5), x0 = ps.cx || 0;
+      A.bodies.forEach((m, k) => { m.visible = k < n; m.position.set(x0 + (k - (n - 1)/2)*1.0, 0, GUN_Z + 1.15); });
+      A.g.children[A.g.children.length - 1].position.set(x0, 2.7, GUN_Z + 1.15);
+      // their stream of fire, for show (the hits are theirs; the host's snapshot shows the result)
+      if (ps.f && MODE === 'def' && state === 'play'){ A.fireT -= dt; while (A.fireT <= 0 && un < BUCAP - 40){ A.fireT += 0.12; const W = WEAPONS[ps.w] || WEAPONS.pistol, k = (Math.random()*n)|0, i = un++, a = rnd(-W.spread, W.spread);
+        ux[i] = x0 + (k - (n - 1)/2)*1.0; uz[i] = GUN_Z + 0.6; uy[i] = 0.68*GS; uvy[i] = 0; uvx[i] = Math.sin(a)*W.speed; uvz[i] = -Math.cos(a)*W.speed; utr[i] = 0; uo[i] = 0; ud[i] = 0; upi[i] = 0; ul[i] = W.life; uk[i] = WKEYS.indexOf(ps.w); um[i] = 0; ulast[i] = 0; } }
+    }
+  }
+  for (const s of [...NET.av.keys()]) if (!NET.players.some(p => p.slot === s)) netAvatarRemove(s);
+}
+
+// ---------- lobby UI ----------
+function mpOpen(){ $('mp').hidden = false; $('mpName').value = mpName(); mpRender(); }
+function mpRender(){
+  if (!$('mp')) return;
+  const inRoom = NET.on && (NET.host || NET.players.length > 0);
+  $('mpStart').hidden = inRoom; $('mpLobby').hidden = !inRoom;
+  if (!inRoom) return;
+  const M = netMode();
+  $('mpCode').textContent = NET.code; $('mpModeName').textContent = M.name; $('mpModeDesc').textContent = M.desc;
+  $('mpModeSel').hidden = !NET.host; $('mpModeSel').value = NET.mode; $('mpGo').hidden = !NET.host; $('mpGo').disabled = NET.players.length < 2 && !SETTINGS.mpSolo;
+  $('mpHeliRow').hidden = M.kind !== 'heli'; $('mpSideRow').hidden = !M.cmd; $('mpTeamRow').hidden = !M.teams;
+  const me = netMe(); $('mpHeli').value = me.heli || 'apache'; $('mpSide').value = me.side || 'def'; $('mpTeam').value = String(me.team || 0);
+  $('mpList').innerHTML = NET.players.map(p => `<li style="--c:${MP_COLS[p.slot % 4]}"><b>${p.name.replace(/[<>&]/g, '')}</b>${p.slot === 0 ? '<i>host</i>' : ''}${p.slot === NET.me ? '<i>you</i>' : ''}<span>${M.kind === 'heli' ? ({apache: 'Apache', dap: 'DAP', little: 'Little Bird'})[p.heli] || '' : ''}${M.teams ? ' · team ' + (p.team ? 'Blue' : 'Gold') : ''}${M.cmd ? (p.side === 'cmd' ? 'commander' : 'defender') : ''}</span></li>`).join('') +
+    Array.from({length: Math.max(0, M.max - NET.players.length)}, () => '<li class="open">open slot</li>').join('');
+}
+function mpSet(k, v){
+  const me = NET.players.find(p => p.slot === NET.me); if (me) me[k] = v;
+  if (k === 'heli'){ SETTINGS.mpHeli = v; saveSettings(); }
+  if (NET.host){ netAll({t: 'roster', players: NET.players, mode: NET.mode}); mpRender(); } else netSend(netHostPeer(), {t: 'set', [k]: v});
+}
+function mpHud(){
+  const el = $('mpHud'); if (!el || el.hidden) return;
+  const M = netMode(), S = NET.score;
+  let ping = '';
+  el.innerHTML = `<b>${M.name}</b> · room ${NET.code}` + NET.players.map(p => `<span style="color:${MP_COLS[p.slot % 4]}">${p.name.replace(/[<>&]/g, '')}${M.pvp ? ' ' + ((S[p.slot] || {}).k || 0) : ''}</span>`).join('') + (NET.side === 'cmd' ? `<span class="cash">💰 ${Math.floor(NET.cash)}</span>` : '') + ping;
+}
+function mpCmdRender(){
+  const el = $('mpCmdBtns'); if (!el) return;
+  if (!el.children.length){
+    el.innerHTML = Object.entries(MP_UNITS).map(([k, U]) => `<button class="btn small" type="button" data-u="${k}">${k === 'boss' ? 'Boss' : ROLES[k].name}<small>${U.cost}${k === 'swarm' ? ' · pack' : ''}</small></button>`).join('');
+    el.querySelectorAll('button').forEach(b => b.onclick = () => mpCmdBuy(b.dataset.u));
+  }
+  el.querySelectorAll('button').forEach(b => { const U = MP_UNITS[b.dataset.u]; b.disabled = NET.cash < U.cost || (U.wave && wave < U.wave); });
+  $('mpCash').textContent = Math.floor(NET.cash);
+}
+function mpCmdBuy(role){
+  const U = MP_UNITS[role]; if (!U || NET.cash < U.cost) return;
+  NET.cash -= U.cost; sfx('buy');
+  const lane = +$('mpLane').value || 0, x = lane*halfW(FAR)*0.6;
+  netSend(netHostPeer(), {t: 'send', role, n: 1, x}); mpCmdRender();
+}
+
+$('mpBtn').onclick = () => mpOpen();
+$('mpBack').onclick = () => { $('mp').hidden = true; if (NET.on && !NET.started) netLeave(); };
+$('mpName').addEventListener('change', e => { SETTINGS.mpName = e.target.value.trim().slice(0, 14) || 'Player'; saveSettings(); });
+{ const opts = Object.entries(MP_MODES).map(([k, M]) => `<option value="${k}">${M.name}</option>`).join(''); $('mpHostMode').innerHTML = opts; $('mpModeSel').innerHTML = opts; }
+$('mpHostBtn').onclick = () => { SETTINGS.mpName = $('mpName').value.trim().slice(0, 14) || 'Player'; saveSettings(); netHost($('mpHostMode').value); };
+$('mpJoinBtn').onclick = () => { SETTINGS.mpName = $('mpName').value.trim().slice(0, 14) || 'Player'; saveSettings(); netJoin($('mpJoinCode').value); };
+$('mpJoinCode').addEventListener('keydown', e => { if (e.key === 'Enter') $('mpJoinBtn').click(); e.stopPropagation(); });
+$('mpName').addEventListener('keydown', e => e.stopPropagation());
+$('mpModeSel').onchange = e => { if (!NET.host) return; NET.mode = e.target.value; netAll({t: 'roster', players: NET.players, mode: NET.mode}); mpRender(); };
+$('mpHeli').onchange = e => mpSet('heli', e.target.value);
+$('mpTeam').onchange = e => mpSet('team', +e.target.value);
+$('mpSide').onchange = e => mpSet('side', e.target.value);
+$('mpGo').onclick = () => netStart();
+$('mpLeave').onclick = () => { netLeave(); netStatus('Left the room'); };
 $('pickApache').onclick = () => { $('heliPick').hidden = true; $('title').hidden = true; hmStart('apache'); };
 $('pickLittle').onclick = () => { $('heliPick').hidden = true; $('title').hidden = true; hmStart('little'); };
 $('pickDap').onclick = () => { if (!lazyReady.dap) return; $('heliPick').hidden = true; $('title').hidden = true; hmStart('dap'); };
 $('pickBack').onclick = () => { $('heliPick').hidden = true; };
 $('howBtn').onclick = () => { $('menu').hidden = false; };
 $('playBtn').onclick = () => { $('menu').hidden = true; };
-$('againBtn').onclick = () => { if (MODE === 'heli'){ $('over').hidden = true; hmStart(); return; } RUN = null; persist(); reset(); };
+$('againBtn').onclick = () => { if (NET.on && NET.backToRoom){ NET.backToRoom = false; $('over').hidden = true; netEndToMenu(); mpOpen(); return; } if (MODE === 'heli'){ $('over').hidden = true; hmStart(); return; } RUN = null; persist(); reset(); };
 $('retryBtn').onclick = () => { if (MODE === 'heli'){ $('over').hidden = true; hmStart(); return; } $('over').hidden = true; loadRun(RUN); };
 $('overMenuBtn').onclick = openTitle;
 // ---- pause ----
@@ -6542,7 +7350,7 @@ addEventListener('pagehide', () => { if (state === 'play') pauseGame(); });
 // ---- settings ----
 function bindSettings(){
   const S_ = SETTINGS;
-  $('sSound').checked = S_.sound; $('sMaster').value = S_.master; $('sSfx').value = S_.sfx; $('sAmb').value = S_.amb; $('sShadows').checked = S_.shadows; $('sHq').checked = S_.hq; $('sLite').checked = !!S_.liteCrowd; $('sMouse').checked = !!S_.mouseMove; $('sPc').value = S_.pcMode || 'auto'; $('sHf').value = S_.heliFlight || 'auto'; $('sHs').value = S_.heliSens || 1; $('sHi').checked = !!S_.heliInvert; renderBinds(); renderHotbarSet(); refreshPadInfo(); $('sLoc').value = S_.location || 'pier'; $('sSkin').value = S_.enemySkin || 'classic';
+  $('sSound').checked = S_.sound; $('sMaster').value = S_.master; $('sSfx').value = S_.sfx; $('sAmb').value = S_.amb; $('sShadows').checked = S_.shadows; $('sMocap').checked = S_.mocap !== false; $('sHq').checked = S_.hq; $('sLite').checked = !!S_.liteCrowd; $('sMouse').checked = !!S_.mouseMove; $('sPc').value = S_.pcMode || 'auto'; $('sHf').value = S_.heliFlight || 'auto'; $('sHs').value = S_.heliSens || 1; $('sHi').checked = !!S_.heliInvert; renderBinds(); renderHotbarSet(); refreshPadInfo(); $('sLoc').value = S_.location || 'pier'; $('sSkin').value = S_.enemySkin || 'classic';
   $('muteBtn').textContent = S_.sound ? '🔊' : '🔇'; $('muteBtn').setAttribute('aria-label', S_.sound ? 'Mute sound' : 'Turn sound on');
 }
 function applyGraphics(){
@@ -6555,6 +7363,7 @@ $('sSound').addEventListener('change', e => { SETTINGS.sound = e.target.checked;
 $('sDap').value = SETTINGS.dapLook || 'pods';
 $('sDap').addEventListener('change', e => { SETTINGS.dapLook = e.target.value; saveSettings(); toast('DAP model changes on the next load', '#e8fbff'); });
 $('sShadows').addEventListener('change', e => { SETTINGS.shadows = e.target.checked; applyGraphics(); saveSettings(); });
+$('sMocap').addEventListener('change', e => { SETTINGS.mocap = e.target.checked; saveSettings(); toast('Restart the game to re-bake the crowd', '#e8fbff'); });
 $('sHq').addEventListener('change', e => { SETTINGS.hq = e.target.checked; applyGraphics(); saveSettings(); });
 $('sPc').addEventListener('change', e => { SETTINGS.pcMode = e.target.value; saveSettings(); applyPC(); applyLocation(LOC.cur); });
 $('sHf').addEventListener('change', e => { SETTINGS.heliFlight = e.target.value; saveSettings(); });
@@ -6934,7 +7743,7 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
   const loader = new THREE.GLTFLoader();
   const lcache = {}, load = url => lcache[url] || (lcache[url] = new Promise((res, rej) => loader.load(url, res, undefined, rej)));
   SKIN_LOAD.load = load; SKIN_LOAD.fresh = url => new Promise((res, rej) => loader.load(url, res, undefined, rej));
-  const jobs = [];
+  const jobs = [], ualP = ualLoad();
   let done = 0; const total = ROLE_ORDER.length + Object.entries(ASSETS.vehicles).filter(([v]) => !LAZY.has(v)).flatMap(([, o]) => Object.values(o)).filter(Boolean).length;
   const tick = label => { done++; $('loadfill').style.width = Math.round(done/total*100) + '%'; $('loadtxt').textContent = label; };
   for (const [veh, parts] of Object.entries(ASSETS.vehicles)) if (!LAZY.has(veh)) for (const [part, url] of Object.entries(parts)) if (url){
@@ -6942,7 +7751,7 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
   }
   if (ASSETS.player) jobs.push(load(ASSETS.player).then(g => { loadedParts.player = g.scene; }).catch(() => {}));
   for (const role of ROLE_ORDER){
-    jobs.push(load(ASSETS.enemies[role]).then(g => { buildRole(role, g); tick('Teaching the ' + ROLES[role].name + ' to walk…'); }));
+    jobs.push(load(ASSETS.enemies[role]).then(g => ualP.then(() => g)).then(g => { buildRole(role, g); tick('Teaching the ' + ROLES[role].name + ' to walk…'); }));
   }
   try { await Promise.all(jobs); }
   catch(e){ $('loadtxt').textContent = 'Could not load the characters. Check your connection and reload.'; console.error(e); return; }

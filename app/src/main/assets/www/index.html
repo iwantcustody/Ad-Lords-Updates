@@ -964,7 +964,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V79';
+const GAME_VERSION = 'V80';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -2573,6 +2573,8 @@ const REWARDS = [
 ];
 for (const r of REWARDS) if (!r.label) r.label = WEAPONS[r.id].name.toUpperCase();
 function pickReward(exclude){
+  // Wave Commander: barrels only ever hold ammo (no pistol levels, no gunners, no call-ins)
+  if (NET.started && netMode().cmd) return (p => p[(Math.random()*p.length)|0])(REWARDS.filter(r => WEAPONS[r.id] && r.id !== exclude));
   const pool = REWARDS.filter(r => r.id !== exclude && r.id !== 'gunner' && (r.id !== 'pistolup' || wlv.pistol < pistolCap()) && (!LAZY.has(r.id) || lazyReady[r.id]) && !(r.id === 'apache' && GS_.on));
   const wt = r => r.id === 'pistolup' ? r.w*(wlv.pistol < 3 ? 1.6 : 1) : r.w;
   let sum = 0; for (const r of pool) sum += wt(r);
@@ -2606,6 +2608,7 @@ function spawnBarrel(x, reward){
   const ls = new THREE.Sprite(new THREE.SpriteMaterial({map: lo.t, depthTest: false})); ls.scale.set(2.0, 0.5, 1); ls.position.y = 2.6; ls.renderOrder = 5; m.add(ls);
   const b = {id: barrelId++, x, z: MOUTH - 2, hp, max: hp, reward, m, spin, icon, o, lo, dirty: true, hit: 0};
   m.position.set(b.x, 0.72, b.z); scene.add(m); barrels.push(b);
+  return b;
 }
 function spawnBarrelPair(){
   const a = pickReward(), b = pickReward(a.id);
@@ -2622,6 +2625,9 @@ function drawBarrel(b){
 function removeBarrel(b){ scene.remove(b.m); b.o.t.dispose(); b.lo.t.dispose(); const i = barrels.indexOf(b); if (i >= 0) barrels.splice(i, 1); }
 function breakBarrel(b){
   if (!barrels.includes(b)) return;
+  if (NET.ghost) return;
+  if (NET.mirror && b.hostId){ b.hp = 0; b.m.visible = false; return; }      // the host decides who breaks it
+  if (NET.on && NET.started && NET.host && !netMode().pvp){ netBarrelLoot(b); return; }
   chips(b.x, 0.9, b.z, WOOD, 34, 6); chips(b.x, 1.6, b.z, GREEN, 14, 4);
   sfx('wood', 1, b.x/6); sfx('wdebris', 0.6, b.x/6); sfx('reward');
   const r = b.reward.id;
@@ -3068,6 +3074,7 @@ const projs = [], booms = [], vehicles = [];
 const grenadeGeo = new S(0.12, 14, 10), rocketBody = new C(0.07, 0.07, 0.5, 12).rotateX(Math.PI/2), rocketTip = new CO(0.07, 0.18, 12).rotateX(-Math.PI/2), shellGeo = new C(0.09, 0.09, 0.5, 10).rotateX(Math.PI/2);
 const boomGeo = new S(1, 20, 14);
 function launch(kind, x, z, vx, vz, dmg, aoe, y = 1.15){
+  if (NET.ghost) dmg = 0;
   const m = new THREE.Group();
   if (kind === 'grenade') m.add(new THREE.Mesh(grenadeGeo, olive));
   else {
@@ -3139,7 +3146,7 @@ function shoot(x, y, z, tx, tz, speed, dmg, pierce, kindIdx, life = 1.2, spread 
   const i = un++;
   ux[i] = x; uz[i] = z; uy[i] = y; uvx[i] = Math.sin(a)*speed; uvz[i] = -Math.cos(a)*speed; uvy[i] = y > 2.4 ? (1.0 - y)/t : 0;
   if (tr >= 2) tr = Math.random() < SETTINGS.hud.trQty ? 3 : 2;      // the tracer share you set
-  ud[i] = dmg*dmgMul; upi[i] = pierce + apLv(); ul[i] = Math.max(life, t + 0.3); uk[i] = kindIdx; um[i] = 3; ulast[i] = 0; utr[i] = tr; uo[i] = SHOT_OWN;
+  ud[i] = NET.ghost ? 0 : dmg*dmgMul; upi[i] = pierce + apLv(); ul[i] = Math.max(life, t + 0.3); uk[i] = kindIdx; um[i] = 3; ulast[i] = 0; utr[i] = tr; uo[i] = SHOT_OWN;
 }
 function nearestEnemy(x, z, maxZ = 2){
   let best = -1, bd = 1e9;
@@ -3187,6 +3194,7 @@ function canDeploy(k){
 function deploy(k){
   if (!(STOCK[k] > 0) || !canDeploy(k)){ sfx('deny'); return; }
   STOCK[k]--;
+  if (NET.mirror && (k === 'freeze' || k === 'repair')){ netSend(netHostPeer(), {t: 'sup', k}); toast(k === 'freeze' ? 'Horde frozen' : 'Barricade repaired', k === 'freeze' ? '#c6ecff' : '#b9f5c1'); sfx(k); buildStreaks(); return; }
   if (k === 'freeze'){ freezeT = 4.5; toast('Horde frozen', '#c6ecff'); sfx('freeze'); }
   else if (k === 'repair'){ wall = Math.min(100, wall + 25); toast('Barricade repaired', '#b9f5c1'); sfx('repair'); }
   else requestVehicle(k);
@@ -3212,7 +3220,7 @@ function buildStreaks(flash){
 function refreshStreaks(){ for (const b of $('streaks').children){ const k = b.dataset.k; if (!k) continue; const n = STOCK[k] || 0; b.classList.toggle('zero', !n); b.disabled = !n || !canDeploy(k); } }
 function requestVehicle(type){
   if (type === 'apache') return gunshipStart();
-  const active = vehicles.filter(v => v.type === type && !v.done);
+  const active = vehicles.filter(v => v.type === type && !v.done && !v.ghost);
   if (active.length && type !== 'bulldozer'){
     pendingChoice = type; prevState = state; state = 'choice';
     $('choiceTitle').textContent = VEHICLES[type].name;
@@ -3222,9 +3230,10 @@ function requestVehicle(type){
   }
   spawnVehicle(type);
 }
-function spawnVehicle(type){
+function spawnVehicle(type, ghost){
   const V = VEHICLES[type], n = vehicles.filter(v => v.type === type && !v.done).length;
-  const v = {type, uid: ++vehUid, t: 0, dur: V.dur, lvl: 1, done: false, fireT: 0, fireT2: 0, side: n % 2 ? -1 : 1};
+  const v = {type, uid: ++vehUid, t: 0, dur: V.dur, lvl: 1, done: false, fireT: 0, fireT2: 0, side: n % 2 ? -1 : 1, ghost: !!ghost};
+  if (!ghost && NET.on && NET.started) netUp({t: 'veh', type, s: NET.me});
   if (type === 'technical'){ Object.assign(v, buildTechnical()); v.x = VSLOT.technical[0]*(n % 2 ? -1 : 1); v.z = VSLOT.technical[1] - (n > 1 ? 3.2 : 0); v.g.scale.setScalar(0.9); }
   else if (type === 'abrams'){ Object.assign(v, buildAbrams()); v.x = VSLOT.abrams[0]*(n % 2 ? -1 : 1); v.z = VSLOT.abrams[1] - (n > 1 ? 3.6 : 0); v.g.scale.setScalar(0.85); }
   else if (type === 'blackhawk'){ Object.assign(v, buildBlackhawk()); v.side = n % 2 ? -1 : 1; v.x = v.side*12; v.z = 4; v.ph = rnd(0, 6); }
@@ -3232,10 +3241,11 @@ function spawnVehicle(type){
   else if (type === 'little'){ Object.assign(v, buildLittle()); v.hull.scale.setScalar(0.36); v.x = v.side*9; v.z = 10; v.y = 7; v.ph = rnd(0, 6); v.yaw = 0; v.rkT = 2.5; v.volley = 0; }
   else { v.g = plowModel(); v.x = clamp(cx, -2.6, 2.6); v.z = BARRICADE_Z - 1.6; v.hp = 60 + wave*25; v.max = v.hp; }
   v.g.position.set(v.x, 0, v.z); scene.add(v.g); vehicles.push(v);
-  toast(V.name + '!', '#ffd08a');
+  if (!ghost) toast(V.name + '!', '#ffd08a');
+  return v;
 }
 function upgradeVehicle(type){
-  const v = vehicles.find(o => o.type === type && !o.done); if (!v) return spawnVehicle(type);
+  const v = vehicles.find(o => o.type === type && !o.done && !o.ghost); if (!v) return spawnVehicle(type);
   v.lvl++; v.dur += type === 'dap' ? 16 : 12; toast(VEHICLES[type].name + ' Lv ' + v.lvl, '#ffd08a');
 }
 $('choiceA').onclick = () => { $('choice').hidden = true; state = prevState; spawnVehicle(pendingChoice); };
@@ -3289,6 +3299,7 @@ const _lodV = new THREE.Vector3();
 function updateVehicles(dt){
   for (const v of vehicles){
     if (v.done) continue;
+    NET.ghost = !!v.ghost;      // another player's vehicle: everything it fires here is for show
     v.t += dt;
     const lv = 1 + 0.5*(v.lvl - 1);
     if (v.type === 'technical'){
@@ -3348,6 +3359,7 @@ function updateVehicles(dt){
     const v = vehicles[k];
     if (v.done){ if (v.type !== 'bulldozer') chips(v.x, 1.5, v.z, SMOKE, 16, 3); scene.remove(v.g); vehicles.splice(k, 1); }
   }
+  NET.ghost = false;
 }
 const _v3 = new THREE.Vector3();
 
@@ -3559,7 +3571,7 @@ function dapUpdate(v, dt, lv){
 
 // ---------- door-gun seat: you work the DAP's inboard M134 ----------
 const DG = {on: false, v: null, gun: null, th: 0.9, ph: -0.6, hold: false, kills0: 0, t: 0, keys: {}};
-const dapReady = () => vehicles.find(o => o.type === 'dap' && !o.done && o.t > 3.4 && o.t < o.dur - 4);
+const dapReady = () => vehicles.find(o => o.type === 'dap' && !o.done && !o.ghost && o.t > 3.4 && o.t < o.dur - 4);
 function dgStart(){
   const v = dapReady(); if (!v || GS_.on || DF.on || state !== 'play' || MODE !== 'def') return;
   Object.assign(DG, {on: true, v, gun: v.guns.find(g => g.side < 0), hold: false, kills0: kills, t: 0});
@@ -3780,9 +3792,10 @@ function airShots(dt){
     const hit = sh.m.position.y <= 0.4 || sh.m.position.distanceTo(sh.to) < (sh.kind === 'cannon' ? 1.2 : 0.8) || sh.life <= 0;
     if (hit){
       const x = sh.m.position.x, z = sh.m.position.z, before = kills;
-      if (sh.kind === 'cannon') explode(x, z, CANNON.r, CANNON.dmg*dmgMul, true);
-      else if (sh.kind === 'rocket') explode(x, z, sh.aoe || 2.8, (sh.dmg || 24)*dmgMul, true);
-      else { explode(x, z, 4.4, 150*dmgMul); }
+      const gm = sh.ghost ? 0 : 1;
+      if (sh.kind === 'cannon') explode(x, z, CANNON.r, CANNON.dmg*dmgMul*gm, true);
+      else if (sh.kind === 'rocket') explode(x, z, sh.aoe || 2.8, (sh.dmg || 24)*dmgMul*gm, true);
+      else { explode(x, z, 4.4, 150*dmgMul*gm); }
       if (P.on) P.kills += kills - before;
       scene.remove(sh.m); P.shots.splice(k, 1);
     }
@@ -3916,7 +3929,7 @@ function gsShoot(kind, from, to, extra){
   if (kind === 'cannon'){ _trX.copy(to).sub(from).normalize(); m.position.addScaledVector(_trX, 2.8); m.lookAt(_trD.copy(m.position).sub(_trX)); }
   const speed = kind === 'cannon' ? 70 : kind === 'rocket' ? 38 : 30;
   const v = to.clone().sub(from).normalize().multiplyScalar(speed);
-  GS_.shots.push({kind, m, v, to: to.clone(), life: extra && extra.followDF ? 4 : 3, ...extra});
+  GS_.shots.push({kind, m, v, to: to.clone(), life: extra && extra.followDF ? 4 : 3, ...extra, ghost: NET.ghost});
 }
 function gsTargetNear(p){
   const nb = nearBoss(p, 9); if (nb) return {boss: nb};
@@ -4103,11 +4116,11 @@ function spawnEnemy(role, z, x){
   return true;
 }
 function hurtEnemy(i, d){
-  if (eh[i] <= 0) return;
+  if (eh[i] <= 0 || NET.ghost) return;
   if (NET.mirror){ if (d > 0){ NET.hitQ.push([eid[i], +d.toFixed(2)]); eh[i] -= d; ehit[i] = 1; if (eh[i] > 0) sfx('hit', 0.5); else { killBy[i] = 1; sfx('pop', 0.8, ex[i]/8); } } return; }
   eh[i] -= d; ehit[i] = 1;
   if (eh[i] > 0) sfx('hit', 0.5);
-  if (eh[i] <= 0){ kills++; killBy[i] = 1; sfx('pop', 0.8, ex[i]/8); coins += ROLES[ROLE_ORDER[er[i]]].coin*(1 + 0.03*wave)*(1 + PERK.coins); }
+  if (eh[i] <= 0){ kills++; killBy[i] = 1; sfx('pop', 0.8, ex[i]/8); coins += ROLES[ROLE_ORDER[er[i]]].coin*(1 + 0.03*wave)*(1 + PERK.coins)*netCoinK(); }
 }
 function pierSet(n){
   PIER.t = -1; PIER.hold = false; PIER.stage = n; MAIN = STAGE_M[n]; GLIM = MAIN - 0.6;
@@ -4177,6 +4190,8 @@ function startWave(){
 }
 function showNextCard(){
   if (!cardQueue.length) return;
+  // multiplayer: commanders skip the intro cards, and nobody's card pauses the shared world
+  if (NET.on && NET.started && NET.side === 'cmd'){ for (const r of cardQueue) seen.add(r); cardQueue.length = 0; return; }
   const r = cardQueue.shift(); seen.add(r);
   const isBoss = r === 'boss', R = isBoss ? null : ROLES[r];
   $('introImg').src = ASSETS.cards[isBoss ? 'tank' : r];
@@ -4190,7 +4205,7 @@ function showNextCard(){
     R.speed > 3 ? 'VERY FAST' : R.speed < 1.4 ? 'SLOW' : 'NORMAL SPEED',
     R.pack ? 'PACKS OF ' + R.pack : R.lunge ? 'LUNGES' : R.aura ? 'SPEED AURA' : R.dmg >= 4 ? 'HITS HARD' : 'BASIC'];
   $('introStats').innerHTML = stats.map(s => `<span>${s}</span>`).join('');
-  prevState = 'play'; state = 'card'; $('intro').hidden = false; sfx('card');
+  prevState = 'play'; if (!(NET.on && NET.started)) state = 'card'; $('intro').hidden = false; sfx('card');
 }
 $('introBtn').onclick = () => { $('intro').hidden = true; state = 'play'; if (cardQueue.length) showNextCard(); else flyRecapture(); };
 // back to flying from a pop-up on PC: grab the mouse again (the click that closed the pop-up counts as the gesture)
@@ -4220,7 +4235,7 @@ const SHOP = [
 function openShop(){
   if (GS_.on){ gsReset(); $('bottom').hidden = false; }
   state = 'shop';
-  coins += 12 + wave*4;
+  coins += Math.round((12 + wave*4)*defCoinK());
   earnGems(1 + Math.floor(wave/5), 'for clearing wave ' + wave);
   showShop();
   saveRun();
@@ -5000,14 +5015,16 @@ function update(dt){
 
   // barrels arrive in pairs: choose which one to break
   barrelT -= dt;
-  if (MODE === 'def' && barrelT <= 0 && barrels.length < 2 && spawned < budget && !NET.mirror){ barrelT = rnd(9, 12); spawnBarrelPair(); }
+  // Wave Commander: barrels keep rolling for the whole round, however long the commanders keep it going
+  if (MODE === 'def' && barrelT <= 0 && barrels.length < 2 && (spawned < budget || (NET.started && netMode().cmd)) && !NET.mirror){ barrelT = rnd(9, 12); spawnBarrelPair(); }
   for (let k = barrels.length - 1; k >= 0; k--){
     const b = barrels[k];
-    if (!frozen){ b.z += 1.5*dt; b.spin.rotation.y -= 1.5*dt/0.7; }
+    if (!frozen && !NET.mirror){ b.z += 1.5*dt; b.spin.rotation.y -= 1.5*dt/0.7; }
+    if (NET.mirror && b.tz !== undefined){ b.z += (b.tz - b.z)*Math.min(1, dt*8); b.spin.rotation.y -= 1.5*dt/0.7; }
     b.hit = Math.max(0, b.hit - dt);
     b.m.position.set(b.x, 0.72, b.z);
     b.icon.rotation.y += dt*1.6; b.icon.position.y = 1.75 + Math.sin(t*3 + b.id)*0.08;
-    if (b.z > BARRICADE_Z - 0.8){ wall -= 8; hurt = 0.5; shake = 0.45; chips(b.x, 1, b.z, WOOD, 30, 6); toast('Barrel hit the barricade', '#ffb3ab'); removeBarrel(b); }
+    if (b.z > BARRICADE_Z - 0.8 && !NET.mirror){ wall -= 8; hurt = 0.5; shake = 0.45; chips(b.x, 1, b.z, WOOD, 30, 6); toast('Barrel hit the barricade', '#ffb3ab'); removeBarrel(b); }
   }
 
   // fire
@@ -5182,12 +5199,13 @@ function update(dt){
   shake = Math.max(0, shake - dt); hurt = Math.max(0, hurt - dt);
   if (wall <= 0 && !NET.mirror) return gameOver();
   // wave cleared -> shop
-  if (!NET.mirror && !NET.noWaves && spawned >= budget && !bossPending && !bosses.length && en === 0 && waveT > 3 && !(GS_.on && GS_.phase !== 'leave')){
+  const cmdTimeUp = NET.started && MODE === 'def' && netMode().cmd && waveT > waveDur + CMD_WAVE_EXTRA;
+  if (!NET.mirror && !NET.noWaves && (cmdTimeUp || (spawned >= budget && !bossPending && !bosses.length && en === 0 && waveT > 3)) && !(GS_.on && GS_.phase !== 'leave')){
     if (MODE === 'heli'){ if (HM.breakT <= 0 && !HM.toSpawn && !HM.enemies.some(e => e.hp > 0)) hmWaveClear(); }
     else {
     while (barrels.length) removeBarrel(barrels[0]);
     un = 0;
-    if (NET.on && NET.started){ NET.shopOpen = true; netAll({t: 'shop'}); if (NET.side === 'cmd'){ state = 'shop'; netCheckReady(); } else openShop(); }
+    if (NET.on && NET.started){ NET.shopOpen = true; NET.shopEnd = netMode().cmd ? performance.now() + CMD_SHOP_T*1000 : 0; netAll({t: 'shop', T: NET.shopEnd ? CMD_SHOP_T : 0}); if (cmdTimeUp) toast('Time! The horde holds while the defenders shop', '#ffe6a0'); if (NET.side === 'cmd'){ state = 'shop'; netCmdShopBonus(); netCheckReady(); } else openShop(); }
     else openShop();
     }
   }
@@ -6809,11 +6827,28 @@ const MP_MODES = {
 const MP_SIG = () => SETTINGS.mpServer || 'wss://0.peerjs.com/peerjs';
 const MP_ICE = [{urls: 'stun:stun.l.google.com:19302'}, {urls: 'stun:stun1.l.google.com:19302'}, {urls: 'stun:global.stun.twilio.com:3478'}];
 const MP_COLS = ['#ffd166', '#6fd3ff', '#a6ff8a', '#ff8ad8'];
-const MP_UNITS = {normal: {cost: 3}, fast: {cost: 4}, swarm: {cost: 8}, charger: {cost: 9}, captain: {cost: 14}, tank: {cost: 18}, boss: {cost: 120, wave: 3}};
-const NET = {on: false, host: false, started: false, code: '', id: '', ws: null, hb: null, peers: new Map(), me: 0, mode: 'coop', players: [],
+// cd: seconds before the commander can send that unit again (weak ones are instant, the boss takes a while)
+const MP_UNITS = {normal: {cost: 3, cd: 0}, fast: {cost: 4, cd: 0.6}, swarm: {cost: 8, cd: 1.5}, charger: {cost: 9, cd: 2.5}, captain: {cost: 14, cd: 4}, tank: {cost: 18, cd: 6}, boss: {cost: 120, wave: 3, cd: 13}};
+// Wave Commander balance: the outnumbered side earns faster
+const cmdSides = () => { const nc = NET.players.filter(p => p.side === 'cmd').length; return {nc: Math.max(1, nc), nd: Math.max(1, NET.players.length - nc)}; };
+const cmdIncomeK = () => { const {nc, nd} = cmdSides(); return nc > nd ? 1/(1 + 0.4*(nc - nd)) : 1 + 0.25*(nd - nc); };
+const defCoinK = () => { if (!(NET.on && NET.started && netMode().cmd)) return 1; const {nc, nd} = cmdSides(); return nc > nd ? 1 + 0.3*(nc - nd) : 1; };
+const CMD_WAVE_EXTRA = 20, CMD_SHOP_T = 15;
+const NET = {ucd: {}, shopOpen: false, shopEnd: 0, on: false, host: false, started: false, code: '', id: '', ws: null, hb: null, peers: new Map(), me: 0, mode: 'coop', players: [],
   mirror: false, noWaves: false, hitQ: [], snap: null, snapT: 0, poseT: 0, pose: {}, av: new Map(), friends: new Map(), score: {}, cash: 0, side: 'def',
   lastBy: -1, ready: new Set(), status: '', joinT: null, mtx: new Float32Array(ECAP), mtz: new Float32Array(ECAP)};
 const netMode = () => MP_MODES[NET.mode] || MP_MODES.coop;
+// co-op: every kill goes to one player, so each kill pays a third more (not double: the barrels and the pier are shared too)
+const netCoinK = () => NET.on && NET.started && !netMode().pvp ? 1.35*defCoinK() : 1;
+// host side: a barrel broke. Ammo / weapon / gunner / pistol rewards go to everyone; a vehicle or support call-in to whoever broke it
+function netBarrelLoot(b){
+  const r = b.reward.id, by = b.lastBy ?? NET.me, who = (NET.players.find(p => p.slot === by) || {}).name || 'Someone';
+  chips(b.x, 0.9, b.z, WOOD, 34, 6); chips(b.x, 1.6, b.z, GREEN, 14, 4); sfx('wood', 1, b.x/6); sfx('wdebris', 0.6, b.x/6);
+  removeBarrel(b);
+  const personal = VEHICLES[r] || r === 'freeze' || r === 'repair';
+  if (personal){ if (by === NET.me){ grant(r); sfx('reward'); toast('You got ' + b.reward.label, '#c8ffd0'); } else { netSend(netPeerOf(by), {t: 'loot', r, by}); toast(who + ' got ' + b.reward.label, '#e8fbff'); } }
+  else { grant(r); sfx('reward'); netAll({t: 'loot', r, by, name: who}); toast((by === NET.me ? 'You' : who) + ' shared ' + b.reward.label, '#c8ffd0'); }
+}
 const netMe = () => NET.players.find(p => p.slot === NET.me) || {slot: NET.me, name: mpName(), heli: SETTINGS.mpHeli || 'apache', team: 0, side: 'def'};
 const mpName = () => (SETTINGS.mpName || 'Player').slice(0, 14);
 function netStatus(s, bad){ NET.status = s; const el = $('mpStatus'); if (el){ el.textContent = s; el.classList.toggle('bad', !!bad); } }
@@ -6823,7 +6858,7 @@ function netSigOpen(id){
   return new Promise((res, rej) => {
     const url = MP_SIG() + '?key=peerjs&id=' + encodeURIComponent(id) + '&token=' + Math.random().toString(36).slice(2, 12) + '&version=1.5.4';
     let ws; try { ws = new WebSocket(url); } catch(e){ rej(e); return; }
-    let opened = false; const to = setTimeout(() => { if (!opened){ try { ws.close(); } catch(_){} rej(new Error('Could not reach the matchmaking server')); } }, 10000);
+    let opened = false, to; const giveUp = n => { to = setTimeout(() => { if (opened) return; if (ws.readyState === 1 && n < 3){ giveUp(n + 1); return; } try { ws.close(); } catch(_){} rej(new Error('Could not reach the matchmaking server')); }, 10000); }; giveUp(0);
     ws.onmessage = ev => {
       let m; try { m = JSON.parse(ev.data); } catch(_){ return; }
       if (m.type === 'OPEN'){ opened = true; clearTimeout(to); NET.ws = ws; clearInterval(NET.hb); NET.hb = setInterval(() => netSig({type: 'HEARTBEAT'}), 5000); res(); return; }
@@ -6869,7 +6904,7 @@ function netPeer(id, initiator){
   pc.onconnectionstatechange = () => { const s = pc.connectionState; if (s === 'failed' || s === 'closed') netDrop(P); else if (s === 'disconnected') setTimeout(() => { if (pc.connectionState === 'disconnected') netDrop(P); }, 5000); };
   const wire = ch => {
     ch.binaryType = 'arraybuffer';
-    if (ch.label === 'g'){ P.g = ch; ch.onopen = () => netPeerOpen(P); ch.onmessage = e => { try { netOnG(P, JSON.parse(e.data)); } catch(err){ console.warn('mp msg', err); } }; ch.onclose = () => netDrop(P); }
+    if (ch.label === 'g'){ P.g = ch; ch.onopen = () => netPeerOpen(P); ch.onmessage = e => { if (typeof e.data !== 'string'){ if (!NET.host){ NET.snap = e.data; NET.snapAt = performance.now(); } return; } try { netOnG(P, JSON.parse(e.data)); } catch(err){ console.warn('mp msg', err); } }; ch.onclose = () => netDrop(P); }
     else { P.s = ch; ch.onmessage = e => netOnS(P, e.data); }
   };
   if (initiator){ wire(pc.createDataChannel('g', {ordered: true})); wire(pc.createDataChannel('s', {ordered: false, maxRetransmits: 0})); }
@@ -6933,7 +6968,7 @@ function netLeave(quiet){
   for (const P of [...NET.peers.values()]){ try { P.pc.close(); } catch(_){} } NET.peers.clear();
   if (NET.ws){ try { NET.ws.close(); } catch(_){} NET.ws = null; } clearInterval(NET.hb);
   for (const s of [...NET.av.keys()]) netAvatarRemove(s);
-  Object.assign(NET, {on: false, host: false, started: false, players: [], mirror: false, noWaves: false, hitQ: [], snap: null, pose: {}, score: {}, ready: new Set(), cash: 0});
+  Object.assign(NET, {on: false, host: false, started: false, players: [], mirror: false, noWaves: false, hitQ: [], snap: null, pose: {}, score: {}, ready: new Set(), cash: 0, ucd: {}, shopOpen: false, shopEnd: 0, waitShop: false});
   $('mpHud').hidden = true; $('mpCmd').hidden = true; mpRender();
 }
 
@@ -6962,9 +6997,13 @@ function netOnG(P, m){
     case 'bye': netDrop(P); return;
     case 'left': netAvatarRemove(m.slot); toast(m.name + ' left', '#ffd2cc'); return;
     // ---- world, from the host ----
-    case 'wave': if (!NET.host){ $('shop').hidden = true; NET.waitShop = false; wave = m.wave - 1; startWave(); } return;
-    case 'shop': if (!NET.host && MODE === 'def' && NET.side === 'def'){ un = 0; openShop(); } if (!NET.host && NET.side === 'cmd'){ NET.cash += 25 + 5*wave; toast('Wave ' + wave + ' held · +' + (25 + 5*wave) + ' budget', '#ffe6a0'); } return;
-    case 'kill': if (!NET.host){ kills++; coins += ROLES[m.role] ? ROLES[m.role].coin*(1 + 0.03*wave)*(1 + PERK.coins) : 0; } return;
+    case 'wave': NET.shopOpen = false; NET.shopEnd = 0; if (!NET.host){ $('shop').hidden = true; NET.waitShop = false; wave = m.wave - 1; startWave(); } return;
+    case 'shop': NET.shopOpen = true; NET.shopEnd = m.T ? performance.now() + m.T*1000 : 0; if (!NET.host && MODE === 'def' && NET.side === 'def'){ un = 0; openShop(); } if (!NET.host && NET.side === 'cmd') netCmdShopBonus(); return;
+    case 'kill': if (!NET.host){ kills++; coins += ROLES[m.role] ? ROLES[m.role].coin*(1 + 0.03*wave)*(1 + PERK.coins)*netCoinK() : 0; } return;
+    case 'veh': if (NET.host) netAll(m, P); if (m.s !== NET.me && MODE === 'def' && VEHICLES[m.type] && m.type !== 'apache') spawnVehicle(m.type, true); return;
+    case 'bar': if (NET.host){ const b = barrels.find(o => o.id === m.id); if (b && b.hp > 0){ b.hp -= m.d; b.dirty = true; b.hit = 0.08; if (b.hp <= 0){ b.lastBy = P.slot; breakBarrel(b); } } } return;
+    case 'loot': grant(m.r); sfx('reward'); toast((m.by === NET.me ? 'You' : m.name || 'A teammate') + (VEHICLES[m.r] || m.r === 'freeze' || m.r === 'repair' ? ' got ' : ' shared ') + ((REWARDS.find(r => r.id === m.r) || {}).label || m.r), '#c8ffd0'); return;
+    case 'sup': if (NET.host){ if (m.k === 'freeze'){ freezeT = 4.5; sfx('freeze'); toast('Horde frozen', '#c6ecff'); } else if (m.k === 'repair'){ wall = Math.min(100, wall + 25); sfx('repair'); toast('Barricade repaired', '#b9f5c1'); } } return;
     case 'over': netOver(m); return;
     // ---- hits on the host's world (clients -> host) ----
     case 'hit': if (NET.host) netApplyHits(P, m.h); return;
@@ -6985,7 +7024,7 @@ function netOnS(P, d){
     if (m.t === 'p'){ if (NET.host && P.slot >= 0){ m.s = P.slot; netAllS(JSON.stringify(m), P); } NET.pose[m.s] = m; m.at = performance.now(); }
     return;
   }
-  if (!NET.host) NET.snap = d;      // newest world snapshot wins; applied once per frame
+  if (!NET.host){ NET.snap = d; NET.snapAt = performance.now(); }      // newest world snapshot wins; applied once per frame
 }
 
 // ---------- lobby -> game ----------
@@ -6993,14 +7032,16 @@ function netStart(){
   if (!NET.host || NET.started) return;
   const M = netMode();
   if (M.cmd && !NET.players.some(p => p.side === 'cmd')){ netStatus('Wave Commander needs at least one commander', true); return; }
-  const msg = {t: 'start', mode: NET.mode, players: NET.players};
+  const msg = {t: 'start', mode: NET.mode, players: NET.players, loc: LOC.cur || SETTINGS.location || 'pier', skin: skinCur || SETTINGS.enemySkin || 'classic'};
   netAll(msg); netBegin(msg);
 }
 function netBegin(m){
-  NET.started = true; NET.mode = m.mode; NET.players = m.players; NET.ready.clear(); NET.score = {}; NET.cash = 30; NET.lastBy = -1;
+  NET.started = true; NET.mode = m.mode; NET.players = m.players; NET.ready.clear(); NET.score = {}; NET.cash = 30; NET.lastBy = -1; NET.ucd = {}; NET.shopOpen = false; NET.shopEnd = 0; NET.waitShop = false;
   for (const p of NET.players) NET.score[p.slot] = {k: 0, d: 0};
   const M = netMode(), me = netMe();
   NET.side = M.cmd ? me.side : 'def';
+  // everyone plays on the host's map, against the host's horde look
+  if (!NET.host){ if (m.loc && m.loc !== LOC.cur) applyLocation(m.loc); if (m.skin && m.skin !== skinCur) applyEnemySkin(m.skin); }
   NET.mirror = !NET.host && !M.pvp;           // pvp: nothing shared but the aircraft
   NET.noWaves = !!M.noWaves;
   $('mp').hidden = true; $('title').hidden = true; RUN = null;
@@ -7026,7 +7067,7 @@ function netShopDone(){
 const netAllReady = () => NET.players.filter(p => p.side !== 'cmd' || !netMode().cmd).every(p => NET.ready.has(p.slot));
 function netCheckReady(){
   if (!NET.host || !NET.started || !NET.shopOpen || !netAllReady()) return;
-  NET.shopOpen = false; NET.ready.clear(); $('shop').hidden = true;
+  NET.shopOpen = false; NET.shopEnd = 0; NET.ready.clear(); $('shop').hidden = true;
   if (netMode().cmd && wave >= 10){ netOver({t: 'over', win: 'def', msg: 'The defenders held all 10 waves'}, true); return; }
   startWave(); netAll({t: 'wave', wave});
 }
@@ -7046,18 +7087,26 @@ function netTick(dt){
     const js = JSON.stringify(p); if (NET.host) netAllS(js); else netSendS(netHostPeer(), js);
   }
   // the host streams the world
-  if (NET.host && !netMode().pvp){ NET.snapT -= dt; if (NET.snapT <= 0){ NET.snapT = 0.1; netAllS(netSnapshot()); } }
+  if (NET.host && !netMode().pvp){ NET.snapT -= dt; if (NET.snapT <= 0){ NET.snapT = 0.1; const buf = netSnapshot(); for (const P of NET.peers.values()) if (P.slot >= 0 && P.g && P.g.readyState === 'open' && P.g.bufferedAmount < 512*1024) try { P.g.send(buf); } catch(_){} } }
   // mirrors: apply the newest snapshot, send my hits
   if (NET.mirror){
     // my hits first (bosses and enemy helicopters by how much their health dropped here), then the host's newest world
     for (const b of bosses) if (b.id && b._hp !== undefined && b.hp < b._hp - 0.01){ netSend(netHostPeer(), {t: 'bd', id: b.id, d: +(b._hp - b.hp).toFixed(2)}); b._hp = b.hp; }
+    for (const b of barrels) if (b.hostId && b._hp !== undefined && b.hp < b._hp - 0.01){ netSend(netHostPeer(), {t: 'bar', id: b.hostId, d: +(b._hp - Math.max(0, b.hp)).toFixed(2)}); b._hp = b.hp; }
     if (MODE === 'heli') for (const e of HM.enemies) if (e.mirror && e._hp !== undefined && e.hp < e._hp - 0.01){ netSend(netHostPeer(), {t: 'hd', id: e.uid, d: +(e._hp - e.hp).toFixed(2)}); e._hp = e.hp; }
     if (NET.hitQ.length){ netSend(netHostPeer(), {t: 'hit', h: NET.hitQ}); NET.hitQ = []; }
     if (NET.snap){ netApplySnapshot(NET.snap); NET.snap = null; }
     for (let i = 0; i < en; i++){ ex[i] += (NET.mtx[i] - ex[i])*Math.min(1, dt*8); ez[i] += (NET.mtz[i] - ez[i])*Math.min(1, dt*8); }
   }
   netAvatars(dt, now);
-  if (NET.side === 'cmd'){ NET.cash += dt*(3 + 0.6*wave); NET.cmdT = (NET.cmdT || 0) - dt; if (NET.cmdT <= 0){ NET.cmdT = 0.25; mpCmdRender(); } }
+  if (NET.shopOpen && NET.shopEnd){
+    const left = Math.max(0, Math.ceil((NET.shopEnd - now)/1000));
+    if (!$('shop').hidden) $('shopGo').textContent = (NET.waitShop ? 'Waiting · ' : 'Ready up · ') + left + 's';
+    if (NET.host && left <= 0){ for (const p of NET.players) NET.ready.add(p.slot); netCheckReady(); }
+  }
+  if (NET.side === 'cmd'){ for (const k in NET.ucd) NET.ucd[k] = Math.max(0, NET.ucd[k] - dt); }
+  // commanders earn nothing while the defenders are shopping
+  if (NET.side === 'cmd'){ if (!NET.shopOpen) NET.cash += dt*(3 + 0.6*wave)*cmdIncomeK(); NET.cmdT = (NET.cmdT || 0) - dt; if (NET.cmdT <= 0){ NET.cmdT = 0.25; mpCmdRender(); } }
   NET.hudT = (NET.hudT || 0) - dt; if (NET.hudT <= 0){ NET.hudT = 0.5; mpHud(); }
 }
 
@@ -7065,18 +7114,20 @@ function netTick(dt){
 // header: kind u8, wave u16, wall f32, en u16, bosses u8, helis u8; enemy: id i32, x i16, z i16, role u8, hp u8; boss: id i32, x z hp max f32; heli: uid i32, kind u8, x y z yaw hp max f32
 function netSnapshot(){
   const hel = MODE === 'heli' ? HM.enemies.filter(e => !e.remote && e.pos) : [];
-  const n = Math.min(en, 1200), buf = new ArrayBuffer(11 + n*10 + bosses.length*20 + hel.length*29), v = new DataView(buf); let o = 0;
-  v.setUint8(o, 1); o++; v.setUint16(o, wave); o += 2; v.setFloat32(o, wall); o += 4; v.setUint16(o, n); o += 2; v.setUint8(o, bosses.length); o++; v.setUint8(o, hel.length); o++;
+  const bar = MODE === 'def' ? barrels.slice(0, 8) : [];
+  const n = Math.min(en, 1200), buf = new ArrayBuffer(12 + n*10 + bosses.length*20 + hel.length*29 + bar.length*21), v = new DataView(buf); let o = 0;
+  v.setUint8(o, 2); o++; v.setUint16(o, wave); o += 2; v.setFloat32(o, wall); o += 4; v.setUint16(o, n); o += 2; v.setUint8(o, bosses.length); o++; v.setUint8(o, hel.length); o++; v.setUint8(o, bar.length); o++;
   for (let i = 0; i < n; i++){ v.setInt32(o, eid[i]); v.setInt16(o + 4, Math.round(ex[i]*100)); v.setInt16(o + 6, Math.round(clamp(ez[i], -320, 320)*100)); v.setUint8(o + 8, er[i]); v.setUint8(o + 9, Math.round(clamp(eh[i]/(ehpMax[i] || 1), 0, 1)*255)); o += 10; }
   for (const b of bosses){ if (!b.id) b.id = nextId++; v.setInt32(o, b.id); v.setFloat32(o + 4, b.x); v.setFloat32(o + 8, b.z); v.setFloat32(o + 12, b.hp); v.setFloat32(o + 16, b.max); o += 20; }
   for (const e of hel){ if (!e.uid) e.uid = ++vehUid; v.setInt32(o, e.uid); v.setUint8(o + 4, e.kind === 'bh' ? 1 : 0); v.setFloat32(o + 5, e.pos.x); v.setFloat32(o + 9, e.pos.y); v.setFloat32(o + 13, e.pos.z); v.setFloat32(o + 17, e.g ? e.g.rotation.y : 0); v.setFloat32(o + 21, e.hp); v.setFloat32(o + 25, e.max); o += 29; }
+  for (const b of bar){ v.setInt32(o, b.id); v.setFloat32(o + 4, b.x); v.setFloat32(o + 8, b.z); v.setFloat32(o + 12, Math.max(0, b.hp)); v.setFloat32(o + 16, b.max); v.setUint8(o + 20, Math.max(0, REWARDS.indexOf(b.reward))); o += 21; }
   return buf;
 }
 const _nIdx = new Map();
 function netApplySnapshot(buf){
   const v = new DataView(buf); let o = 0;
-  if (v.getUint8(o) !== 1) return; o++;
-  const w = v.getUint16(o); o += 2; wall = v.getFloat32(o); o += 4; const n = v.getUint16(o); o += 2; const nb = v.getUint8(o); o++; const nh = v.getUint8(o); o++;
+  const ver = v.getUint8(o); if (ver !== 1 && ver !== 2) return; o++;
+  const w = v.getUint16(o); o += 2; wall = v.getFloat32(o); o += 4; const n = v.getUint16(o); o += 2; const nb = v.getUint8(o); o++; const nh = v.getUint8(o); o++; const nbar = ver >= 2 ? v.getUint8(o++) : 0;
   if (w !== wave && w > 0){ wave = w; }
   _nIdx.clear(); for (let i = 0; i < en; i++) _nIdx.set(eid[i], i);
   // rebuild the horde in the host's order, keeping each girl's walk phase so she doesn't stutter
@@ -7108,7 +7159,18 @@ function netApplySnapshot(buf){
       e.tgt = e.tgt || new THREE.Vector3(); e.tgt.set(x, y, z); e.yaw = yaw; e.max = max; e.hp = e._hp = hp;
     }
     for (let k = HM.enemies.length - 1; k >= 0; k--){ const e = HM.enemies[k]; if (e.mirror && !seenH.has(e.uid)){ if (e.hp > 0){ e.hp = 0; e.fall = 0; } } }
+  } else o += nh*29;
+  // the host's barrels
+  const seenB = new Set();
+  for (let k = 0; k < nbar; k++){
+    const id = v.getInt32(o), x = v.getFloat32(o + 4), z = v.getFloat32(o + 8), hp = v.getFloat32(o + 12), max = v.getFloat32(o + 16), ri = v.getUint8(o + 20); o += 21;
+    if (MODE !== 'def') continue;
+    seenB.add(id);
+    let b = barrels.find(q => q.hostId === id);
+    if (!b){ b = spawnBarrel(x, REWARDS[ri] || REWARDS[0]); b.hostId = id; b.z = z; }
+    b.x = x; b.tz = z; if (Math.abs(b.hp - hp) > 0.01){ b.hp = hp; b.dirty = true; } b._hp = hp; b.max = max;
   }
+  if (MODE === 'def') for (const b of barrels.slice()) if (b.hostId && !seenB.has(b.hostId)) removeBarrel(b);
 }
 function netMirrorHeli(kind, uid){
   if (kind === 'bh' && !lazyReady.blackhawk) return null;
@@ -7295,6 +7357,7 @@ function mpHud(){
   const el = $('mpHud'); if (!el || el.hidden) return;
   const M = netMode(), S = NET.score;
   let ping = '';
+  if (!NET.host && !M.pvp && NET.started && performance.now() - (NET.snapAt || 0) > 2000) ping = '<span style="color:#ff9a90">⚠ waiting for the host’s world…</span>';
   el.innerHTML = `<b>${M.name}</b> · room ${NET.code}` + NET.players.map(p => `<span style="color:${MP_COLS[p.slot % 4]}">${p.name.replace(/[<>&]/g, '')}${M.pvp ? ' ' + ((S[p.slot] || {}).k || 0) : ''}</span>`).join('') + (NET.side === 'cmd' ? `<span class="cash">💰 ${Math.floor(NET.cash)}</span>` : '') + ping;
 }
 function mpCmdRender(){
@@ -7303,14 +7366,17 @@ function mpCmdRender(){
     el.innerHTML = Object.entries(MP_UNITS).map(([k, U]) => `<button class="btn small" type="button" data-u="${k}">${k === 'boss' ? 'Boss' : ROLES[k].name}<small>${U.cost}${k === 'swarm' ? ' · pack' : ''}</small></button>`).join('');
     el.querySelectorAll('button').forEach(b => b.onclick = () => mpCmdBuy(b.dataset.u));
   }
-  el.querySelectorAll('button').forEach(b => { const U = MP_UNITS[b.dataset.u]; b.disabled = NET.cash < U.cost || (U.wave && wave < U.wave); });
+  el.querySelectorAll('button').forEach(b => { const k = b.dataset.u, U = MP_UNITS[k], cd = NET.ucd[k] || 0; b.disabled = NET.cash < U.cost || (U.wave && wave < U.wave) || cd > 0; b.querySelector('small').textContent = cd > 0 ? cd.toFixed(cd < 1 ? 1 : 0) + 's' : U.cost + (k === 'swarm' ? ' · pack' : ''); });
   $('mpCash').textContent = Math.floor(NET.cash);
 }
+function netCmdShopBonus(){ const b = Math.round((25 + 5*wave)*cmdIncomeK()); NET.cash += b; toast('Wave ' + wave + ' over · +' + b + ' budget · defenders are shopping (no income)', '#ffe6a0'); }
 function mpCmdBuy(role){
-  const U = MP_UNITS[role]; if (!U || NET.cash < U.cost) return;
-  NET.cash -= U.cost; sfx('buy');
+  const U = MP_UNITS[role]; if (!U || NET.cash < U.cost || (NET.ucd[role] || 0) > 0) return;
+  NET.cash -= U.cost; NET.ucd[role] = U.cd || 0; sfx('buy');
   const lane = +$('mpLane').value || 0, x = lane*halfW(FAR)*0.6;
-  netSend(netHostPeer(), {t: 'send', role, n: 1, x}); mpCmdRender();
+  const msg = {t: 'send', role, n: 1, x};
+  if (NET.host) netSpawnUnits(NET.me, msg); else netSend(netHostPeer(), msg);
+  mpCmdRender();
 }
 
 $('mpBtn').onclick = () => mpOpen();

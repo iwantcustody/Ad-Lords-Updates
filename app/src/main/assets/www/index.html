@@ -141,7 +141,22 @@ body.pc .streak span{font-size:11px}
 #trPrev{display:block;width:100%;max-width:420px;height:auto;aspect-ratio:320/130;margin:6px 0 8px;border-radius:6px;background:#0a1015;border:1px solid rgba(255,255,255,.08)}
 #radar{position:absolute;z-index:5;left:calc(10px + env(safe-area-inset-left,0px));top:calc(62px + env(safe-area-inset-top,0px));width:104px;height:104px;pointer-events:none;display:none}
 #radar.on{display:block}
+#seatHud{position:absolute;z-index:5;left:50%;bottom:calc(4px + env(safe-area-inset-bottom,0px));width:70px;height:70px;transform:translateX(-50%);pointer-events:none;display:none}#seatHud.on{display:block}
+body.pc #seatHud{width:100px;height:100px}
 body.pc #radar{width:140px;height:140px}
+#loadout{z-index:30;background:rgba(3,8,12,.8)}
+.loCard{background:linear-gradient(180deg,#0d1419,#0a0f13)!important;color:#e6eef2;width:min(940px,96vw)!important;max-width:none!important;max-height:92vh;display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.08);border-radius:6px!important;padding:16px 18px!important}
+.loCard h2{color:#fff;letter-spacing:2px;text-transform:uppercase;font-size:20px}
+.loCard #loSlots{overflow:auto;flex:1;min-height:0}
+#loTabs{display:flex;gap:4px;margin:10px 0 4px;border-bottom:1px solid rgba(255,255,255,.1)}
+#loTabs button{background:none;border:0;color:#9fb0b8;font:800 13px var(--body);letter-spacing:1.2px;text-transform:uppercase;padding:8px 14px;cursor:pointer;border-bottom:3px solid transparent}
+#loTabs button.on{color:#fff;border-bottom-color:var(--gold)}
+.loCard .bfKeys{opacity:.8;font-weight:800;letter-spacing:1px;color:var(--gold)}
+.loSlot{margin:14px 0 4px;text-align:left}.loSlotName{font:800 11px var(--body);letter-spacing:1.4px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.loOpts{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.loOpt{text-align:left;padding:10px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:#141d23;color:#e6eef2;cursor:pointer;font:inherit;display:flex;flex-direction:column;gap:4px}
+.loOpt b{font-size:14px}.loOpt small{font-size:11.5px;opacity:.65;line-height:1.35}
+.loOpt.on{border-color:var(--gold);background:#22291c;box-shadow:inset 3px 0 0 var(--gold)}
 #bfHud{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;display:none}#bfHud.on{display:block}
 #hm.pilotseat #hmRet,#hm.pilotseat #hmAtt,#df.sim .ret,#hm.doorgun #hmRet,#hm.apgun #hmRet,#dg>svg{display:none!important}
 #lookStick{position:absolute;z-index:7;display:none;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;border:2px solid rgba(232,251,255,.8);background:rgba(10,16,22,.28);opacity:.55;touch-action:none}
@@ -442,6 +457,7 @@ body.pc .titleFs{display:none}
   <div id="flash"></div>
   <canvas id="bfHud" aria-hidden="true"></canvas>
   <canvas id="radar" width="300" height="300" aria-hidden="true"></canvas>
+  <canvas id="seatHud" width="160" height="160" aria-hidden="true"></canvas>
   <div id="lookStick" aria-hidden="true"><i></i><span>AIM</span></div>
   <button id="tiltBtn" type="button" aria-label="Recenter tilt">⦿</button>
   <div id="updBar" hidden><span id="updTxt"></span><button id="updGo" type="button">Restart</button><button id="updX" type="button" aria-label="Later">✕</button></div>
@@ -547,7 +563,6 @@ body.pc .titleFs{display:none}
           <label for="tsFloat">Sticks follow your thumb</label><input class="sw" type="checkbox" id="tsFloat">
           <label for="tsSticky">Collective stays where you leave it</label><input class="sw" type="checkbox" id="tsSticky">
           <label for="tsInv">Invert pitch stick</label><input class="sw" type="checkbox" id="tsInv">
-          <label for="sGuided">Aim-guided rockets &amp; missiles (follow the HUD)</label><input class="sw" type="checkbox" id="sGuided">
           <label for="sHf">Gunship flight</label><select id="sHf"><option value="auto">Auto (classic on PC)</option><option value="classic">Classic (Battlefield-style)</option><option value="arcade">Arcade (simple)</option></select>
           <span>Positions</span><button class="btn small" id="tsArrange" type="button">Arrange sticks</button>
         </div>
@@ -621,20 +636,14 @@ body.pc .titleFs{display:none}
           <label for="hdDot">Sight dot size</label><input type="range" id="hdDot" min="0.6" max="3" step="0.05">
           <label for="hdCdot">Centre dot size</label><input type="range" id="hdCdot" min="0.5" max="3" step="0.05">
         </div>
-        <h3 class="subh">Tracers</h3>
-        <canvas id="trPrev" width="320" height="130" aria-label="Tracer preview"></canvas>
-        <div class="set">
-          <label for="trSize">Tracer size</label><input type="range" id="trSize" min="0.4" max="2.5" step="0.05">
-          <label for="trQty">Tracer amount (share of rounds)</label><input type="range" id="trQty" min="0" max="1" step="0.05">
-        </div>
-        <p class="fine">Applies to the miniguns, door guns and the 30 mm.</p>
+
       </section>
       <section class="bfPane" data-pane="aud">
         <div class="set">
           <label for="sSound">Sound</label><input class="sw" type="checkbox" id="sSound">
           <label for="sMaster">Volume</label><input type="range" id="sMaster" min="0" max="1" step="0.05">
           <label for="sSfx">Effects</label><input type="range" id="sSfx" min="0" max="1" step="0.05">
-          <label for="sAmb">Waves and gulls</label><input type="range" id="sAmb" min="0" max="1" step="0.05">
+          <label for="sAmb">Ambience (sea, wind, distant traffic)</label><input type="range" id="sAmb" min="0" max="1" step="0.05">
         </div>
       </section>
       <section class="bfPane" data-pane="keys">
@@ -678,6 +687,13 @@ body.pc .titleFs{display:none}
     </div>
   </div>
 
+  <div class="overlay" id="loadout" hidden>
+    <div class="card loCard">
+      <div class="bfHead"><h2>Loadout</h2><span class="bfKeys" id="loName" style="margin-left:auto"></span><button class="btn small" id="loDone" type="button">Done</button></div>
+      <nav id="loTabs"><button type="button" data-t="apache">Apache</button><button type="button" data-t="dap">DAP</button><button type="button" data-t="little">Little Bird</button></nav>
+      <div class="bfBody" id="loSlots"></div>
+    </div>
+  </div>
   <div class="overlay" id="heliPick" hidden>
     <div class="card">
       <div class="tag">Gunship</div>
@@ -687,6 +703,7 @@ body.pc .titleFs{display:none}
         <button class="btn alt" id="pickDap" type="button">MH-60L DAP<small id="pickDapInfo">Wing guns + rockets · M134 door gun</small></button>
         <button class="btn alt" id="pickLittle" type="button">AH-6 Little Bird<small>Twin miniguns · rocket volleys · fast and nimble</small></button>
       </div>
+      <button class="btn soft" id="loBtn" type="button">Loadouts</button>
       <button class="btn ghost" id="pickBack" type="button">Back</button>
     </div>
   </div>
@@ -893,7 +910,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V75';
+const GAME_VERSION = 'V76';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -904,7 +921,18 @@ function audioInit(){
   try { AU.ctx = new AC(); } catch(e){ return; }
   const c = AU.ctx;
   const comp = c.createDynamicsCompressor(); comp.threshold.value = -14; comp.knee.value = 10; comp.ratio.value = 5; comp.attack.value = 0.003; comp.release.value = 0.18;
-  AU.master = c.createGain(); AU.master.connect(comp); comp.connect(c.destination);
+  AU.master = c.createGain(); comp.connect(c.destination);
+  { // dry path and headset path, crossfaded by earProTick()
+    const dry = c.createGain(), fx = c.createGain(); dry.gain.value = 1; fx.gain.value = 0; AU.master.connect(dry); dry.connect(comp);
+    const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 260; hp.Q.value = 0.8;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3900; lp.Q.value = 0.9;
+    const pk = c.createBiquadFilter(); pk.type = 'peaking'; pk.frequency.value = 1700; pk.Q.value = 0.9; pk.gain.value = 5;
+    const crush = c.createWaveShaper(); { const n = 4096, cv = new Float32Array(n), Q = 26; for (let i = 0; i < n; i++){ const x = i/(n - 1)*2 - 1; cv[i] = Math.round(Math.tanh(x*1.6)*Q)/Q; } crush.curve = cv; }
+    const clean = c.createGain(), dirty = c.createGain(); clean.gain.value = 0.7; dirty.gain.value = 0.45;
+    const hc = c.createDynamicsCompressor(); hc.threshold.value = -26; hc.ratio.value = 6; hc.attack.value = 0.002; hc.release.value = 0.12;
+    AU.master.connect(hp); hp.connect(lp); lp.connect(pk); pk.connect(clean); pk.connect(crush); crush.connect(dirty); clean.connect(hc); dirty.connect(hc); hc.connect(fx); fx.connect(comp);
+    AU.earDry = dry; AU.earFx = fx;
+  }
   AU.sfx = c.createGain(); AU.sfx.connect(AU.master);
   // battlefield bus: everything that isn't your own gun. In a vehicle it gets quieter and muffled (distance + headset)
   AU.worldF = c.createBiquadFilter(); AU.worldF.type = 'lowpass'; AU.worldF.frequency.value = 20000; AU.worldF.Q.value = 0.5;
@@ -919,15 +947,25 @@ function audioInit(){
   const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 520;
   const sg = c.createGain(); sg.gain.value = 0.22;
   const lfo = c.createOscillator(), lfoG = c.createGain(); lfo.frequency.value = 0.12; lfoG.gain.value = 0.16; lfo.connect(lfoG); lfoG.connect(sg.gain); lfo.start();
-  surf.connect(lp); lp.connect(sg); sg.connect(AU.amb); surf.start();
+  surf.connect(lp); lp.connect(sg); sg.connect(AU.amb); surf.start(); AU.surfG = sg;
+  { const dw = c.createBufferSource(); dw.buffer = buf; dw.loop = true; dw.playbackRate.value = 0.7;
+    const b1 = c.createBiquadFilter(); b1.type = 'bandpass'; b1.frequency.value = 700; b1.Q.value = 0.6; const b2 = c.createBiquadFilter(); b2.type = 'lowpass'; b2.frequency.value = 1600;
+    const dg = c.createGain(); dg.gain.value = 0; const gl = c.createOscillator(), glg = c.createGain(); gl.frequency.value = 0.07; glg.gain.value = 0.05; gl.connect(glg); glg.connect(dg.gain); gl.start();
+    const gl2 = c.createOscillator(), gl2g = c.createGain(); gl2.frequency.value = 0.23; gl2g.gain.value = 250; gl2.connect(gl2g); gl2g.connect(b1.frequency); gl2.start();
+    dw.connect(b1); b1.connect(b2); b2.connect(dg); dg.connect(AU.amb); dw.start(); AU.desertG = dg; }
+  AU.trafficG = c.createGain(); AU.trafficG.gain.value = 0; AU.trafficG.connect(AU.amb);
   // rotor loop, silent until a helicopter is near
   const rs = c.createBufferSource(); rs.buffer = buf; rs.loop = true;
   // tuned against the reference: blade slap at ~19.5 Hz, broadband body 120–2000 Hz, gearbox hum ~122/142 Hz, faint turbine whine
-  const rbp = c.createBiquadFilter(); rbp.type = 'bandpass'; rbp.frequency.value = 480; rbp.Q.value = 0.45;
-  const rlp = c.createBiquadFilter(); rlp.type = 'lowpass'; rlp.frequency.value = 1900;
+  const rbp = c.createBiquadFilter(); rbp.type = 'bandpass'; rbp.frequency.value = 360; rbp.Q.value = 0.5;
+  const rlp = c.createBiquadFilter(); rlp.type = 'lowpass'; rlp.frequency.value = 1300;
   const rg = c.createGain(); rg.gain.value = 0;
-  const chop = c.createGain(); chop.gain.value = 0.45;
-  const rl = c.createOscillator(), rlg = c.createGain(); rl.frequency.value = 19.5; rlg.gain.value = 0.55; rl.connect(rlg); rlg.connect(chop.gain); rl.start();
+  const chop = c.createGain(); chop.gain.value = 0.1;
+  // a saw at the blade-pass rate shaped into a short spike: each blade goes "thwop" instead of a steady hiss
+  const pulse = c.createWaveShaper(); { const n = 1024, cv = new Float32Array(n); for (let i = 0; i < n; i++){ const u = i/(n - 1); cv[i] = Math.pow(Math.max(0, 1 - Math.abs(u - 0.18)/0.16), 2); } pulse.curve = cv; }
+  const rl = c.createOscillator(), rlg = c.createGain(); rl.type = 'sawtooth'; rl.frequency.value = 19.5; rlg.gain.value = 0.9; rl.connect(pulse); pulse.connect(rlg); rlg.connect(chop.gain); rl.start();
+  { const wb = c.createBufferSource(); wb.buffer = buf; wb.loop = true; wb.playbackRate.value = 0.6; const wlp = c.createBiquadFilter(); wlp.type = 'lowpass'; wlp.frequency.value = 150; const wlp2 = c.createBiquadFilter(); wlp2.type = 'lowpass'; wlp2.frequency.value = 150;
+    const wg = c.createGain(); wg.gain.value = 0; const wm = c.createGain(); wm.gain.value = 2.2; pulse.connect(wm); wm.connect(wg.gain); wb.connect(wlp); wlp.connect(wlp2); wlp2.connect(wg); wg.connect(rg); wb.start(); }
   rs.connect(rbp); rbp.connect(rlp); rlp.connect(chop); chop.connect(rg);
   const hum = c.createGain(); hum.gain.value = 0.05; hum.connect(rg);
   for (const [f, v] of [[122, 1], [142, 0.8], [178, 0.4]]){ const o = c.createOscillator(), g = c.createGain(); o.type = 'sawtooth'; o.frequency.value = f; g.gain.value = v; const lp2 = c.createBiquadFilter(); lp2.type = 'lowpass'; lp2.frequency.value = 600; o.connect(lp2); lp2.connect(g); g.connect(hum); o.start(); }
@@ -951,7 +989,7 @@ function audioInit(){
   //  skid: metal/concrete scrape while you slide along the ground
   AU.scrape = loopN(1.0, AU.sfx, bq('bandpass', 2800, 0.9), bq('peaking', 1200, 1.0));
   AU.rotorGain = rg; AU.rotorLfo = rl; AU.rotorLfoG = rlg; AU.rotShelf = shelf; AU.surgeD = slg;
-  applyVolumes(); m134Load(); smpLoad();
+  applyVolumes(); m134Load(); smpLoad(); ambSet();
   setInterval(() => { if (SETTINGS.sound && LOC.sets[LOC.cur].gulls && Math.random() < 0.35 && (state === 'play' || state === 'menu' || state === 'title')) sfx('gull'); }, 7000);
 }
 function applyVolumes(){
@@ -1074,10 +1112,10 @@ function heliAudioTick(P, dt){
   const load = on && !P.onGround ? clamp(Math.max(0, coll)*(0.3 + P.sinkA/4.5), 0, 1.3) : 0;
   P.loadA = (P.loadA || 0) + (load - (P.loadA || 0))*Math.min(1, dt*3);
   const dm = on ? clamp((0.55 - (P.hull || 100)/100)/0.45, 0, 1) : 0;
-  AU.wind.gain.setTargetAtTime(on ? 0.03*(0.3 + 0.7*sp*sp) : 0, t, 0.15);
+  AU.wind.gain.setTargetAtTime(on ? 0.012*(0.3 + 0.7*sp*sp) : 0, t, 0.15);
   AU.rumble.gain.setTargetAtTime(on ? 0.75*P.loadA + 0.12*dm : 0, t, 0.1);
   AU.rotShelf.gain.setTargetAtTime(on ? clamp(5*Math.min(0, coll) + 3*P.loadA + 4*dm, -6, 5) : 0, t, 0.2);
-  AU.surgeD.gain.setTargetAtTime(on ? 0.22*dm : 0, t, 0.3); AU.rotorLfoG.gain.setTargetAtTime(on ? 0.55 - 0.25*dm : 0.55, t, 0.3);
+  AU.surgeD.gain.setTargetAtTime(on ? 0.22*dm : 0, t, 0.3); AU.rotorLfoG.gain.setTargetAtTime(on ? 0.9 - 0.4*dm : 0.9, t, 0.3);
   AU.dmgN.gain.setTargetAtTime(dm ? dm*(Math.random() < 0.25 ? rnd(0.015, 0.035) : 0.006) : 0, t, 0.012);
   const scrape = on && P.onGround && hs > 0.8 ? clamp(hs/6, 0, 1) : 0;
   AU.scrape.gain.setTargetAtTime(0.035*scrape*rnd(0.6, 1.2), t, 0.03);
@@ -1092,14 +1130,14 @@ const OWN_GUNS = new Set(['player', 'dg', 'hmdoor', 'hmw', 'df']);
 const M134_LOOP = {fire: [0.2, 6.082], spin: [0.2, 4.71]};
 // recorded one-shots by Filip_Hancho_Unltd. (see Settings → Gameplay → Credits). Each bank holds a few takes;
 // one is picked at random with a slight pitch change. The synth recipes stand in until a bank loads.
-const SMP_DEF = {missile: 5, agm: 3, mpass: 6, whiz: 16, flareL: 6, flareB: 4, rocket: 5, imWood: 6, imConc: 6, imMetal: 5, debris: 4, wdebris: 4, downdraft: 2};
+const SMP_DEF = {ambTraffic: 1, missile: 5, agm: 3, mpass: 6, whiz: 16, flareL: 6, flareB: 4, rocket: 5, imWood: 6, imConc: 6, imMetal: 5, debris: 4, wdebris: 4, downdraft: 2};
 const SMP_VOL = {mpass: 0.9, whiz: 0.55, imWood: 0.5, imConc: 0.5, imMetal: 0.55, debris: 0.45, wdebris: 0.45};
 const SMP = {loading: false}; for (const k in SMP_DEF) SMP[k] = [];
 function smpLoad(){
   if (!AU.ctx || SMP.loading) return; SMP.loading = true;
   for (const [k, n] of Object.entries(SMP_DEF)) for (let i = 1; i <= n; i++)
     fetch('assets/sfx/' + k + '_' + i + '.mp3').then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
-      .then(b => new Promise((res, rej) => AU.ctx.decodeAudioData(b, res, rej))).then(b => SMP[k].push(b)).catch(e => console.warn('sample', k, i, e));
+      .then(b => new Promise((res, rej) => AU.ctx.decodeAudioData(b, res, rej))).then(b => { SMP[k].push(b); if (k === 'ambTraffic') ambSet(); }).catch(e => console.warn('sample', k, i, e));
 }
 function playSmp(list, t, vol, out, rate = 0.94 + Math.random()*0.12){
   const c = AU.ctx, s = c.createBufferSource(), g = c.createGain();
@@ -1788,12 +1826,31 @@ function buildAirfield(){
   g.visible = false; scene.add(g);
   return set;
 }
+function inFirstPerson(){
+  if (state !== 'play' && state !== 'dying') return false;
+  if (MODE === 'heli' && HM.on) return HM.seat !== 'pilot' || HM.view === 'cockpit';
+  return DG.on || (DF.on && DF.view === 'cockpit') || (GS_.on && GS_.phase === 'gun');
+}
+function earProTick(){
+  if (!AU.earFx) return;
+  const k = inFirstPerson() ? 1 : 0;
+  if (k !== AU.earK){ AU.earK = k; const t = AU.ctx.currentTime; AU.earDry.gain.setTargetAtTime(1 - k*0.92, t, 0.12); AU.earFx.gain.setTargetAtTime(k*1.25, t, 0.12); }
+}
+// which ambience plays where
+function ambSet(){
+  if (!AU.ctx || !AU.surfG) return;
+  const t = AU.ctx.currentTime, desert = (LOC.cur || 'pier') === 'airfield';
+  AU.surfG.gain.setTargetAtTime(desert ? 0 : 0.22, t, 0.6);
+  AU.desertG.gain.setTargetAtTime(desert ? 0.11 : 0, t, 0.6);
+  AU.trafficG.gain.setTargetAtTime(desert ? 0.16 : 0, t, 0.6);
+  if (desert && !AU.trafficSrc && SMP.ambTraffic && SMP.ambTraffic.length){ const s2 = AU.ctx.createBufferSource(); s2.buffer = SMP.ambTraffic[0]; s2.loop = true; s2.connect(AU.trafficG); s2.start(); AU.trafficSrc = s2; }
+}
 function applyLocation(name){
   if (!LOC.sets[name]){ if (name === 'airfield') LOC.sets.airfield = buildAirfield(); else name = 'pier'; }
   const animating = PIER.t >= 0;
   const mapChanged = LOC.cur !== name;
   if (mapChanged) switchRunMap(LOC.cur, name);
-  LOC.cur = name;
+  LOC.cur = name; ambSet();
   if (mapChanged && state === 'title') refreshTitle();
   for (const k in LOC.sets) LOC.sets[k].group.visible = k === name;
   const L = LOC.sets[name];
@@ -2964,7 +3021,7 @@ function gunAI(gun, dt, on, rate, dmg, voice, x, lim = gun.lim || gunLimits, rea
       gun.up = Math.min(1, (gun.up || 0) + dt/0.45);       // spin-up before the first round
       if (gun.up >= 1 && Math.abs(sol[0] - th) < tol && Math.abs(sol[1] - ph) < tol){
         gun.fireT = (gun.fireT || 0) - dt;
-        while (gun.fireT <= 0){ gun.fireT += rate; gunFire(gun, 48, dmg, 1); }
+        while (gun.fireT <= 0){ gun.fireT += rate; gunFire(gun, 140, dmg, 1); }
         firing = true; gun.lastFire = 0;
       }
     } else gun.tgt = -1;
@@ -3117,7 +3174,7 @@ function dgGun(v, gun, dt, lv){
   const hold = DG.hold || ks.fire;
   gun.up = clamp((gun.up || 0) + (hold ? dt/0.4 : -dt*0.6), 0, 1);
   let firing = false;
-  if (hold && gun.up >= 1){ gun.fireT = (gun.fireT || 0) - dt; while (gun.fireT <= 0){ gun.fireT += M134_STEP/rateMul; gunFire(gun, 52, 2.2*lv, 1, 0.018, 2.2); } firing = true; }
+  if (hold && gun.up >= 1){ gun.fireT = (gun.fireT || 0) - dt; while (gun.fireT <= 0){ gun.fireT += M134_STEP/rateMul; gunFire(gun, 150, 2.2*lv, 1, 0.018, 2.2); } firing = true; }
   gun.spinV += ((firing ? 1 : hold || gun.up > 0.05 ? 0.8 : 0) - gun.spinV)*Math.min(1, dt*(hold ? 6 : 1.2));
   gunTick(gun, dt);
   if (hold || gun.up > 0.05){ if (!gunVoice('dg', firing ? 'fire' : 'spin', 0, 1) && firing) sfx('heliGun', 0.8); }
@@ -3212,7 +3269,7 @@ function dfFly(v, dt, lv){
   if (m.fire && m.rkT <= 0){
     m.rkT = 0.16/rateMul; v.rk ^= 1;
     const from = v.pods[v.rk].getWorldPosition(new THREE.Vector3()), to = dfBoresight(v); to.x += rnd(-1.2, 1.2); to.z += rnd(-1.2, 1.2);
-    gsShoot('rocket', from, to, {dmg: 24*lv, aoe: 2.8, followDF: !!(DF.P && SETTINGS.guided)}); sfx('rocket', 0.8, v.rk ? 0.35 : -0.35, true);
+    if (DF.P && gPri('dap')){ const nd = simNose(DF.P, new THREE.Vector3(), ROCKET_DEP); gsShoot('rocket', from, from.clone().addScaledVector(nd, 30), {dmg: 24*lv, aoe: 2.8, followDF: 'rocket'}); } else gsShoot('rocket', from, to, {dmg: 24*lv, aoe: 2.8}); sfx('rocket', 0.8, v.rk ? 0.35 : -0.35, true);
   }
   $('dfTime').style.width = Math.max(0, 100 - v.t/v.dur*100) + '%'; $('dfKills').textContent = fmt(kills - m.kills0);
   $('dfHfN').textContent = m.hf; $('dfHf').disabled = !m.hf || m.hfCd > 0; $('dfRkN').textContent = '∞';
@@ -3232,9 +3289,9 @@ function dfHellfire(){
   DF.hf--; DF.hfCd = 1;
   const bp = dfBoresight(v); let bi = -1, bh = 0;
   for (let i = 0; i < en; i++){ if (eh[i] <= 0) continue; const d = Math.hypot(ex[i] - bp.x, ez[i] - bp.z); if (d < 9 && eh[i]/(1 + d*0.2) > bh){ bh = eh[i]/(1 + d*0.2); bi = i; } }
-  const nb = nearBoss(bp, 12), tg = !DF.P ? (nb ? {boss: nb} : bi >= 0 ? {id: eid[bi]} : {}) : SETTINGS.guided ? {followDF: true} : {};
+  const nb = nearBoss(bp, 12), tg = !DF.P ? (nb ? {boss: nb} : bi >= 0 ? {id: eid[bi]} : {}) : gSec('dap') ? {followDF: 'hellfire'} : {};
   const from = v.pods[DF.hf & 1].getWorldPosition(new THREE.Vector3());
-  gsShoot('hellfire', from, bp, tg); sfx('hellfire', 1, 0, true);
+  gsShoot('hellfire', from, tg.followDF ? from.clone().addScaledVector(simNose(DF.P, new THREE.Vector3(), ROCKET_DEP), 30) : bp, tg); sfx('hellfire', 1, 0, true);
 }
 function dfCamera(){
   const v = DF.v; if (!v) return false;
@@ -3254,9 +3311,9 @@ function dfCamera(){
       camera.fov = CHASE.fov;
     }
     camera.updateProjectionMatrix();
-    const bp = dfBoresight(v).project(camera), g = SETTINGS.guided ? 'GUID ' : '';
+    const bp = dfBoresight(v).project(camera), g = gPri('dap') ? 'GUID ' : '';
     bfHud({cockpit: !!ck, aim: bp.z < 1 && Math.abs(bp.x) < 1.3 && Math.abs(bp.y) < 1.3 ? bp : null, msl: !!DF.sec, hdg: P.yaw*57.2958, alt: P.pos.y*3.3, kts: Math.hypot(P.vel.x, P.vel.z)*4.86, pitch: P.pitch, bank: P.bank || 0, flr: '—',
-      lines: [(DF.sec ? '  ' : '▸ ') + g + 'RKT RDY', (DF.sec ? '▸ ' : '  ') + g + 'AT MSL ' + (DF.hf > 0 && DF.hfCd <= 0 ? 'RDY' : 'CDN')]});
+      lines: [(DF.sec ? '  ' : '▸ ') + g + 'RKT RDY', (DF.sec ? '▸ ' : '  ') + (gSec('dap') ? 'GUID ' : '') + 'AT MSL ' + (DF.hf > 0 && DF.hfCd <= 0 ? 'RDY' : 'CDN')]});
     return true;
   }
   const fx = -Math.sin(v.yaw), fz = -Math.cos(v.yaw), far = camera.aspect < 1 ? 1.35 : 1;
@@ -3298,11 +3355,11 @@ function airShots(dt){
       if (sh.boss && sh.boss.hp > 0) tgt = new THREE.Vector3(sh.boss.x, 1.5, sh.boss.z);
       else if (sh.id){ for (let i = 0; i < en; i++) if (eid[i] === sh.id && eh[i] > 0){ tgt = new THREE.Vector3(ex[i], 0.8, ez[i]); break; } }
       if (tgt){ sh.to.copy(tgt); }
-      const want = sh.to.clone().sub(sh.m.position).normalize().multiplyScalar(30);
-      sh.v.lerp(want, Math.min(1, dt*4)); sh.m.lookAt(sh.m.position.clone().add(sh.v));
+      if (sh.followDF){ sh.age = (sh.age || 0) + dt; if (DF.on && DF.v) sh.to.copy(dfBoresight(DF.v)); if (sh.age > 0.15) steerVel(sh.v, _trX.copy(sh.to).sub(sh.m.position), GUIDE_RATE.hellfire, dt); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v)); }
+      else { const want = sh.to.clone().sub(sh.m.position).normalize().multiplyScalar(30); sh.v.lerp(want, Math.min(1, dt*4)); sh.m.lookAt(sh.m.position.clone().add(sh.v)); }
       if (Math.random() < 0.6) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.6);
     } else if (sh.kind === 'rocket' && Math.random() < 0.4) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.5);
-    if (sh.followDF && DF.on && DF.v){ sh.to.copy(dfBoresight(DF.v)); if (sh.kind === 'rocket'){ const sp = sh.v.length(); sh.v.lerp(_trX.copy(sh.to).sub(sh.m.position).normalize().multiplyScalar(sp), Math.min(1, dt*3)); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v)); } }
+    if (sh.followDF && DF.on && DF.v){ sh.age = (sh.age || 0) + dt; sh.to.copy(dfBoresight(DF.v)); if (sh.kind === 'rocket' && sh.age > 0.12){ steerVel(sh.v, _trX.copy(sh.to).sub(sh.m.position), GUIDE_RATE.rocket, dt); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v)); } }
     sh.m.position.addScaledVector(sh.v, dt); sh.life -= dt;
     if (sh.life <= 0 && sh.m.position.y > 1.2){ scene.remove(sh.m); P.shots.splice(k, 1); continue; }     // too far: it just goes
     const hit = sh.m.position.y <= 0.4 || sh.m.position.distanceTo(sh.to) < (sh.kind === 'cannon' ? 1.2 : 0.8) || sh.life <= 0;
@@ -3866,13 +3923,14 @@ const ACTIONS = [
   ['hFree', 'Freelook (hold)', ['KeyV', '']],
   ['hAimU', 'Freelook / aim up', ['ArrowUp', '']], ['hAimD', 'Freelook / aim down', ['ArrowDown', '']],
   ['hAimL', 'Freelook / aim left', ['ArrowLeft', '']], ['hAimR', 'Freelook / aim right', ['ArrowRight', '']],
-  ['hSeat1', 'Pilot seat', ['F1', '']], ['hSeat2', 'Gunner seat', ['F2', '']],
+  ['hSeat1', 'Seat 1 · pilot', ['Digit1', 'F1']], ['hSeat2', 'Seat 2 · left gunner', ['Digit2', 'F2']], ['hSeat3', 'Seat 3 · right gunner', ['Digit3', 'F3']],
 ];
 // which group an action belongs to: a key can do one thing in the lane game and another in the gunship
 const ACT_GROUP = {}; { let g = 'lane'; for (const r of ACTIONS){ if (r[0] === '#'){ g = 'heli'; continue; } ACT_GROUP[r[0]] = g; } }
 const INPUT = {held: {}, map: {}, rebind: null, gp: {held: {}, prev: [], ax: [0, 0, 0, 0], name: '', focusT: 0, used: false}};
 function bindsGet(){ const b = SETTINGS.binds || {}; const out = {}; for (const [a, , def] of ACTIONS){ if (a === '#') continue; out[a] = (b[a] && b[a].length === 2) ? b[a].slice() : def.slice(); } return out; }
 // earlier builds had W as nose-up; in Battlefield W pushes the nose down, so swap saved binds once
+try { const b = SETTINGS.binds; if (b && b.hSeat1 && b.hSeat1[0] === 'F1' && !b.hSeat1[1]){ b.hSeat1 = ['Digit1', 'F1']; b.hSeat2 = ['Digit2', 'F2']; b.hSeat3 = ['Digit3', 'F3']; saveSettings(); } } catch(e) {}
 try { const b = SETTINGS.binds; if (b && b.hPitchUp && b.hPitchDown && b.hPitchUp[0] === 'KeyW' && b.hPitchDown[0] === 'KeyS'){ const t = b.hPitchUp; b.hPitchUp = b.hPitchDown; b.hPitchDown = t; saveSettings(); } } catch(e) {}
 function bindsRebuild(){ INPUT.map = {}; const b = bindsGet(); for (const a in b) for (const c of b[a]) if (c) (INPUT.map[c] = INPUT.map[c] || []).push(a); }
 const act = a => !!(INPUT.held[a] || INPUT.gp.held[a]);
@@ -3897,8 +3955,7 @@ function actPress(a){
     else if (a === 'hPri') hmSelect('pri'); else if (a === 'hSec') hmSelect('sec');
     else if (a === 'hEq1') hmFlares();
     else if (a === 'hView') hmSwapView();
-    else if (a === 'hSeat1'){ if (HM.seat !== 'pilot') hmSwapSeat(); }
-    else if (a === 'hSeat2'){ if (HM.seat === 'pilot') hmSwapSeat(); }
+    else if (a === 'hSeat1') hmSetSeat(1); else if (a === 'hSeat2') hmSetSeat(2); else if (a === 'hSeat3') hmSetSeat(3);
     else if (a === 'hZoom') HM.zoom = true; else if (a === 'hFree') HM.free = true;
     return;
   }
@@ -4172,7 +4229,8 @@ for (const ty of ['pointerup', 'pointercancel']) document.addEventListener(ty, e
 function heliAgi(type){
   const b = type === 'little' ? LB_AGI : {rate: 1, yaw: 1, lift: 1, drag: 1};
   const m = +(SETTINGS.agi[type === 'little' ? 'little' : type === 'apache' ? 'apache' : 'dap']) || 1;
-  return {rate: b.rate*m, yaw: b.yaw*m, lift: b.lift, drag: b.drag};
+  const u = MODE === 'heli' && HM.on ? (HM.agiUp || 1) : 1;
+  return {rate: b.rate*m*u, yaw: b.yaw*m*u, lift: b.lift, drag: b.drag};
 }
 // full screen, anywhere
 async function toggleFullscreen(){
@@ -4264,7 +4322,8 @@ function inputTick(dt){
   if (document.pointerLockElement && (state !== 'play' || ['intro', 'choice', 'shop', 'over', 'pause', 'settings', 'confirm', 'title'].some(id => $(id) && !$(id).hidden))) document.exitPointerLock();
   gpPoll(dt); tsTick(); motionPoll(); tiltTick(); lsTick(dt); gyMeterTick();
   if (BH.on && performance.now() - BH.t > 150) bfHudHide();
-  aiSquadTick(dt); downdraftTick(); trPreviewTick(dt);
+  aiSquadTick(dt); downdraftTick(); earProTick(); seatHudTick();
+  if (state !== 'play' && state !== 'dying' && AU.ctx && AU.wind){ heliAudioTick(HM, dt); setRotor(0); } trPreviewTick(dt);
   if (state === 'play' && MODE === 'heli' && HM.on) radarTick(dt, HM); else if (state === 'play' && DF.on && DF.P) radarTick(dt, DF.P); else radarHide();
   if (state !== 'play'){ gyroTake(); return; }
   gyroTick();
@@ -4805,7 +4864,7 @@ function sync(dt){
   bulletMesh.count = un; bulletMesh.instanceMatrix.needsUpdate = true; bulletMesh.instanceColor.needsUpdate = true;
   let tn = 0;
   for (let i = 0; i < un; i++){ if (utr[i] !== 3) continue;
-    _trD.set(uvx[i], uvy[i], uvz[i]); const sp = _trD.length() || 1; _trD.multiplyScalar(1/sp); const len = Math.min(3.2, sp*0.05);
+    _trD.set(uvx[i], uvy[i], uvz[i]); const sp = _trD.length() || 1; _trD.multiplyScalar(1/sp); const len = Math.min(4.2, sp*0.03);
     const ts = SETTINGS.hud.trSize; trSet(trCore, tn, ux[i], uy[i], uz[i], _trD, 0.03*ts, len*ts); trSet(trHalo, tn, ux[i], uy[i], uz[i], _trD, 0.1*ts, len*1.05*ts); tn++; }
   trCore.count = trHalo.count = tn; if (tn){ trCore.instanceMatrix.needsUpdate = true; trHalo.instanceMatrix.needsUpdate = true; }
 
@@ -4959,11 +5018,12 @@ function hmStart(type = 'apache'){
   Object.assign(HM, {on: true, flPairs: 0, flT: 0, pq: 0, wr: 0, wp: 0, wy: 0, camYaw: 0, camPitch: 0, landT: 0, seat: 'pilot', view: 'chase', wsel: 'pri', zoom: false, free: false, hfHold: false, coll: 0, mdx: 0, mdy: 0, lookYaw: 0, lookPitch: 0, yaw: 0, speed: 0, alt: 12, sx: 0, sy: 0, climb: 0, firing: false, aimAz: 0, aimEl: -0.45,
     hull: 100, score: 0, mag: CANNON.mag, reload: 0, rockets: 38, rkMax: 38, rkReload: 0, hfReload: 0, hellfire: 8, flares: 12, fireT: 0, hfCd: 0, flCd: 0, heliSpawnT: 6, toSpawn: 0, breakT: 0, warnT: 0, bank: 0, pitch: 0, hintT: 6,
     airT: 9, kicked: true, camQ2: null, volley: 0, volleyT: 0, agi: type === 'little' ? LB_AGI : null});
-  HM.pos.set(0, 12, 12); HM.type = type; if (!HM.vel) HM.vel = new THREE.Vector3(); HM.vel.set(0, 0, 0);
+  HM.pos.set(0, 12, 12); HM.type = type;
+  { const L = LO(type); HM.armor = L.up === 'armor' ? 0.75 : 1; HM.quick = L.up === 'reload' ? 1.4 : 1; if (L.up === 'flaresx') HM.flares = 18; HM.agiUp = L.up === 'armor' ? 0.94 : 1; } if (!HM.vel) HM.vel = new THREE.Vector3(); HM.vel.set(0, 0, 0);
   if (HM.heli) HM.heli.g.visible = false;
   if (type === 'dap'){
     if (!HM.heliD){ HM.heliD = buildDap(); HM.heliD.hull.scale.setScalar(0.42*HB); HM.heliD.hull.position.y = 0; scene.add(HM.heliD.g); }
-    HM.dgun = HM.heliD.guns.find(g => g.side > 0); HM.dgun.flashBase = 0.42; HM.th = 0.5; HM.ph = -0.7;
+    HM.gside = 1; HM.dgun = HM.heliD.guns.find(g => g.side > 0); HM.dgun.flashBase = 0.42; HM.th = 0.5; HM.ph = -0.7;
     HM.heli = HM.heliD; HM.rkMax = HM.rockets = 38;
     if (!HM.vm){ HM.vm = buildM134(); HM.vm.g.scale.setScalar(0.55); HM.vm.g.position.set(0.16, -0.2, -0.42); HM.vm.post.visible = false; HM.vm.flash.scale.setScalar(0.2); HM.vm.g.traverse(o => { o.frustumCulled = false; }); camera.add(HM.vm.g); }
   } else if (type === 'little'){
@@ -5008,13 +5068,13 @@ function hmSeatUI(){
   const dap = HM.type === 'dap', lb = HM.type === 'little';
   $('hmHullName').textContent = dap ? 'DAP' : lb ? 'LITTLE BIRD' : 'APACHE';
   $('hmSeatBtn').hidden = lb; $('hmMissile').firstChild.textContent = lb ? 'ROCKETS' : pilot ? 'HELLFIRE' : 'AGM';
-  $('hmSeat').textContent = (dap ? 'DAP · ' : lb ? 'LITTLE BIRD · ' : 'APACHE · ') + (pilot ? 'PILOT · ' + (HM.view === 'chase' ? 'CHASE CAM' : 'COCKPIT') : dap ? 'DOOR GUN · M134' : 'GUNNER · 30MM');
+  $('hmSeat').textContent = (dap ? 'DAP · ' : lb ? 'LITTLE BIRD · ' : 'APACHE · ') + (pilot ? 'PILOT · ' + (HM.view === 'chase' ? 'CHASE CAM' : 'COCKPIT') : dap ? (HM.gside < 0 ? 'LEFT' : 'RIGHT') + ' DOOR GUN · M134' : 'GUNNER · 30MM');
   $('hmFire').firstChild.textContent = pilot ? (HM.wsel === 'sec' ? (lb ? 'VOLLEY' : 'HELLFIRE') : lb ? 'MINIGUNS' : 'ROCKETS') : dap ? 'M134' : '30MM';
   if (HM.vm) HM.vm.g.visible = false;
   if (dap && !pilot){ camera.near = 0.03; camera.updateProjectionMatrix(); }
   $('hmMissile').hidden = !pilot && HM.type !== 'apache';
   $('hmViewBtn').hidden = !pilot;
-  $('hmSeatBtn').textContent = pilot ? 'Gunner seat' : 'Pilot seat';
+  $('hmSeatBtn').textContent = 'Seat ' + (hmSeatNo() % (dap ? 3 : 2) + 1);
   if (GS_.cockpit) GS_.cockpit.visible = pilot && HM.view === 'cockpit';
   if (pilot && HM.view === 'cockpit' && lb){ if (GS_.cockpit) GS_.cockpit.visible = false; camera.near = 0.03; }
   else if (pilot && HM.view === 'cockpit' && !dap && HM.heli && HM.heli.rig){ if (GS_.cockpit) GS_.cockpit.visible = false; camera.near = 0.02; }
@@ -5024,7 +5084,20 @@ function hmSeatUI(){
   camera.updateProjectionMatrix();
   if (!pilot){ const tgt = new THREE.Vector3(0, 0, -18); const d = tgt.sub(HM.pos); HM.aimAz = Math.atan2(d.x, -d.z); HM.aimEl = clamp(Math.atan2(-HM.pos.y, Math.hypot(d.x, d.z)), -1.3, -0.15); }
 }
-function hmSwapSeat(){ if (HM.type === 'little'){ toast('The Little Bird has no gunner seat', '#c8ffd0'); return; } HM.seat = HM.seat === 'pilot' ? 'gunner' : 'pilot'; flash(); sfx('click'); hmSeatUI(); toast(HM.seat === 'pilot' ? 'Pilot seat' : 'Gunner seat', '#c8ffd0'); }
+// which seat you're in, as a number: 1 pilot, 2 left door gun (or the Apache's front-seat gunner), 3 right door gun
+const hmSeatNo = () => HM.seat === 'pilot' ? 1 : HM.type === 'dap' ? (HM.gside < 0 ? 2 : 3) : 2;
+function hmSetSeat(n){
+  if (!HM.on) return;
+  const T = HM.type, max = T === 'dap' ? 3 : T === 'apache' ? 2 : 1;
+  if (n > max){ toast(T === 'little' ? 'The Little Bird has no gunner seat' : 'No seat ' + n + ' in the Apache', '#c8ffd0'); return; }
+  if (n === hmSeatNo()) return;
+  if (HM.dgun){ gunnerEyeOff(HM.dgun); HM.dgun.own = false; }
+  if (n === 1) HM.seat = 'pilot';
+  else { HM.seat = 'gunner'; if (T === 'dap'){ HM.gside = n === 2 ? -1 : 1; HM.dgun = HM.heli.guns.find(g => g.side === HM.gside); HM.dgun.flashBase = 0.42; HM.th = HM.dgun.th || 0.9; HM.ph = HM.dgun.ph || -0.5; } }
+  flash(); sfx('click'); hmSeatUI();
+  toast(n === 1 ? 'Seat 1 · Pilot' : T === 'dap' ? 'Seat ' + n + ' · ' + (n === 2 ? 'Left' : 'Right') + ' door gun' : 'Seat 2 · Gunner', '#c8ffd0');
+}
+function hmSwapSeat(){ const max = HM.type === 'dap' ? 3 : HM.type === 'apache' ? 2 : 1; if (max === 1){ toast('The Little Bird has no gunner seat', '#c8ffd0'); return; } hmSetSeat(hmSeatNo() % max + 1); }
 function hmSwapView(){ if (HM.seat !== 'pilot') return; HM.view = HM.view === 'chase' ? 'cockpit' : 'chase'; flash(); hmSeatUI(); }
 function hmSpawnEnemy(){
   const e = {hp: 45*(1 + 0.25*(wave - 2)), max: 0, ang: rnd(0, 6.28), r: rnd(18, 30), h: rnd(9, 17), fireT: rnd(1, 3), burst: 0, missT: rnd(6, 10), hit: 0, pos: new THREE.Vector3(), g: null};
@@ -5078,7 +5151,7 @@ function ebhTick(e, dt){
 }
 function hmDamage(d){
   if (HM.hull <= 0) return;
-  HM.hull -= d; hurt = 0.4; shake = Math.max(shake, 0.25); sfx('thud', 0.8);
+  HM.hull -= d*(HM.armor || 1); hurt = 0.4; shake = Math.max(shake, 0.25); sfx('thud', 0.8);
   if (HM.hull <= 0){ HM.hull = 0; explode(HM.pos.x, HM.pos.z, 3, 0); chips(HM.pos.x, HM.pos.y, HM.pos.z, SMOKE, 30, 6); setTimeout(() => { if (state === 'dying' && MODE === 'heli') gameOver(); }, 1100); state = 'dying'; HM.firing = false; }
 }
 function hmShoot(kind, from, dir, speed, extra){
@@ -5178,7 +5251,8 @@ function hmFireHellfire(){
   const f = hmFwd(HM.yaw, new THREE.Vector3()), side = new THREE.Vector3(-f.z, 0, f.x).multiplyScalar((HM.hellfire % 2 ? 1.6 : -1.6)*HB);
   const from = HM.pos.clone().add(side); from.y -= 0.8*HB;
   const aim = heliSim() ? hmAimPoint(new THREE.Vector3()) : hmBoresight(new THREE.Vector3());
-  hmShoot('hellfire', from, aim.clone().sub(from), 30, heliSim() ? {heli: t.heli, to: aim, follow: SETTINGS.guided && !t.heli} : {heli: t.heli, boss: t.boss, id: t.id, to: aim});
+  const gh = heliSim() && gSec(HM.type) && !t.heli;
+  hmShoot('hellfire', from, gh ? hmNoseDir(new THREE.Vector3()) : aim.clone().sub(from), 30, heliSim() ? {heli: t.heli, to: aim, follow: gh ? 'hellfire' : null} : {heli: t.heli, boss: t.boss, id: t.id, to: aim});
   sfx('hellfire', 1, 0, true);
 }
 function hmFlares(){
@@ -5317,8 +5391,8 @@ function hmUpdate(dt){
   if (P.flPairs > 0){ P.flT -= dt; while (P.flT <= 0 && P.flPairs > 0){ P.flT += 0.35; P.flPairs--; hmFlarePair(); } }
   if (P.hfHold && P.hfCd <= 0 && P.wsel === 'sec') hmFireHellfire();
   // rocket pods reload on their own; Hellfires trickle back slowly
-  P.rkReload = (P.rkReload || 0) + dt*(P.firing && P.seat === 'pilot' ? 1.6 : 3.2); while (P.rkReload >= 1){ P.rkReload--; if (P.rockets < P.rkMax) P.rockets++; }
-  P.hfReload = (P.hfReload || 0) + dt/14; if (P.hfReload >= 1){ P.hfReload = 0; if (P.hellfire < 8) P.hellfire++; }
+  P.rkReload = (P.rkReload || 0) + dt*(P.firing && P.seat === 'pilot' ? 1.6 : 3.2)*(P.quick || 1); while (P.rkReload >= 1){ P.rkReload--; if (P.rockets < P.rkMax) P.rockets++; }
+  P.hfReload = (P.hfReload || 0) + dt/14*(P.quick || 1); if (P.hfReload >= 1){ P.hfReload = 0; if (P.hellfire < 8) P.hellfire++; }
   $('hmHint').style.opacity = P.hintT > 0 ? 1 : 0;
   // ---- flight ----
   const f = hmFwd(P.yaw, P.fwd);
@@ -5357,7 +5431,7 @@ function hmUpdate(dt){
   if (P.seat === 'pilot'){
     if (P.firing && P.fireT <= 0 && P.rockets > 0 && !little){
       P.rockets--; P.fireT = dap ? 0.28 : 0.14; const side = right.clone().multiplyScalar((P.rockets % 2 ? 1 : -1)*(dap ? 1.2 : 1.5)*HB); const from = P.pos.clone().add(side); from.y -= (dap ? 0.2 : 0.7)*HB;
-      if (heliSim()){ const tgt = hmAimPoint(new THREE.Vector3()); tgt.x += rnd(-0.6, 0.6); tgt.z += rnd(-0.6, 0.6); hmShoot('rocket', from, tgt.sub(from), 42, SETTINGS.guided ? {follow: true} : null); }
+      if (heliSim()){ const tgt = hmAimPoint(new THREE.Vector3()); tgt.x += rnd(-0.6, 0.6); tgt.z += rnd(-0.6, 0.6); if (gPri(P.type)) hmShoot('rocket', from, hmNoseDir(new THREE.Vector3()), 42, {follow: 'rocket'}); else hmShoot('rocket', from, tgt.sub(from), 42, null); }
       else { const aim = hmBoresight(new THREE.Vector3()); aim.x += rnd(-1.2, 1.2); aim.z += rnd(-1.2, 1.2); hmShoot('rocket', from, aim.sub(from), 42); } sfx('rocket', 0.8, P.rockets % 2 ? 0.4 : -0.4, true);
     }
     // Little Bird: the two fixed M134s are the pilot's (on the DAP the crew works every minigun)
@@ -5367,7 +5441,7 @@ function hmUpdate(dt){
         P.gunT += M134_STEP/rateMul/(little ? 2 : 1); P.tc = ((P.tc || 0) + 1) & 3;     // Little Bird: two guns, each at full rate
         const from = P.pos.clone().addScaledVector(right, (P.tc & 1 ? 1 : -1)*(little ? 0.5 : 0.8)*HB); from.y -= (little ? 0.25 : 0.1)*HB;
         if (little){ const gg = P.heli.guns[P.tc & 1]; gg.flash.visible = true; gg.flashT = 0.035; }
-        { const ax = aim.x + rnd(-1.4, 1.4), az = aim.z + rnd(-1.4, 1.4); shoot(from.x, from.y, from.z, ax, az, 70, 1.6, 1, 5, 2.4, 0.01, P.tc & 2 ? 3 : 2); if (Math.random() < 0.5) hitPuff(ax, az, from.distanceTo(aim)/70); }
+        { const ax = aim.x + rnd(-1.4, 1.4), az = aim.z + rnd(-1.4, 1.4); shoot(from.x, from.y, from.z, ax, az, 170, 1.6, 1, 5, 2.4, 0.01, P.tc & 2 ? 3 : 2); if (Math.random() < 0.5) hitPuff(ax, az, from.distanceTo(aim)/70); }
       }
       gunVoice('hmw', 'fire', little ? -0.25 : 0, 0.9); if (little) gunVoice('hmw2', 'fire', 0.25, 0.9);
     } else if (P.gunT < 0) P.gunT = 0;
@@ -5376,7 +5450,7 @@ function hmUpdate(dt){
       if (P.volley > 0){ P.volleyT -= dt;
         while (P.volleyT <= 0 && P.volley > 0 && P.rockets > 0){ P.volleyT += 0.045; P.volley--; P.rockets--;
           const from = P.heli.pods[P.volley & 1].getWorldPosition(new THREE.Vector3()), tgt = heliSim() ? hmAimPoint(new THREE.Vector3()) : hmBoresight(new THREE.Vector3());
-          tgt.x += rnd(-1.4, 1.4); tgt.z += rnd(-1.4, 1.4); hmShoot('rocket', from, tgt.clone().sub(from), 62, heliSim() && SETTINGS.guided ? {follow: true} : null); sfx('rocket', 0.65, P.volley & 1 ? 0.4 : -0.4, true); } } }
+          tgt.x += rnd(-1.4, 1.4); tgt.z += rnd(-1.4, 1.4); if (heliSim() && gSec('little')) hmShoot('rocket', from, hmNoseDir(new THREE.Vector3()), 62, {follow: 'volley'}); else hmShoot('rocket', from, tgt.clone().sub(from), 62, null); sfx('rocket', 0.65, P.volley & 1 ? 0.4 : -0.4, true); } } }
   } else if (!dap){
     // Apache 30mm: keeps reloading even when you let go of the trigger
     if (P.firing || P.reload > 0 || P.mag < CANNON.mag){
@@ -5387,10 +5461,10 @@ function hmUpdate(dt){
     // DAP: starboard crew-chief-window M134, 4,000 rpm, tracer every fourth round
     const g = P.dgun;
     P.th += P.sx*1.1*dt; P.ph += P.sy*0.8*dt; [P.th, P.ph] = dapLimits(P.th, P.ph);
-    aimGun(g, 1, P.th, P.ph); P.heli.g.updateMatrixWorld(true);
+    aimGun(g, g.side, P.th, P.ph); P.heli.g.updateMatrixWorld(true);
     if (P.firing){
       while (P.gunT <= 0){
-        P.gunT += M134_STEP/rateMul; gunFire(g, 75, 2.4, 1, 0.01, 0.8);
+        P.gunT += M134_STEP/rateMul; gunFire(g, 170, 2.4, 1, 0.01, 0.8);
         // the same line of fire against enemy helicopters (hitscan)
         for (const e of P.enemies){ if (e.hp <= 0) continue; const rel = e.pos.clone().sub(_gq), along = rel.dot(_gd); if (along > 0 && along < 90 && rel.addScaledVector(_gd, -along).length() < 2.2){ hmHitHelis(e.pos, 0, 1.4); hitMark(e.hp <= 0); fx('white', e.pos.x + rnd(-1, 1), e.pos.y + rnd(-0.5, 0.5), e.pos.z + rnd(-1, 1), rnd(0.8, 1.3)); break; } }
       }
@@ -5411,14 +5485,15 @@ function hmUpdate(dt){
       else if (sh.boss && sh.boss.hp > 0) tgt = new THREE.Vector3(sh.boss.x, 2.5, sh.boss.z);
       else if (sh.id){ for (let i = 0; i < en; i++) if (eid[i] === sh.id && eh[i] > 0){ tgt = new THREE.Vector3(ex[i], 1.2, ez[i]); break; } }
       if (tgt) sh.to = tgt;
-      else if (sh.follow && P.seat === 'pilot') sh.to = hmAimPoint(sh.to || new THREE.Vector3());
-      const want = sh.to.clone().sub(sh.m.position).normalize().multiplyScalar(30);
-      sh.v.lerp(want, Math.min(1, dt*3.5)); sh.m.lookAt(sh.m.position.clone().add(sh.v));
+      sh.age = (sh.age || 0) + dt;
+      if (sh.follow && !tgt){ if (P.seat === 'pilot') sh.to = hmAimPoint(sh.to || new THREE.Vector3()); if (sh.age > 0.15) steerVel(sh.v, _shA.copy(sh.to).sub(sh.m.position), GUIDE_RATE.hellfire, dt); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v)); }
+      else { const want = sh.to.clone().sub(sh.m.position).normalize().multiplyScalar(30); sh.v.lerp(want, Math.min(1, dt*3.5)); sh.m.lookAt(sh.m.position.clone().add(sh.v)); }
       if (Math.random() < 0.7) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.6);
     } else if (sh.kind === 'rocket'){
       // aim-guided: leaves along the nose, then bends toward the point under the centre dot
       // guided option: keeps steering for the point under the HUD reticle as the helicopter moves
-      if (sh.follow && P.seat === 'pilot'){ const a = hmAimPoint(_shA), sp = sh.v.length(); sh.v.lerp(a.sub(sh.m.position).normalize().multiplyScalar(sp), Math.min(1, dt*3)); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v)); }
+      sh.age = (sh.age || 0) + dt;
+      if (sh.follow && P.seat === 'pilot' && sh.age > 0.12){ const a = hmAimPoint(_shA); steerVel(sh.v, a.sub(sh.m.position), GUIDE_RATE[sh.follow] || 0.85, dt); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v)); }
       if (Math.random() < 0.5) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.5);
     } else if (sh.kind === 'agm'){
       const want = sh.to.clone().sub(sh.m.position).normalize().multiplyScalar(36); sh.v.lerp(want, Math.min(1, dt*2.5)); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v));
@@ -5689,11 +5764,11 @@ function hmCamera(dt){
   $('hmSound').textContent = SETTINGS.sound ? '🔊' : '🔇';
   if (P.seat === 'pilot'){
     const ap = (heliSim() ? hmAimPoint(_hmV) : hmBoresight(_hmV)).project(camera), lb = P.type === 'little', hs = P.vel ? Math.hypot(P.vel.x, P.vel.z) : Math.abs(P.speed || 0);
-    const msl = P.wsel === 'sec' && !lb, rk = P.rockets > 0 ? 'RDY' : 'RLD', g = SETTINGS.guided && heliSim() ? 'GUID ' : '';
+    const msl = P.wsel === 'sec' && !lb, rk = P.rockets > 0 ? 'RDY' : 'RLD', g = gPri(P.type) && heliSim() ? 'GUID ' : '', g2 = gSec(P.type) && heliSim() ? 'GUID ' : '';
     bfHud({cockpit: P.view === 'cockpit', frame: P.view === 'cockpit' && lb, aim: ap.z < 1 && Math.abs(ap.x) < 1.3 && Math.abs(ap.y) < 1.3 ? ap : null, msl,
       hdg: P.yaw*57.2958, alt: P.pos.y*3.3, kts: hs*4.86, pitch: P.pitch, bank: P.bank || 0, flr: P.flares > 0 && P.flCd <= 0 ? 'RDY' : 'CDN',
-      lines: lb ? [(P.wsel !== 'sec' ? '▸ ' : '  ') + 'M134 RDY', (P.wsel === 'sec' ? '▸ ' : '  ') + g + 'RKT VOLLEY ' + (P.rockets > 0 && P.hfCd <= 0 ? 'RDY' : 'RLD')]
-        : [(msl ? '  ' : '▸ ') + g + 'RKT ' + rk, (msl ? '▸ ' : '  ') + g + 'AT MSL ' + (P.hellfire > 0 && P.hfCd <= 0 ? 'RDY' : 'CDN')]});
+      lines: lb ? [(P.wsel !== 'sec' ? '▸ ' : '  ') + 'M134 RDY', (P.wsel === 'sec' ? '▸ ' : '  ') + g2 + 'RKT VOLLEY ' + (P.rockets > 0 && P.hfCd <= 0 ? 'RDY' : 'RLD')]
+        : [(msl ? '  ' : '▸ ') + g + 'RKT ' + rk, (msl ? '▸ ' : '  ') + g2 + 'AT MSL ' + (P.hellfire > 0 && P.hfCd <= 0 ? 'RDY' : 'CDN')]});
   }
   return true;
 }
@@ -6297,8 +6372,8 @@ document.querySelectorAll('#settings input[type=range]').forEach(rgWrap);
 // ---- new controls ----
 function bindNew(){
   const G = SETTINGS.gunner, A = SETTINGS.agi, F = SETTINGS.gyro.fly;
-  { const U = SETTINGS.hud; $('hdDot').value = U.dot; $('hdCdot').value = U.cdot; $('trSize').value = U.trSize; $('trQty').value = U.trQty; $('sRadar').checked = U.radar; }
-  $('sGuided').checked = !!SETTINGS.guided; $('sAiSquad').checked = SETTINGS.aiSquad !== false; $('gnAim').value = G.aim; $('gnSide').value = G.side; $('gnFloat').checked = G.float; $('gnSwipe').value = G.swipe; $('gnStick').value = G.stick; $('gnExpo').value = G.expo; $('gnInv').checked = G.inv;
+  { const U = SETTINGS.hud; $('hdDot').value = U.dot; $('hdCdot').value = U.cdot; $('sRadar').checked = U.radar; }
+  $('sAiSquad').checked = SETTINGS.aiSquad !== false; $('gnAim').value = G.aim; $('gnSide').value = G.side; $('gnFloat').checked = G.float; $('gnSwipe').value = G.swipe; $('gnStick').value = G.stick; $('gnExpo').value = G.expo; $('gnInv').checked = G.inv;
   $('agApache').value = A.apache; $('agDap').value = A.dap; $('agLittle').value = A.little;
   $('gfOn').checked = F.on; $('gfSens').value = F.sens; $('gfDead').value = F.dead; $('gfInvP').checked = F.invP; $('gfInvR').checked = F.invR;
   $('gyOn').checked = SETTINGS.gyro.on; $('gySens').value = SETTINGS.gyro.sens; $('gyInvX').checked = SETTINGS.gyro.invX; $('gyInvY').checked = SETTINGS.gyro.invY;
@@ -6306,8 +6381,8 @@ function bindNew(){
   $('appVer').textContent = 'Game ' + GAME_VERSION + (nv ? ' · App ' + nv : '');
 }
 for (const [id, get, key, kind] of [
-  ['hdDot', () => SETTINGS.hud, 'dot', 'n'], ['hdCdot', () => SETTINGS.hud, 'cdot', 'n'], ['trSize', () => SETTINGS.hud, 'trSize', 'n'], ['trQty', () => SETTINGS.hud, 'trQty', 'n'], ['sRadar', () => SETTINGS.hud, 'radar', 'b'],
-  ['sGuided', () => SETTINGS, 'guided', 'b'], ['sAiSquad', () => SETTINGS, 'aiSquad', 'b'], ['gnAim', () => SETTINGS.gunner, 'aim', 's'], ['gnSide', () => SETTINGS.gunner, 'side', 's'], ['gnFloat', () => SETTINGS.gunner, 'float', 'b'],
+  ['hdDot', () => SETTINGS.hud, 'dot', 'n'], ['hdCdot', () => SETTINGS.hud, 'cdot', 'n'], ['sRadar', () => SETTINGS.hud, 'radar', 'b'],
+  ['sAiSquad', () => SETTINGS, 'aiSquad', 'b'], ['gnAim', () => SETTINGS.gunner, 'aim', 's'], ['gnSide', () => SETTINGS.gunner, 'side', 's'], ['gnFloat', () => SETTINGS.gunner, 'float', 'b'],
   ['gnSwipe', () => SETTINGS.gunner, 'swipe', 'n'], ['gnStick', () => SETTINGS.gunner, 'stick', 'n'], ['gnExpo', () => SETTINGS.gunner, 'expo', 'n'], ['gnInv', () => SETTINGS.gunner, 'inv', 'b'],
   ['agApache', () => SETTINGS.agi, 'apache', 'n'], ['agDap', () => SETTINGS.agi, 'dap', 'n'], ['agLittle', () => SETTINGS.agi, 'little', 'n'],
   ['gfSens', () => SETTINGS.gyro.fly, 'sens', 'n'], ['gfDead', () => SETTINGS.gyro.fly, 'dead', 'n'], ['gfInvP', () => SETTINGS.gyro.fly, 'invP', 'b'], ['gfInvR', () => SETTINGS.gyro.fly, 'invR', 'b']])
@@ -6376,7 +6451,7 @@ function bfHud(o){
     x.strokeRect(lx + 14*s, pa - 9*s, 50*s, 18*s); x.textAlign = 'center'; x.fillText(String(Math.round(o.alt)), lx + 39*s, pa + 1);
   }
   // attitude box, bottom centre: the small box drifts with roll and pitch
-  { const by = H*0.86, bw = 108*s, bh = 26*s, ix = clamp(-o.bank*30*s, -bw/2 + 18*s, bw/2 - 18*s), iy = clamp(o.pitch*16*s, -bh/2 + 6*s, bh/2 - 6*s);
+  { const by = H - (PC.on ? 84 : 62) - 22*s, bw = 108*s, bh = 26*s, ix = clamp(-o.bank*30*s, -bw/2 + 18*s, bw/2 - 18*s), iy = clamp(o.pitch*16*s, -bh/2 + 6*s, bh/2 - 6*s);
     x.strokeRect(cx - bw/2, by - bh/2, bw, bh); x.beginPath(); x.moveTo(cx, by - bh/2 - 6*s); x.lineTo(cx, by - bh/2); x.moveTo(cx, by + bh/2); x.lineTo(cx, by + bh/2 + 4*s);
     x.moveTo(cx - bw/2, by); x.lineTo(cx - bw/2 + 5*s, by); x.moveTo(cx + bw/2 - 5*s, by); x.lineTo(cx + bw/2, by); x.stroke();
     x.strokeRect(cx + ix - 16*s, by + iy - 5.5*s, 32*s, 11*s); x.beginPath(); x.arc(cx + ix, by + iy, 3*s, 0, 6.29); x.fill();
@@ -6420,7 +6495,7 @@ function gunSightHud(gun){
 }
 
 // ---- HUD settings ----
-SETTINGS.hud = Object.assign({dot: 1, cdot: 1, trSize: 1, trQty: 0.5, radar: true}, SETTINGS.hud || {});
+SETTINGS.hud = Object.assign({dot: 1, cdot: 1, radar: true}, SETTINGS.hud || {}); SETTINGS.hud.trSize = 0.55; SETTINGS.hud.trQty = 0.85;   // tracers: small, dense, fast (not a setting)
 // ---- air radar: a green sweep, heading-up; enemy aircraft and incoming missiles light up as the beam passes ----
 const RAD = {cv: $('radar'), x: null, a: 0, on: false, range: 140};
 function radarHide(){ if (RAD.on){ RAD.on = false; RAD.cv.classList.remove('on'); } }
@@ -6486,7 +6561,7 @@ function apGunnerHud(rng, pitch, bank){
 }
 // ---- tracer preview: a burst from the bottom-left corner at the size and amount you picked ----
 const TPV = {cv: $('trPrev'), x: null, b: [], t: 0};
-function trPreviewTick(dt){
+function trPreviewTick(dt){ return;
   if ($('settings').hidden || !document.querySelector('.bfPane.on[data-pane="hud"]')) return;
   const c = TPV.cv; if (!TPV.x) TPV.x = c.getContext('2d'); const x = TPV.x, W = c.width, H = c.height, S = SETTINGS.hud;
   TPV.t -= dt;
@@ -6502,6 +6577,78 @@ function trPreviewTick(dt){
   }
   x.fillStyle = '#3c4146'; x.fillRect(4, H - 30, 30, 14);
 }
+
+// ---- seat diagram (BF): helicopter seen from above, numbered seats; yours lit, AI-crewed seats dim ----
+const SEATC = {cv: $('seatHud'), x: null, on: false, key: ''};
+function seatHudTick(){
+  const want = state === 'play' && MODE === 'heli' && HM.on;
+  if (want !== SEATC.on){ SEATC.on = want; SEATC.cv.classList.toggle('on', want); SEATC.key = ''; }
+  if (!want) return;
+  const T = HM.type, me = hmSeatNo(), key = T + me; if (key === SEATC.key) return; SEATC.key = key;
+  const c = SEATC.cv; if (!SEATC.x) SEATC.x = c.getContext('2d'); const x = SEATC.x, W = c.width, cx = W/2;
+  x.clearRect(0, 0, W, W); x.lineWidth = 3; x.strokeStyle = 'rgba(230,255,240,.85)'; x.fillStyle = 'rgba(10,22,18,.35)';
+  // airframe: fuselage, tail boom, rotor
+  x.beginPath(); x.ellipse(cx, W*0.42, W*0.12, W*0.22, 0, 0, 6.29); x.fill(); x.stroke();
+  x.beginPath(); x.moveTo(cx, W*0.64); x.lineTo(cx, W*0.93); x.moveTo(cx - W*0.08, W*0.9); x.lineTo(cx + W*0.08, W*0.9); x.stroke();
+  x.strokeStyle = 'rgba(230,255,240,.45)'; x.beginPath(); x.moveTo(cx - W*0.4, W*0.08); x.lineTo(cx + W*0.4, W*0.76); x.moveTo(cx + W*0.4, W*0.08); x.lineTo(cx - W*0.4, W*0.76); x.stroke();
+  const seats = T === 'dap' ? [[1, cx, W*0.27], [2, cx - W*0.2, W*0.47], [3, cx + W*0.2, W*0.47]] : T === 'apache' ? [[2, cx, W*0.27], [1, cx, W*0.5]] : [[1, cx, W*0.34]];
+  for (const [n, sx, sy] of seats){
+    const mine = n === me, r = W*0.085;
+    x.beginPath(); x.arc(sx, sy, r, 0, 6.29); x.fillStyle = mine ? '#4fd7ff' : 'rgba(110,230,150,.55)'; x.fill(); x.lineWidth = 2.5; x.strokeStyle = mine ? '#e8fbff' : 'rgba(200,255,220,.7)'; x.stroke();
+    x.fillStyle = mine ? '#06202b' : '#062012'; x.font = `800 ${Math.round(r*1.3)}px ${getComputedStyle(document.body).fontFamily}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(n), sx, sy + 1);
+  }
+}
+
+// ---- helicopter loadouts: what each aircraft carries. Picked in the Loadout screen, applied when you take off ----
+const LO_OPTS = {
+  pri: {hydra: {name: 'Hydra rockets', desc: 'Unguided. Fly straight to where the reticle was when you fired.'},
+        grkt: {name: 'Guided rockets', desc: 'Leave forward of the nose, then turn toward the reticle at a set rate. Too fast or too sharp and they miss.'},
+        m134: {name: 'Twin M134', desc: 'Two fixed miniguns on the skids.'}},
+  sec: {hellfire: {name: 'Hellfire', desc: 'Unguided against the ground: straight to the reticle spot. Locks enemy helicopters.'},
+        ghf: {name: 'Aim-guided Hellfire', desc: 'Leaves forward, then steers for wherever your reticle is, as it moves. Turns slower than a rocket.'},
+        volley: {name: 'Rocket volley', desc: '14 rockets in under a second, straight to the reticle spot.'},
+        gvolley: {name: 'Guided volley', desc: '14 rockets that curve toward the reticle.'}},
+  cm: {flares: {name: 'Flares', desc: 'Six pairs over 1.75 seconds. Missiles go for the newest pair.'}},
+  up: {none: {name: 'None', desc: 'Stock aircraft.'},
+       armor: {name: 'Armor plating', desc: 'Takes 25% less damage, handles 6% slower.'},
+       reload: {name: 'Quick reload', desc: 'Rockets and missiles come back 40% faster.'},
+       flaresx: {name: 'Extra flares', desc: '+50% flare charges.'}},
+};
+const LO_SLOTS = {apache: {pri: ['hydra', 'grkt'], sec: ['hellfire', 'ghf'], cm: ['flares'], up: ['none', 'armor', 'reload', 'flaresx']},
+  dap: {pri: ['hydra', 'grkt'], sec: ['hellfire', 'ghf'], cm: ['flares'], up: ['none', 'armor', 'reload', 'flaresx']},
+  little: {pri: ['m134'], sec: ['volley', 'gvolley'], cm: ['flares'], up: ['none', 'armor', 'reload', 'flaresx']}};
+const LO_SLOT_NAME = {pri: 'Primary', sec: 'Secondary', cm: 'Countermeasure', up: 'Upgrade'};
+SETTINGS.loadout = SETTINGS.loadout || {};
+for (const [t, sl] of Object.entries(LO_SLOTS)){ SETTINGS.loadout[t] = Object.assign({}, ...Object.entries(sl).map(([k, o]) => ({[k]: o[0]})), SETTINGS.loadout[t] || {});
+  for (const k in sl) if (!sl[k].includes(SETTINGS.loadout[t][k])) SETTINGS.loadout[t][k] = sl[k][0]; }
+if (SETTINGS.guided){ for (const t of ['apache', 'dap']){ SETTINGS.loadout[t].pri = 'grkt'; SETTINGS.loadout[t].sec = 'ghf'; } SETTINGS.loadout.little.sec = 'gvolley'; delete SETTINGS.guided; }
+const LO = t => SETTINGS.loadout[t] || SETTINGS.loadout.apache;
+const gPri = t => LO(t).pri === 'grkt', gSec = t => LO(t).sec === 'ghf' || LO(t).sec === 'gvolley';
+// aim-guided flight: turn the velocity toward the wanted direction by at most `rate` rad/s, keeping speed
+const _stA = new THREE.Vector3(), _stB = new THREE.Vector3();
+function steerVel(v, to, rate, dt){
+  const sp = v.length(); if (!sp) return; _stA.copy(v).divideScalar(sp); _stB.copy(to).normalize();
+  const ang = Math.acos(clamp(_stA.dot(_stB), -1, 1)); if (ang < 1e-4) return;
+  _stA.lerp(_stB, Math.min(1, rate*dt/ang)).normalize(); v.copy(_stA).multiplyScalar(sp);
+}
+const GUIDE_RATE = {rocket: 0.85, hellfire: 0.6, volley: 1.0};
+let LOT = 'apache';
+function loRender(){
+  const t = LOT, cur = LO(t);
+  for (const b of document.querySelectorAll('#loTabs button')) b.classList.toggle('on', b.dataset.t === t);
+  $('loName').textContent = {apache: 'AH-64 APACHE', dap: 'MH-60L DAP', little: 'AH-6 LITTLE BIRD'}[t];
+  let h = '';
+  for (const [slot, opts] of Object.entries(LO_SLOTS[t])){
+    h += `<div class="loSlot"><div class="loSlotName">${LO_SLOT_NAME[slot]}</div><div class="loOpts">`;
+    for (const o of opts){ const O = LO_OPTS[slot][o]; h += `<button type="button" class="loOpt${cur[slot] === o ? ' on' : ''}" data-slot="${slot}" data-o="${o}"><b>${O.name}</b><small>${O.desc}</small></button>`; }
+    h += '</div></div>';
+  }
+  $('loSlots').innerHTML = h;
+  for (const b of document.querySelectorAll('#loSlots .loOpt')) b.onclick = () => { SETTINGS.loadout[LOT][b.dataset.slot] = b.dataset.o; saveSettings(); sfx('click'); loRender(); };
+}
+for (const b of document.querySelectorAll('#loTabs button')) b.onclick = () => { LOT = b.dataset.t; sfx('click'); loRender(); };
+$('loBtn').onclick = () => { $('heliPick').hidden = true; $('loadout').hidden = false; loRender(); };
+$('loDone').onclick = () => { $('loadout').hidden = true; $('heliPick').hidden = false; };
 // ---- in-app updates (Android app only): the app downloads new game files in the background ----
 const UPD = {pending: null, dismissed: false};
 function updShow(){

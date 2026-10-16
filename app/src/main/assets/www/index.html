@@ -949,6 +949,7 @@ const WEAPONS = {
     svg: '<rect x="6" y="10" width="44" height="7" rx="2"/><path d="M50 6l12 7.5-12 7.5z"/><rect x="20" y="17" width="5" height="10"/><rect x="33" y="17" width="5" height="10"/>'},
 };
 const WKEYS = Object.keys(WEAPONS);
+const SNIPER_K = WKEYS.indexOf('sniper');
 // how hard each gun shoves: shotguns most, the minigun little (the pistol least); vehicle and heli rounds stay at 1
 const KB_W = WKEYS.map(k => ({pistol: 0.35, smg: 0.6, revolver: 1.4, bailiff: 1.7, shotgun: 2.2, ar: 0.9, minigun: 0.5, sniper: 1.6, grenade: 1.5, rpg: 1.8})[k] ?? 1);
 // late game (from wave 13) every gun carries more and every pickup gives more.
@@ -975,7 +976,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V81';
+const GAME_VERSION = 'V82';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -2197,6 +2198,7 @@ function makeGate(text, width, z, speed){
   return {g, o, text, width, z, x: 0, speed, mult: +text.slice(1), hp: 70, max: 70, broken: false, rebuild: 0, dirty: true, flash: 0, banner};
 }
 const gates = [makeGate('×2', 3.4, -7, 0.55), makeGate('×3', 2.1, -15, 1.05)];
+const GATE_REACH_Z = -28;      // how far a round that went through no gate can travel
 function breakGate(g){
   g.broken = true; g.hp = 0; g.rebuild = 12; g.g.visible = false; sfx('gate'); sfx('wdebris', 0.7, g.x/6);
   chips(g.x, 1.2, g.z, PURPLE, 30, 6); shake = Math.max(shake, 0.3);
@@ -2645,9 +2647,9 @@ function breakBarrel(b){
   removeBarrel(b);
   grant(r, 'barrel');
 }
-function grant(r){
+function grant(r, src, scale = 1){
   if (r === 'pistolup'){ pistolUp(); return; }
-  if (WEAPONS[r]) giveWeapon(r);
+  if (WEAPONS[r]) giveWeapon(r, false, scale);
   else if (VEHICLES[r]) addStock(r);
   else if (r === 'gunner'){ addGunner(); toast('+1 Gunner', '#bcd8ff'); }
   else if (r === 'freeze' || r === 'repair') addStock(r);
@@ -2668,9 +2670,9 @@ function pistolUp(){
 const pistolShots = () => wlv.pistol >= 6 ? 3 : wlv.pistol >= 3 ? 2 : 1;
 let weapon = 'pistol';
 function resetArsenal(){ for (const k of WKEYS){ owned[k] = k === 'pistol'; ammo[k] = k === 'pistol' ? Infinity : 0; wlv[k] = 1; } weapon = 'pistol'; syncGuns(); buildBar(); }
-function giveWeapon(k, quiet){
+function giveWeapon(k, quiet, scale = 1){
   const W = WEAPONS[k];
-  const MX = wMax(k), GV = wGive(k);
+  const MX = wMax(k), GV = Math.max(1, Math.round(wGive(k)*scale));
   if (!owned[k]){ owned[k] = true; ammo[k] = GV; if (!quiet) toast(W.name + ' unlocked', '#b9ffbf'); if (weapon === 'pistol') setWeapon(k); buildBar(k); return 'unlocked'; }
   let what;
   // pickups and the shop's weapon slots only ever give ammo; levels are bought under Weapon upgrades
@@ -4233,7 +4235,8 @@ function drawBossBar(boss, bossBar){
 }
 
 // ================= state =================
-const ex = new Float32Array(ECAP), ez = new Float32Array(ECAP), eh = new Float32Array(ECAP), er = new Uint8Array(ECAP), eph = new Float32Array(ECAP), es = new Float32Array(ECAP), eyaw = new Float32Array(ECAP), ehit = new Float32Array(ECAP), eid = new Int32Array(ECAP), killBy = new Uint8Array(ECAP), elunge = new Uint8Array(ECAP), ebuff = new Uint8Array(ECAP), ehpMax = new Float32Array(ECAP), estag = new Float32Array(ECAP);
+const ex = new Float32Array(ECAP), ez = new Float32Array(ECAP), eh = new Float32Array(ECAP), er = new Uint8Array(ECAP), eph = new Float32Array(ECAP), es = new Float32Array(ECAP), eyaw = new Float32Array(ECAP), ehit = new Float32Array(ECAP), eid = new Int32Array(ECAP), killBy = new Uint8Array(ECAP), elunge = new Uint8Array(ECAP), ebuff = new Uint8Array(ECAP), ehpMax = new Float32Array(ECAP), estag = new Float32Array(ECAP), ecmd = new Uint8Array(ECAP);
+let SPAWN_CMD = 0;      // set while a commander's units (or their boss's summons) are being spawned
 const ux = new Float32Array(BUCAP), uz = new Float32Array(BUCAP), uy = new Float32Array(BUCAP), uvx = new Float32Array(BUCAP), uvz = new Float32Array(BUCAP), uvy = new Float32Array(BUCAP), ud = new Float32Array(BUCAP), upi = new Int16Array(BUCAP), ul = new Float32Array(BUCAP), uk = new Uint8Array(BUCAP), um = new Uint8Array(BUCAP), ulast = new Int32Array(BUCAP), utr = new Uint8Array(BUCAP), uo = new Uint8Array(BUCAP);   // uo: 1 = your mounted gun (hit markers). utr: 0 normal, 1 slim tracer, 2 ball round (not drawn)
 const px = new Float32Array(PCAP), py = new Float32Array(PCAP), pz = new Float32Array(PCAP), pvx = new Float32Array(PCAP), pvy = new Float32Array(PCAP), pvz = new Float32Array(PCAP), pl = new Float32Array(PCAP);
 const dx_ = new Float32Array(DCAP), dz_ = new Float32Array(DCAP), dt_ = new Float32Array(DCAP), dr_ = new Uint8Array(DCAP), dyaw = new Float32Array(DCAP), dph = new Float32Array(DCAP);
@@ -4266,7 +4269,7 @@ function spawnEnemy(role, z, x){
   const R = ROLES[role], i = en++, hw = halfW(z) - R.r*1.5;
   ex[i] = x !== undefined ? clamp(x, -hw, hw) : rnd(-hw, hw); ez[i] = z; er[i] = RI[role];
   eph[i] = rnd(0, 6.28); eyaw[i] = rnd(-0.2, 0.2); es[i] = R.speed*rnd(0.9, 1.1)*(1 + Math.min(0.5, (wave - 1)*0.025));
-  eh[i] = ehpMax[i] = R.hp*hpScale(); ehit[i] = 0; eid[i] = nextId++; killBy[i] = 0; elunge[i] = 0; ebuff[i] = 0; estag[i] = 0;
+  eh[i] = ehpMax[i] = R.hp*hpScale(); ehit[i] = 0; eid[i] = nextId++; killBy[i] = 0; elunge[i] = 0; ebuff[i] = 0; estag[i] = 0; ecmd[i] = SPAWN_CMD;
   return true;
 }
 function hurtEnemy(i, d){
@@ -4411,7 +4414,7 @@ function renderShop(flashId){
     const b = document.createElement('button'); b.type = 'button'; b.className = 'item' + (it.id === flashId ? ' bought' : '');
     b.disabled = !ok || coins < price;
     b.innerHTML = `<b>${it.name}${it.max ? ' <small>' + lv + '/' + it.max + '</small>' : ''}</b><span>${typeof it.desc === 'function' ? it.desc() : it.desc}</span><em>${maxed ? 'Maxed' : '● ' + fmt(price)}</em>`;
-    b.onclick = () => { if (coins < price || !ok){ sfx('deny'); return; } sfx('buy'); coins -= price; shopLv[it.id] = lv + 1; it.buy(); renderShop(it.id); saveRunSoon(); if (state === 'choice') $('shop').hidden = true; };
+    b.onclick = () => { if (coins < price || !ok){ sfx('deny'); return; } sfx('buy'); coins -= price; netSpend(price); shopLv[it.id] = lv + 1; it.buy(); renderShop(it.id); saveRunSoon(); if (state === 'choice') $('shop').hidden = true; };
     grid.appendChild(b);
   }
 }
@@ -5164,7 +5167,7 @@ function update(dt){
   }
   if (bosses.length && !frozen && !NET.mirror){
     summonT -= dt;
-    if (summonT <= 0){ summonT = 2.6; const per = Math.ceil((3 + wave)/Math.sqrt(bosses.length)); for (const boss of bosses) for (let k = 0; k < per; k++) spawnEnemy(k % 3 ? 'normal' : 'swarm', boss.z + rnd(-1, 1), boss.x + rnd(-2.5, 2.5)); }
+    if (summonT <= 0){ summonT = 2.6; const per = Math.ceil((3 + wave)/Math.sqrt(bosses.length)); for (const boss of bosses){ SPAWN_CMD = boss.cmd ? 1 : 0; for (let k = 0; k < per; k++) spawnEnemy(k % 3 ? 'normal' : 'swarm', boss.z + rnd(-1, 1), boss.x + rnd(-2.5, 2.5)); } SPAWN_CMD = 0; }
   }
 
   // barrels arrive in pairs: choose which one to break
@@ -5296,6 +5299,8 @@ function update(dt){
         if (extra > 0) ud[i] *= (extra + 1);
       }
     }
+    // a round that missed both gates runs out of steam at the second light pole; the sniper still reaches all the way
+    if (um[i] === 0 && z1 < GATE_REACH_Z && uk[i] !== SNIPER_K){ ul[i] = 0; if (Math.random() < 0.15) chips(x1, Math.max(0.3, uy[i]), z1, SPARK, 1, 1); continue; }
     const sx = x1 - x0, sz = z1 - z0, len2 = sx*sx + sz*sz || 1e-6;
     const gx = (x1 - X0)|0, gz0 = (Math.min(z0, z1) - Z0)|0, gz1 = (Math.max(z0, z1) - Z0)|0;
     for (let cz = gz0 - 1; cz <= gz1 + 1 && ul[i] > 0; cz++){
@@ -5333,7 +5338,7 @@ function update(dt){
   // compact enemies; the ones we shot fall over
   let w = 0;
   for (let i = 0; i < en; i++){
-    if (eh[i] > 0){ if (w !== i){ ex[w]=ex[i]; ez[w]=ez[i]; eh[w]=eh[i]; er[w]=er[i]; eph[w]=eph[i]; es[w]=es[i]; eyaw[w]=eyaw[i]; ehit[w]=ehit[i]; eid[w]=eid[i]; killBy[w]=killBy[i]; elunge[w]=elunge[i]; ebuff[w]=ebuff[i]; ehpMax[w]=ehpMax[i]; estag[w]=estag[i]; } w++; }
+    if (eh[i] > 0){ if (w !== i){ ex[w]=ex[i]; ez[w]=ez[i]; eh[w]=eh[i]; er[w]=er[i]; eph[w]=eph[i]; es[w]=es[i]; eyaw[w]=eyaw[i]; ehit[w]=ehit[i]; eid[w]=eid[i]; killBy[w]=killBy[i]; elunge[w]=elunge[i]; ebuff[w]=ebuff[i]; ehpMax[w]=ehpMax[i]; estag[w]=estag[i]; ecmd[w]=ecmd[i]; } w++; }
     else if (killBy[i] === 1){
       const s = ROLES[ROLE_ORDER[er[i]]].scale;
       chips(ex[i], 0.8*s, ez[i], TEAL, 2, 3); chips(ex[i], 1.0*s, ez[i], CREAM, 1, 3); chips(ex[i], 0.6*s, ez[i], BLUEC, 1, 3);
@@ -5353,13 +5358,16 @@ function update(dt){
   shake = Math.max(0, shake - dt); hurt = Math.max(0, hurt - dt);
   if (wall <= 0 && !NET.mirror) return gameOver();
   // wave cleared -> shop
-  const cmdTimeUp = NET.started && MODE === 'def' && netMode().cmd && waveT > waveDur + CMD_WAVE_EXTRA;
-  if (!NET.mirror && !NET.noWaves && (cmdTimeUp || (spawned >= budget && !bossPending && !bosses.length && en === 0 && waveT > 3)) && !(GS_.on && GS_.phase !== 'leave')){
+  const cmdMode = NET.started && MODE === 'def' && netMode().cmd;
+  let left = en, bossLeft = bosses.length;
+  if (cmdMode){ left = 0; for (let i = 0; i < en; i++) if (!ecmd[i] && eh[i] > 0) left++; bossLeft = bosses.filter(b => !b.cmd).length; }
+  const cmdCleared = cmdMode && en > left;          // only the commanders' units are still up
+  if (!NET.mirror && !NET.noWaves && spawned >= budget && !bossPending && !bossLeft && left === 0 && waveT > 3 && !(GS_.on && GS_.phase !== 'leave')){
     if (MODE === 'heli'){ if (HM.breakT <= 0 && !HM.toSpawn && !HM.enemies.some(e => e.hp > 0)) hmWaveClear(); }
     else {
     while (barrels.length) removeBarrel(barrels[0]);
     un = 0;
-    if (NET.on && NET.started){ NET.shopOpen = true; NET.shopEnd = netMode().cmd ? performance.now() + CMD_SHOP_T*1000 : 0; netAll({t: 'shop', T: NET.shopEnd ? CMD_SHOP_T : 0}); if (cmdTimeUp) toast('Time! The horde holds while the defenders shop', '#ffe6a0'); if (NET.side === 'cmd'){ state = 'shop'; netCmdShopBonus(); netCheckReady(); } else openShop(); }
+    if (NET.on && NET.started){ NET.shopOpen = true; NET.shopEnd = performance.now() + CMD_SHOP_T*1000; netAll({t: 'shop', T: NET.shopEnd ? CMD_SHOP_T : 0}); if (cmdCleared) toast('Wave cleared · the commanders’ units hold while you shop', '#ffe6a0'); if (NET.side === 'cmd'){ state = 'shop'; netCmdShopBonus(); netCheckReady(); } else openShop(); }
     else openShop();
     }
   }
@@ -6990,13 +6998,19 @@ const MP_UNITS = {normal: {cost: 3, cd: 0}, fast: {cost: 4, cd: 0.6}, swarm: {co
 const cmdSides = () => { const nc = NET.players.filter(p => p.side === 'cmd').length; return {nc: Math.max(1, nc), nd: Math.max(1, NET.players.length - nc)}; };
 const cmdIncomeK = () => { const {nc, nd} = cmdSides(); return nc > nd ? 1/(1 + 0.4*(nc - nd)) : 1 + 0.25*(nd - nc); };
 const defCoinK = () => { if (!(NET.on && NET.started && netMode().cmd)) return 1; const {nc, nd} = cmdSides(); return nc > nd ? 1 + 0.3*(nc - nd) : 1; };
-const CMD_WAVE_EXTRA = 20, CMD_SHOP_T = 15;
+const CMD_SHOP_T = 15;      // seconds to shop between waves in multiplayer
 const NET = {ucd: {}, shopOpen: false, shopEnd: 0, on: false, host: false, started: false, code: '', id: '', ws: null, hb: null, peers: new Map(), me: 0, mode: 'coop', players: [],
   mirror: false, noWaves: false, hitQ: [], snap: null, snapT: 0, poseT: 0, pose: {}, av: new Map(), friends: new Map(), score: {}, cash: 0, side: 'def',
   lastBy: -1, ready: new Set(), status: '', joinT: null, mtx: new Float32Array(ECAP), mtz: new Float32Array(ECAP)};
 const netMode = () => MP_MODES[NET.mode] || MP_MODES.coop;
 // co-op: every kill goes to one player, so each kill pays a third more (not double: the barrels and the pier are shared too)
-const netCoinK = () => NET.on && NET.started && !netMode().pvp ? 1.35*defCoinK() : 1;
+// wave modes share one wallet (the host's): it fills a bit faster the more defenders there are
+const netPool = () => NET.on && NET.started && !netMode().pvp && MODE === 'def';
+const netDefs = () => Math.max(1, NET.players.filter(p => !netMode().cmd || p.side !== 'cmd').length);
+const netCoinK = () => NET.on && NET.started && !netMode().pvp ? (MODE === 'def' ? 1 + 0.25*netDefs() : 1.35)*defCoinK() : 1;
+// a teammate spent from the shared wallet: tell the host; the local figure counts it until the host confirms
+function netSpend(n){ if (!netPool() || NET.host || !n) return; NET.cseq = (NET.cseq || 0) + 1; NET.pend = NET.pend || {}; NET.pend[NET.cseq] = n; netSend(netHostPeer(), {t: 'coin', d: n, q: NET.cseq}); }
+const netPending = () => { let s = 0; for (const k in NET.pend || {}) s += NET.pend[k]; return s; };
 // host side: a barrel broke. Ammo / weapon / gunner / pistol rewards go to everyone; a vehicle or support call-in to whoever broke it
 function netBarrelLoot(b){
   const r = b.reward.id, by = b.lastBy ?? NET.me, who = (NET.players.find(p => p.slot === by) || {}).name || 'Someone';
@@ -7004,6 +7018,17 @@ function netBarrelLoot(b){
   removeBarrel(b);
   const personal = VEHICLES[r] || r === 'freeze' || r === 'repair';
   if (personal){ if (by === NET.me){ grant(r); sfx('reward'); toast('You got ' + b.reward.label, '#c8ffd0'); } else { netSend(netPeerOf(by), {t: 'loot', r, by}); toast(who + ' got ' + b.reward.label, '#e8fbff'); } }
+  else if (WEAPONS[r]){
+    // whoever broke it gets the gun on the barrel; everyone else gets a different random one; half the usual ammo each
+    const guns = REWARDS.filter(x => WEAPONS[x.id] && x.id !== r).map(x => x.id).sort(() => Math.random() - 0.5);
+    let k = 0;
+    for (const p of NET.players){
+      if (netMode().cmd && p.side === 'cmd') continue;
+      const g = p.slot === by ? r : guns[k++ % guns.length];
+      if (p.slot === NET.me){ grant(g, 'barrel', 0.5); sfx('reward'); toast((by === NET.me ? 'Your barrel: ' : who + '’s barrel: ') + WEAPONS[g].name + ' (half ammo)', '#c8ffd0'); }
+      else netSend(netPeerOf(p.slot), {t: 'loot', r: g, by, name: who, half: 1});
+    }
+  }
   else { grant(r); sfx('reward'); netAll({t: 'loot', r, by, name: who}); toast((by === NET.me ? 'You' : who) + ' shared ' + b.reward.label, '#c8ffd0'); }
 }
 // ---------- shared helicopters: everyone sees where the owner's helicopter really is, and friends can crew it ----------
@@ -7213,12 +7238,14 @@ function netOnG(P, m){
     // ---- world, from the host ----
     case 'wave': NET.shopOpen = false; NET.shopEnd = 0; if (!NET.host){ $('shop').hidden = true; NET.waitShop = false; wave = m.wave - 1; startWave(); } return;
     case 'shop': NET.shopOpen = true; NET.shopEnd = m.T ? performance.now() + m.T*1000 : 0; if (!NET.host && MODE === 'def' && NET.side === 'def'){ un = 0; openShop(); } if (!NET.host && NET.side === 'cmd') netCmdShopBonus(); return;
-    case 'kill': if (!NET.host){ kills++; coins += ROLES[m.role] ? ROLES[m.role].coin*(1 + 0.03*wave)*(1 + PERK.coins)*netCoinK() : 0; } return;
+    case 'kill': if (!NET.host){ kills++; if (!netPool()) coins += ROLES[m.role] ? ROLES[m.role].coin*(1 + 0.03*wave)*(1 + PERK.coins)*netCoinK() : 0; } return;
+    case 'coin': if (NET.host){ coins = Math.max(0, coins - (+m.d || 0)); netSend(P, {t: 'cack', q: m.q}); if (state === 'shop') renderShop(); } return;
+    case 'cack': if (NET.pend) delete NET.pend[m.q]; return;
     case 'veh': if (NET.host) netAll(m, P); if (m.s !== NET.me && MODE === 'def' && VEHICLES[m.type]){ const v = spawnVehicle(m.type, true); v.nu = m.u; v.owner = m.s; if (m.dur) v.dur = m.dur + 3; } return;
     case 'vend': if (NET.host) netAll(m, P); { const v = netVehByU(m.u); if (v && v.ghost){ v.done = true; if (DG.on && DG.v === v) dgEnd(); } } return;
     case 'crew': if (NET.host) netAll(m, P); netOnCrew(m); return;
     case 'bar': if (NET.host){ const b = barrels.find(o => o.id === m.id); if (b && b.hp > 0){ b.hp -= m.d; b.dirty = true; b.hit = 0.08; if (b.hp <= 0){ b.lastBy = P.slot; breakBarrel(b); } } } return;
-    case 'loot': grant(m.r); sfx('reward'); toast((m.by === NET.me ? 'You' : m.name || 'A teammate') + (VEHICLES[m.r] || m.r === 'freeze' || m.r === 'repair' ? ' got ' : ' shared ') + ((REWARDS.find(r => r.id === m.r) || {}).label || m.r), '#c8ffd0'); return;
+    case 'loot': grant(m.r, 'barrel', m.half ? 0.5 : 1); sfx('reward'); if (m.half && WEAPONS[m.r]){ toast((m.by === NET.me ? 'Your barrel: ' : (m.name || 'A teammate') + '’s barrel: ') + WEAPONS[m.r].name + ' (half ammo)', '#c8ffd0'); return; } toast((m.by === NET.me ? 'You' : m.name || 'A teammate') + (VEHICLES[m.r] || m.r === 'freeze' || m.r === 'repair' ? ' got ' : ' shared ') + ((REWARDS.find(r => r.id === m.r) || {}).label || m.r), '#c8ffd0'); return;
     case 'sup': if (NET.host){ if (m.k === 'freeze'){ freezeT = 4.5; sfx('freeze'); toast('Horde frozen', '#c6ecff'); } else if (m.k === 'repair'){ wall = Math.min(100, wall + 25); sfx('repair'); toast('Barricade repaired', '#b9f5c1'); } } return;
     case 'over': netOver(m); return;
     // ---- hits on the host's world (clients -> host) ----
@@ -7332,8 +7359,8 @@ function netTick(dt){
 function netSnapshot(){
   const hel = MODE === 'heli' ? HM.enemies.filter(e => !e.remote && e.pos) : [];
   const bar = MODE === 'def' ? barrels.slice(0, 8) : [];
-  const n = Math.min(en, 1200), buf = new ArrayBuffer(12 + n*10 + bosses.length*20 + hel.length*29 + bar.length*21), v = new DataView(buf); let o = 0;
-  v.setUint8(o, 2); o++; v.setUint16(o, wave); o += 2; v.setFloat32(o, wall); o += 4; v.setUint16(o, n); o += 2; v.setUint8(o, bosses.length); o++; v.setUint8(o, hel.length); o++; v.setUint8(o, bar.length); o++;
+  const n = Math.min(en, 1200), buf = new ArrayBuffer(16 + n*10 + bosses.length*20 + hel.length*29 + bar.length*21), v = new DataView(buf); let o = 0;
+  v.setUint8(o, 3); o++; v.setUint16(o, wave); o += 2; v.setFloat32(o, wall); o += 4; v.setUint16(o, n); o += 2; v.setUint8(o, bosses.length); o++; v.setUint8(o, hel.length); o++; v.setUint8(o, bar.length); o++; v.setFloat32(o, coins); o += 4;
   for (let i = 0; i < n; i++){ v.setInt32(o, eid[i]); v.setInt16(o + 4, Math.round(ex[i]*100)); v.setInt16(o + 6, Math.round(clamp(ez[i], -320, 320)*100)); v.setUint8(o + 8, er[i]); v.setUint8(o + 9, Math.round(clamp(eh[i]/(ehpMax[i] || 1), 0, 1)*255)); o += 10; }
   for (const b of bosses){ if (!b.id) b.id = nextId++; v.setInt32(o, b.id); v.setFloat32(o + 4, b.x); v.setFloat32(o + 8, b.z); v.setFloat32(o + 12, b.hp); v.setFloat32(o + 16, b.max); o += 20; }
   for (const e of hel){ if (!e.uid) e.uid = ++vehUid; v.setInt32(o, e.uid); v.setUint8(o + 4, e.kind === 'bh' ? 1 : 0); v.setFloat32(o + 5, e.pos.x); v.setFloat32(o + 9, e.pos.y); v.setFloat32(o + 13, e.pos.z); v.setFloat32(o + 17, e.g ? e.g.rotation.y : 0); v.setFloat32(o + 21, e.hp); v.setFloat32(o + 25, e.max); o += 29; }
@@ -7343,8 +7370,9 @@ function netSnapshot(){
 const _nIdx = new Map();
 function netApplySnapshot(buf){
   const v = new DataView(buf); let o = 0;
-  const ver = v.getUint8(o); if (ver !== 1 && ver !== 2) return; o++;
+  const ver = v.getUint8(o); if (ver < 1 || ver > 3) return; o++;
   const w = v.getUint16(o); o += 2; wall = v.getFloat32(o); o += 4; const n = v.getUint16(o); o += 2; const nb = v.getUint8(o); o++; const nh = v.getUint8(o); o++; const nbar = ver >= 2 ? v.getUint8(o++) : 0;
+  if (ver >= 3){ const c = v.getFloat32(o); o += 4; if (netPool()){ const nc = Math.max(0, c - netPending()); if (Math.floor(nc) !== Math.floor(coins)){ coins = nc; if (state === 'shop' && !$('shop').hidden) renderShop(); } } }
   if (w !== wave && w > 0){ wave = w; }
   _nIdx.clear(); for (let i = 0; i < en; i++) _nIdx.set(eid[i], i);
   // rebuild the horde in the host's order, keeping each girl's walk phase so she doesn't stutter
@@ -7424,15 +7452,15 @@ function netApplyHits(P, list){
   for (const [id, d] of list){
     const i = _nIdx.get(id); if (i === undefined || eh[i] <= 0) continue;
     const kb = kills, c0 = coins; hurtEnemy(i, +d || 0);
-    if (eh[i] <= 0){ kills = kb; coins = c0; netSend(P, {t: 'kill', role: ROLE_ORDER[er[i]]}); NET.score[P.slot] = NET.score[P.slot] || {k: 0, d: 0}; NET.score[P.slot].k++; }     // the kill (and its coins) are theirs
+    if (eh[i] <= 0){ kills = kb; if (!netPool()) coins = c0; netSend(P, {t: 'kill', role: ROLE_ORDER[er[i]]}); NET.score[P.slot] = NET.score[P.slot] || {k: 0, d: 0}; NET.score[P.slot].k++; }     // the kill (and its coins) are theirs
   }
 }
 // commander: units bought on the other side arrive at the far end of the pier
 function netSpawnUnits(slot, m){
   const U = MP_UNITS[m.role]; if (!U) return;
-  if (m.role === 'boss'){ const max = Math.round(70*Math.pow(Math.max(3, wave), 2.0)); bosses.push({x: clamp(+m.x || 0, -halfW(FAR + 2) + 2.5, halfW(FAR + 2) - 2.5), z: FAR + 2, hp: max, max, hit: 0, dirty: true, ph: rnd(0, 6), id: nextId++}); sfx('boss'); toast('A commander sent a boss!', '#ff9a90'); return; }
+  if (m.role === 'boss'){ const max = Math.round(70*Math.pow(Math.max(3, wave), 2.0)); bosses.push({x: clamp(+m.x || 0, -halfW(FAR + 2) + 2.5, halfW(FAR + 2) - 2.5), z: FAR + 2, hp: max, max, hit: 0, dirty: true, ph: rnd(0, 6), id: nextId++, cmd: true}); sfx('boss'); toast('A commander sent a boss!', '#ff9a90'); return; }
   const R = ROLES[m.role], n = Math.min(12, Math.max(1, m.n | 0))*(R.pack || 1), x0 = clamp(+m.x || 0, -halfW(FAR) + 1, halfW(FAR) - 1);
-  for (let k = 0; k < n; k++) spawnEnemy(m.role, FAR - rnd(0, 3), x0 + rnd(-1.5, 1.5));
+  SPAWN_CMD = 1; for (let k = 0; k < n; k++) spawnEnemy(m.role, FAR - rnd(0, 3), x0 + rnd(-1.5, 1.5)); SPAWN_CMD = 0;
 }
 
 // ---------- player vs player ----------
@@ -8020,6 +8048,11 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V82', ['Gates matter: rounds that miss both moving gates only reach the second light pole (the sniper still reaches all the way)',
+           'Wave modes in multiplayer share one wallet, and it fills faster the more defenders there are',
+           'Barrels in multiplayer: half ammo each, and everyone gets a different gun (the breaker gets the one on the barrel)',
+           '15-second shop between waves in every multiplayer wave mode',
+           'Wave Commander: a wave ends when its own enemies are dead; the commanders’ units stay on the field']],
   ['V81', ['Fly any helicopter you call in on the pier (Little Bird, Black Hawk, DAP and now the Apache) with the same controls as Gunship mode',
            'Apache call-in: fly it yourself or take the gunner seat',
            'Multiplayer crews: friends can jump into your helicopter as the Apache gunner or a DAP / Black Hawk door gunner',

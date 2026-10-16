@@ -12,6 +12,33 @@
 html,body{height:100%;margin:0;background:var(--deep);color:var(--ink);overflow:hidden;font-family:var(--body)}
 #wrap{position:relative;height:100%;max-width:520px;margin:0 auto;background:#bfe6f5;overflow:hidden}
 body.wide #wrap{max-width:none}
+/* V88: phone held sideways: the whole app goes full width (like PC) and every screen packs into the short height */
+body.land #pos{max-width:620px;margin:0 auto;width:100%}
+body.land #title .logo{left:0;right:auto;width:48%;top:calc(50% - 50px);padding:0 10px}
+body.land #title h1{font-size:clamp(38px,7.5vw,62px)}
+body.land #title .sub{font-size:13px;margin-top:6px}
+body.land #title .menuBtns{left:auto;right:max(14px,env(safe-area-inset-right,0px));transform:none;top:calc(46px + env(safe-area-inset-top,0px));bottom:6px;width:min(330px,46%);overflow-y:auto;gap:7px;padding:2px 2px 12px;scrollbar-width:none}
+body.land #title .menuBtns .btn{font-size:17px;padding:8px 12px}
+body.land #title .menuBtns .btn small{font-size:11px}
+body.land #title .menuBtns .btn.ghost{font-size:15px;padding:7px 12px}
+body.land #title .mapTile{padding:6px 6px 5px}
+body.land #title .mapTile b{font-size:15px}
+body.land #lineup{right:50%;height:min(44vh,170px)}
+body.land.tn #title .logo{top:calc(50% - 30px)}
+body.land .overlay{padding:6px max(10px,env(safe-area-inset-right,0px)) 6px max(10px,env(safe-area-inset-left,0px))}
+body.land .card{max-width:560px;padding:14px 16px;gap:9px;border-radius:16px}
+body.land .card h2{font-size:22px}
+body.land #heliPick .pick{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:6px 0}
+body.land #heliPick .pick .btn{font-size:16px;padding:10px 8px}
+body.land #settings .card.bfset{max-width:780px;height:calc(100vh - 12px);max-height:none}
+body.land #streaks{right:10px;top:13%;grid-template-columns:repeat(4,50px);gap:5px}
+body.land .titleFs{right:auto;left:12px;bottom:calc(26px + env(safe-area-inset-bottom,0px))}
+body.land #lineup{height:min(38vh,140px)}
+body.land #intro .card{display:grid;grid-template-columns:42% 1fr;gap:0;padding:0;max-width:640px;overflow:hidden;text-align:left}
+body.land #introArt{height:100%;min-height:0;border-radius:0}
+body.land #introArt img{height:min(78vh,300px);width:auto;max-width:100%;object-fit:contain}
+body.land #introText{padding:12px 14px;display:flex;flex-direction:column;gap:6px;justify-content:center}
+body.land .streak{min-height:50px}
 body.pc #fab{display:none!important}
 /* PC: keyboard and mouse only. Touch sticks, on-screen buttons, pen and gyro settings go away; the weapon tiles stay as read-outs */
 body.pc #hm .tools,body.pc #hm .alt,body.pc #df .alt,body.pc #hmStick,body.pc #dfStick,body.pc #lookStick,body.pc #tiltBtn,body.pc #ts,body.pc #tsEdit,body.pc .landBtn,body.pc .tsEditBtn,body.pc #dfView,body.pc #dfExit,body.pc .touchOnly,body.pc #bfTabs [data-tab=gyro]{display:none!important}
@@ -1091,7 +1118,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V87';
+const GAME_VERSION = 'V88';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -6837,9 +6864,13 @@ function applyPC(){
   document.body.classList.toggle('pc', PC.on);
   if (PC.on && SETTINGS.mouseMove === undefined) SETTINGS.mouseMove = true;
   applyQuality();
-  DYN.scale = 1; applyGraphics(); setWide();
+  DYN.scale = 1; applyGraphics(); landCheck(); setWide();
 }
-function setWide(){ const on = PC.on || (MODE === 'heli' && HM.on) || DG.on || DF.on || (GS_.on && GS_.phase === 'gun'); if (document.body.classList.contains('wide') !== on){ document.body.classList.toggle('wide', on); resize(); } }
+// phone held sideways (V88): full-width layout everywhere, touch controls stay
+const LANDP = {on: false};
+function landCheck(){ const on = !PC.on && innerWidth > innerHeight*1.15 && innerHeight < 640; if (on !== LANDP.on){ LANDP.on = on; document.body.classList.toggle('land', on); setWide(); resize(); } }
+addEventListener('resize', landCheck); addEventListener('orientationchange', () => setTimeout(landCheck, 250));
+function setWide(){ const on = PC.on || LANDP.on || (MODE === 'heli' && HM.on) || DG.on || DF.on || (GS_.on && GS_.phase === 'gun'); if (document.body.classList.contains('wide') !== on){ document.body.classList.toggle('wide', on); resize(); } }
 async function toggleLandscape(force){
   const want = force === undefined ? !LAND.on : force;
   if (window.AdLordsNative){ AdLordsNative.orientation(want ? 'landscape' : 'auto'); LAND.on = want; setTimeout(resize, 350); return; }   // Android app: the activity turns itself
@@ -8727,6 +8758,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V88', ['Phones: turn sideways anywhere and the whole app follows: full-width game view, menu on the right of the title screen, side-by-side enemy cards, a three-across aircraft picker, a wider settings panel and a compact call-in hotbar']],
   ['V87', ['Black Hawk door gun: the sight sits where the rounds actually land again, at any range',
            'Black Hawk door gun: you can swing aft past the stub wing when you look well down under it (or over it)',
            'Little Bird outside minigun: your recording plays at its own pitch with only its own start and stop, once per aircraft (it is both guns in one take)']],

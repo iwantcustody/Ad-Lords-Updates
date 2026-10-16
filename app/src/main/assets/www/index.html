@@ -1118,11 +1118,26 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V88';
+const GAME_VERSION = 'V89';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
 const AU = {ctx: null, master: null, sfx: null, amb: null, noise: null, last: {}, voices: 0, rotor: null, rotorGain: null, waves: null};
+// V89: never let a bad number into the audio graph: a NaN there throws, or leaves a filter silent for the rest of the session
+(() => { const AP = window.AudioParam && AudioParam.prototype; if (!AP) return;
+  for (const m of ['setValueAtTime', 'linearRampToValueAtTime', 'exponentialRampToValueAtTime', 'setTargetAtTime']){ const f = AP[m];
+    AP[m] = function(v, t, c){ if (!isFinite(v) || !isFinite(t) || (c !== undefined && !isFinite(c))) return this; if (m === 'exponentialRampToValueAtTime' && v <= 0) v = 0.0001; return c === undefined ? f.call(this, v, t) : f.call(this, v, t, c); }; }
+  const d = Object.getOwnPropertyDescriptor(AP, 'value'); if (d && d.set) Object.defineProperty(AP, 'value', {get: d.get, set(v){ if (isFinite(v)) d.set.call(this, v); }, configurable: true});
+})();
+// V89 watchdog: if the phone suspends the audio, or its clock stalls under load, kick it back into life
+const AUW = {ct: -1, t: 0};
+setInterval(() => {
+  const c = AU.ctx; if (!c || !SETTINGS.sound || document.visibilityState !== 'visible') return;
+  if (c.state === 'suspended' || c.state === 'interrupted'){ c.resume().catch(() => {}); return; }
+  const now = performance.now();
+  if (c.currentTime === AUW.ct && now - AUW.t > 900){ AUW.t = now; c.suspend().then(() => c.resume()).catch(() => {}); return; }
+  if (c.currentTime !== AUW.ct){ AUW.ct = c.currentTime; AUW.t = now; }
+}, 500);
 function audioInit(){
   if (AU.ctx){ if (AU.ctx.state === 'suspended') AU.ctx.resume().catch(() => {}); return; }
   const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
@@ -1238,6 +1253,7 @@ function playRec(t, L, v, r, out){
 const SFX_GAP = {flarePop: 0.2, imWood: 0.045, imConc: 0.045, imMetal: 0.06, whiz: 0.06, mpass: 0.4, debris: 1.4, wdebris: 1.4, rocket: 0.07, touchdown: 0.18, ar: 0.07, pistol: 0.05, smg: 0.06, revolver: 0.08, bailiff: 0.1, shotgun: 0.1, minigun: 0.045, sniper: 0.1, grenade: 0.1, rpg: 0.1, cannon30: 0.07, cal50: 0.07, tank: 0.2, heliGun: 0.05, boom: 0.06, bigboom: 0.15, smallboom: 0.05, pop: 0.035, hit: 0.03, wood: 0.05, thud: 0.08, coin: 0.04, enemyGun: 0.06};
 function sfx(name, vol = 1, pan = 0, own = false, outNode = null){
   if (!AU.ctx || !SETTINGS.sound || AU.ctx.state !== 'running') return;
+  if (!auBudget(own || outNode === AU.raw, vol)) return;
   const c = AU.ctx, t = c.currentTime, gap = SFX_GAP[name] || 0;
   if (gap && AU.last[name] && t - AU.last[name] < gap) return;
   AU.last[name] = t;
@@ -1354,6 +1370,16 @@ function smpLoad(){
   for (const [k, n] of Object.entries(SMP_DEF)) for (let i = 1; i <= n; i++)
     fetch('assets/sfx/' + k + '_' + i + '.mp3').then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
       .then(b => new Promise((res, rej) => AU.ctx.decodeAudioData(b, res, rej))).then(b => { SMP[k].push(b); if (k === 'ambTraffic') ambSet(); }).catch(e => console.warn('sample', k, i, e));
+}
+// V89 voice budget: in a big wave hundreds of one-shots a second could pile up until the phone's audio thread choked and
+// went silent. New one-shots draw from a token bucket (yours get a bigger one); when it's empty the quietest ones are skipped.
+const AUB = {w: 18, o: 14, t: 0};
+function auBudget(own, vol){
+  const now = performance.now(), dt = Math.min(0.25, (now - AUB.t)/1000); AUB.t = now;
+  AUB.w = Math.min(18, AUB.w + dt*45); AUB.o = Math.min(14, AUB.o + dt*40);
+  AU.busy = 1 - AUB.w/18;
+  if (own){ if (AUB.o < 1) return false; AUB.o--; return true; }
+  if (AUB.w < 1 || (AUB.w < 6 && vol < 0.35)) return false; AUB.w--; return true;
 }
 function playSmp(list, t, vol, out, rate = 0.94 + Math.random()*0.12){
   const c = AU.ctx, s = c.createBufferSource(), g = c.createGain();
@@ -1493,6 +1519,7 @@ function reverbInit(){
 // a one-shot through the distance chain. ref: how far it stays full volume (explosions carry, impacts don't)
 function sfxAt(name, x, y, z, vol = 1, ref = 12){
   if (!AU.ctx || !SETTINGS.sound || AU.ctx.state !== 'running') return;
+  if (AU.busy > 0.5 && vol < 0.25) return;
   if (!AU.revIn) reverbInit();
   const S = spatial(x, y, z, ref), v = vol*S.vol; if (v < 0.015) return;
   const out = spatChain(S, false);
@@ -1539,6 +1566,7 @@ function hsShot(kind, persp, what, vol = 1, pan = 0, pos = null, ref = 16){
   if (!L.length) return false;
   const c = AU.ctx, t = c.currentTime, key = 'hs_' + g + what;
   if (AU.last[key] && t - AU.last[key] < 0.03) return true; AU.last[key] = t;
+  if (!auBudget(!pos, vol)) return true;
   let out;
   if (pos){ if (!AU.revIn) reverbInit(); const S = spatial(pos.x, pos.y, pos.z, ref); vol *= S.vol; if (vol < 0.015) return true; out = spatChain(S, false); }
   else { const bus = persp === '1p' && g.endsWith('_1p') && AU.raw ? AU.raw : AU.sfx; out = bus; if (pan && c.createStereoPanner){ const p = c.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); p.connect(bus); out = p; } }
@@ -2556,8 +2584,6 @@ function dapLimits(th, ph){
   ph = clamp(ph, -1.35, 0.22);      // up: stops short of the rotor blades; down: almost straight down
   // forward and abeam are clear; aft of ~110° the stores are right below the line of fire, so the gun stops there when aiming down
   th = clamp(th, 0, 2.75);
-  // V87: the stub wing and its pods only block a band of elevation aft of ~110 deg; under it (looking well down) or over it you can swing on back
-  if (th > 1.92 && ph < -0.12 && ph > -0.72) ph = ph > -0.42 ? -0.12 : -0.72;
   return [th, ph];
 }
 function aimGun(gun, side, th, ph){ gun.th = th; gun.ph = ph; gun.g.rotation.y = -side*th; gun.pitch.rotation.x = ph; }
@@ -3638,7 +3664,7 @@ let SHOT_OWN = 0;
 function gunFire(gun, speed, dmg, pierce, spread = 0.025, ahead = 0){
   gun.muzzle.getWorldPosition(_gq); _gd.set(0, 0, -1).transformDirection(gun.pitch.matrixWorld);
   if (ahead) _gq.addScaledVector(_gd, ahead);      // first-person: start tracers past the eye
-  const gy = MODE === 'heli' ? 0 : 0.9;
+  const gy = 0;
   let hx, hz, hy = null;
   if (_gd.y < -0.01){ const k = Math.min(1500, (_gq.y - gy)/(-_gd.y)); hx = _gq.x + _gd.x*k; hz = _gq.z + _gd.z*k; hy = _gq.y + _gd.y*k; }
   else { hx = _gq.x + _gd.x*900; hz = _gq.z + _gd.z*900; hy = _gq.y + _gd.y*900; }
@@ -4123,7 +4149,7 @@ cv.addEventListener('pointerdown', e => {
   if (e.clientX - r.left < r.width*0.6){ DF.stick = {id: e.pointerId, x: e.clientX, y: e.clientY}; dfStickSet(e.clientX, e.clientY, e.clientX, e.clientY); }
   e.stopImmediatePropagation();
 }, true);
-cv.addEventListener('pointermove', e => { if (!DF.on) return; if (DF.stick && e.pointerId === DF.stick.id) dfStickSet(e.clientX, e.clientY, DF.stick.x, DF.stick.y); if (e.pointerType !== 'pen') e.stopImmediatePropagation(); }, true);
+cv.addEventListener('pointermove', e => { if (!DF.on || tsActive()) return; if (DF.stick && e.pointerId === DF.stick.id) dfStickSet(e.clientX, e.clientY, DF.stick.x, DF.stick.y); if (e.pointerType !== 'pen') e.stopImmediatePropagation(); }, true);
 const dfUpH = e => { if (DF.stick && e.pointerId === DF.stick.id){ DF.stick = null; DF.sx = DF.sy = 0; $('dfStick').style.display = 'none'; } };
 cv.addEventListener('pointerup', dfUpH, true); cv.addEventListener('pointercancel', dfUpH, true);
 // ---------- shared air-launched projectiles (Apache gunner + DAP pods) ----------
@@ -4694,7 +4720,7 @@ cv.addEventListener('pointermove', e => {
   if (dragX === null || e.pointerType === 'pen' && MODE === 'def') return;
   if ((GS_.on && GS_.phase === 'gun') || DG.on){ const w = cv.getBoundingClientRect().width, k = SETTINGS.gunner.swipe/w; gunnerLook((e.clientX - dragX)*k, (e.clientY - dragY)*k); dragX = e.clientX; dragY = e.clientY; return; }
   const w = cv.getBoundingClientRect().width;
-  tx = clamp(dragTx + (e.clientX - dragX)/w*(fp ? 8 : 11), -MAIN + 0.6, MAIN - 0.6);
+  tx = clamp(dragTx + (e.clientX - dragX)/w*(MAIN - 0.6)*2/(fp ? 0.42 : 0.34), -MAIN + 0.6, MAIN - 0.6);
 });
 const endDrag = () => { dragX = null; if (!FAB.firing && !VOL.up) DG.hold = false; };
 cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
@@ -8163,6 +8189,7 @@ const M134_CONE = 0.05;
 const HITM = {t: -9, kill: false};
 function hitMark(kill){ HITM.t = performance.now(); HITM.kill = HITM.kill && performance.now() - HITM.t < 200 ? true : kill; if (kill) HITM.kill = true; }
 const _gs1 = new THREE.Vector3(), _gs2 = new THREE.Vector3();
+const _hz1 = new THREE.Vector3(), _hz2 = new THREE.Vector3(), _hz3 = new THREE.Vector3(), _hzA = new THREE.Vector3(), _hzB = new THREE.Vector3();
 function gunSightHud(gun){
   const c = BH.cv; if (!BH.x) BH.x = c.getContext('2d');
   const d = Math.min(2, devicePixelRatio || 1), W = c.clientWidth || innerWidth, H = c.clientHeight || innerHeight;
@@ -8171,10 +8198,23 @@ function gunSightHud(gun){
   BH.t = performance.now();
   const x = BH.x; x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, W, H);
   gun.g.updateMatrixWorld(true); gun.muzzle.getWorldPosition(_gq); _gd.set(0, 0, -1).transformDirection(gun.pitch.matrixWorld); _gu.set(1, 0, 0).transformDirection(gun.pitch.matrixWorld);
-  const gy = MODE === 'heli' ? 0 : 0.9, L = _gd.y < -0.01 ? Math.min(1500, (_gq.y - gy)/(-_gd.y)) : 900;
-  _gs1.copy(_gq).addScaledVector(_gd, L).project(camera); _gs2.copy(_gq).addScaledVector(_gd, L).addScaledVector(_gu, Math.min(L*Math.tan(M134_CONE), M134_RING)).project(camera);
-  if (_gs1.z > 1) return;
-  const cx = (_gs1.x + 1)/2*W, cy = (1 - _gs1.y)/2*H, R = Math.max(14, Math.hypot((_gs2.x - _gs1.x)/2*W, (_gs2.y - _gs1.y)/2*H));
+  const L = _gd.y < -0.01 ? Math.min(1500, _gq.y/(-_gd.y)) : 900, Lp = Math.min(L, 380), k = Lp/L;      // projected at most 380 m out (the camera's far plane), same line of sight
+  _gs1.copy(_gq).addScaledVector(_gd, Lp).project(camera); _gs2.copy(_gq).addScaledVector(_gd, Lp).addScaledVector(_gu, Math.min(L*Math.tan(M134_CONE), M134_RING)*k).project(camera);
+  // the sight never leaves the screen: if the line of fire can't be projected (behind the eye, off the edge) it sits in the middle
+  const ok = _gs1.z < 1 && Math.abs(_gs1.x) < 1.05 && Math.abs(_gs1.y) < 1.05;
+  // artificial horizon: a dotted line that always lies on the real horizon, so you can read the roll and pitch at a glance
+  { camera.getWorldDirection(_hz1); _hz1.y = 0;
+    if (_hz1.lengthSq() > 1e-4){ _hz1.normalize(); _hz2.set(-_hz1.z, 0, _hz1.x); _hz3.copy(camera.position).addScaledVector(_hz1, 400);
+      _hzA.copy(_hz3).addScaledVector(_hz2, -60).project(camera); _hzB.copy(_hz3).addScaledVector(_hz2, 60).project(camera);
+      if (_hzA.z < 1 && _hzB.z < 1){
+        const ax = (_hzA.x + 1)/2*W, ay = (1 - _hzA.y)/2*H, bx = (_hzB.x + 1)/2*W, by = (1 - _hzB.y)/2*H, mx = (ax + bx)/2, my = (ay + by)/2;
+        let ux = bx - ax, uy = by - ay; const n = Math.hypot(ux, uy) || 1; ux /= n; uy /= n;
+        // centre the line on the screen's middle column, along the horizon
+        const t0 = ((W/2 - mx)*ux + (H/2 - my)*uy), ox = mx + ux*t0, oy = my + uy*t0, span = Math.min(W, H)*0.55;
+        x.save(); x.fillStyle = 'rgba(200,255,208,.75)'; x.shadowColor = 'rgba(0,0,0,.5)'; x.shadowBlur = 2;
+        for (let q = -12; q <= 12; q++){ if (Math.abs(q) < 2) continue; const px = ox + ux*q*span/12, py = oy + uy*q*span/12; x.beginPath(); x.arc(px, py, Math.abs(q) % 4 === 0 ? 2.4 : 1.5, 0, 6.29); x.fill(); }
+        x.restore(); } } }
+  const cx = ok ? (_gs1.x + 1)/2*W : W/2, cy = ok ? (1 - _gs1.y)/2*H : H/2, R = ok ? Math.max(14, Math.hypot((_gs2.x - _gs1.x)/2*W, (_gs2.y - _gs1.y)/2*H)) : 22;
   x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 2; x.fillStyle = 'rgba(255,255,255,.92)';
   for (let k = 0; k < 16; k++){ const a = k/16*6.2832; x.beginPath(); x.arc(cx + Math.cos(a)*R, cy + Math.sin(a)*R, 1.9*SETTINGS.hud.dot, 0, 6.29); x.fill(); }
   x.beginPath(); x.arc(cx, cy, 1.6*SETTINGS.hud.cdot, 0, 6.29); x.fill();
@@ -8758,6 +8798,11 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V89', ['Black Hawk door gun: no invisible wall when looking down and back',
+           'Phones: the flight sticks work again when you fly a called-in helicopter in wave mode',
+           'Swiping moves the squad much further: about a third of the screen sweeps the whole width of the play area',
+           'Door guns: the sight and the dust always match, the sight stays on screen at any angle, and a dotted artificial horizon stays level with the real horizon',
+           'Sound no longer cuts out in big waves: one-shot sounds share a budget so the phone never chokes, bad values can no longer break the audio, and a watchdog restarts it if it stalls']],
   ['V88', ['Phones: turn sideways anywhere and the whole app follows: full-width game view, menu on the right of the title screen, side-by-side enemy cards, a three-across aircraft picker, a wider settings panel and a compact call-in hotbar']],
   ['V87', ['Black Hawk door gun: the sight sits where the rounds actually land again, at any range',
            'Black Hawk door gun: you can swing aft past the stub wing when you look well down under it (or over it)',

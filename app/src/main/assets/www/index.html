@@ -892,7 +892,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V73';
+const GAME_VERSION = 'V74';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -4166,7 +4166,7 @@ function heliAgi(type){
 }
 // full screen, anywhere
 async function toggleFullscreen(){
-  if (window.AdLordsNative){ toast('The app is already full screen', '#e8fbff'); return; }
+  if (window.AdLordsNative){ if (AdLordsNative.fullscreen) AdLordsNative.fullscreen(); else toast('The app is already full screen', '#e8fbff'); return; }   // Windows app: F11 too
   const d = document, el = d.documentElement;
   try {
     if (d.fullscreenElement || d.webkitFullscreenElement){ if (d.exitFullscreen) await d.exitFullscreen(); else if (d.webkitExitFullscreen) d.webkitExitFullscreen(); }

@@ -1,0 +1,40 @@
+{
+  "name": "ad-lords",
+  "productName": "Ad Lords",
+  "version": "1.0.0",
+  "description": "Ad Lords for Windows",
+  "author": "iwantcustody",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "^31.7.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.adlords.game",
+    "productName": "Ad Lords",
+    "files": ["main.js", "preload.js", "build-info.json", "package.json"],
+    "extraResources": [
+      {"from": "www", "to": "www"},
+      {"from": "www-manifest.json", "to": "www-manifest.json"}
+    ],
+    "directories": {"output": "dist", "buildResources": "build"},
+    "asar": true,
+    "win": {"target": [{"target": "nsis", "arch": ["x64"]}], "icon": "build/icon.png"},
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Ad Lords",
+      "artifactName": "AdLords-Setup.exe",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

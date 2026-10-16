@@ -17,6 +17,12 @@ What the app adds over the browser:
 
 To get an APK file instead: **Build → Build App Bundle(s) / APK(s) → Build APK(s)**. It lands in `app/build/outputs/apk/debug/app-debug.apk`; copy that to the phone and open it to install. You may need to allow installs from that app.
 
+## Windows (10 and 11)
+`desktop/` wraps the same game in Electron. CI builds `AdLords-Setup.exe` on a Windows runner and attaches it to the same release as the APK.
+The installer is per-user (no admin prompt) and adds Start menu and desktop shortcuts. F11 toggles full screen.
+It reads the same `update.json`: game changes download in the background (Restart on the banner); when `desktop/` itself changes, the banner offers Install.
+The exe isn't code-signed, so Windows SmartScreen asks once: **More info → Run anyway**.
+
 ## How updates work
 - **Ad-Lords** (private) holds the source. **Ad-Lords-Updates** (public) builds and publishes: every push to its `main` runs `.github/workflows/android.yml`, which builds a signed APK and creates a GitHub release with `AdLords.apk` and `update.json`.
 - A few seconds after the app starts it reads `releases/latest/download/update.json`. Game files that changed are downloaded in the background and used after you tap **Restart** on the banner (or the next time the app opens). Only the changed files are fetched.

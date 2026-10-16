@@ -6,7 +6,7 @@ on:
 permissions:
   contents: write
 jobs:
-  build:
+  android:
     # the public updates repo builds on every push; the private source repo only when you run it by hand
     if: github.repository == 'iwantcustody/Ad-Lords-Updates' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -35,8 +35,55 @@ jobs:
           name: AdLords-apk
           path: AdLords.apk
           if-no-files-found: error
-      - name: Publish release (the app checks this for updates)
-        if: github.repository == 'iwantcustody/Ad-Lords-Updates'
+
+  windows:
+    if: github.repository == 'iwantcustody/Ad-Lords-Updates' || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Game files and version
+        run: |
+          VC=$((GITHUB_RUN_NUMBER + 100))
+          echo "VC=$VC" >> "$GITHUB_ENV"
+          python tools/manifest.py "$VC" "$GITHUB_SHA" "$GITHUB_REPOSITORY"
+          cp -r app/src/main/assets/www desktop/www
+          cp app/src/main/assets/www-manifest.json desktop/www-manifest.json
+      - name: Build the Windows installer
+        working-directory: desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          npm install --no-audit --no-fund
+          npx electron-builder --win nsis --x64 --publish never -c.extraMetadata.version=1.$VC.0
+          ls dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AdLords-exe
+          path: desktop/dist/AdLords-Setup.exe
+          if-no-files-found: error
+
+  publish:
+    # the release (and the update feed the apps read) goes out once the APK is built; the Windows installer joins it when its build worked
+    needs: [android, windows]
+    if: always() && needs.android.result == 'success' && github.repository == 'iwantcustody/Ad-Lords-Updates'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+      - name: Publish release (the apps check this for updates)
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "v$VC" AdLords.apk build/update.json --title "Ad Lords $VC" --notes "Build $VC from ${GITHUB_SHA::7}" --latest
+        run: |
+          VC=$((GITHUB_RUN_NUMBER + 100))
+          FILES="out/AdLords-apk/AdLords.apk build/update.json"
+          if [ -f out/AdLords-exe/AdLords-Setup.exe ]; then export HAS_EXE=1; FILES="$FILES out/AdLords-exe/AdLords-Setup.exe"; fi
+          python3 tools/manifest.py "$VC" "$GITHUB_SHA" "$GITHUB_REPOSITORY"
+          gh release create "v$VC" $FILES --title "Ad Lords $VC" --notes "Build $VC from ${GITHUB_SHA::7}" --latest

@@ -186,6 +186,7 @@ body.pc #radar{width:140px;height:140px}
 #lookStick span{position:absolute;left:-20px;right:-20px;top:calc(100% + 4px);text-align:center;font:800 10px var(--body);letter-spacing:.5px;color:#e8fbff;text-shadow:0 1px 3px #000;pointer-events:none}
 #tiltBtn{position:absolute;z-index:7;right:calc(10px + env(safe-area-inset-right,0px));top:46%;display:none;width:40px;height:40px;border-radius:50%;border:1px solid rgba(232,251,255,.7);background:rgba(10,16,22,.55);color:#e8fbff;font:800 18px/1 var(--body);touch-action:manipulation}
 #tiltBtn.on{display:block}
+#news{z-index:60}#news .card{max-width:440px}#newsBody{text-align:left;max-height:55vh;overflow-y:auto;margin:6px 0 12px}#newsBody h3{margin:12px 0 4px;font:700 15px var(--display)}#newsBody h3:first-child{margin-top:0}#newsBody ul{margin:0;padding-left:20px}#newsBody li{margin:3px 0;font:600 13px/1.35 var(--body)}
 #updBar{position:absolute;z-index:40;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:8px 8px 8px 14px;border-radius:8px;background:rgba(10,16,22,.92);color:#e8fbff;font:700 13px var(--body);box-shadow:0 6px 20px rgba(0,0,0,.4);max-width:calc(100% - 24px)}
 #updBar button{border:0;border-radius:6px;padding:7px 12px;font:800 12px var(--body);cursor:pointer;background:var(--gold);color:#10243a}
 #updBar #updX{background:transparent;color:#e8fbff;padding:7px 8px}
@@ -318,6 +319,8 @@ button.ccard{cursor:pointer}
 #gs button small{display:block;font-family:var(--body);font-weight:800;font-size:11px}
 #gs #gsExit{background:rgba(8,32,15,.7);color:#c8ffd0;box-shadow:none;border:1.5px solid #c8ffd0;min-width:0;font-size:14px;padding:8px 12px}
 #dfBtn{pointer-events:auto;font-family:var(--display);font-size:15px;color:#2a1600;background:#bfefff;border:2px solid #fff;border-radius:10px;padding:5px 10px;cursor:pointer;box-shadow:0 3px 0 #5aa7c0}
+#df .act button[hidden]{display:none}
+#crewBtn{pointer-events:auto;font-family:var(--display);font-size:15px;color:#2a1600;background:#c8ffd0;border:2px solid #fff;border-radius:10px;padding:5px 10px;cursor:pointer;box-shadow:0 3px 0 #5ab070}
 #dgBtn{pointer-events:auto;font-family:var(--display);font-size:15px;color:#2a1600;background:#ffd08a;border:2px solid #fff;border-radius:10px;padding:5px 10px;cursor:pointer;box-shadow:0 3px 0 #c98a35;animation:dgPulse 1.2s ease-in-out infinite}
 @keyframes dgPulse{50%{transform:scale(1.06)}}
 @media (prefers-reduced-motion: reduce){#dgBtn{animation:none}}
@@ -447,7 +450,7 @@ body.pc .titleFs{display:none}
   </div>
   <div id="bottom" hidden>
     <div id="pos" aria-label="Move along the lane"><div class="trk"><div class="th"></div></div></div>
-    <div id="row"><span id="gunners">1 gunner</span><div class="grp"><button id="dfBtn" type="button" hidden>🚁 Fly DAP</button><button id="dgBtn" type="button" hidden>🎯 Door gun</button><button id="muteBtn" type="button" aria-label="Sound on">🔊</button><button class="fsBtn" type="button" aria-label="Full screen">⛶</button><button id="viewBtn" type="button">First person</button><button id="pauseBtn" type="button" aria-label="Pause">II</button></div></div>
+    <div id="row"><span id="gunners">1 gunner</span><div class="grp"><button id="dfBtn" type="button" hidden>🚁 Fly DAP</button><button id="crewBtn" type="button" hidden>🪖 Crew</button><button id="dgBtn" type="button" hidden>🎯 Door gun</button><button id="muteBtn" type="button" aria-label="Sound on">🔊</button><button class="fsBtn" type="button" aria-label="Full screen">⛶</button><button id="viewBtn" type="button">First person</button><button id="pauseBtn" type="button" aria-label="Pause">II</button></div></div>
     <div id="wbar" role="toolbar" aria-label="Weapons"></div>
   </div>
   <div id="streaks" role="toolbar" aria-label="Call-ins"></div>
@@ -468,12 +471,12 @@ body.pc .titleFs{display:none}
     <div class="hint" id="dgHint">Drag to aim · hold to fire<br><small>Pen: hover to aim · side button fires · the gun can't swing into the pods</small></div>
   </div>
   <div id="df" hidden>
-    <div class="top"><div>DAP · PILOT<div class="bar"><i id="dfTime"></i></div></div><div style="text-align:right"><span id="dfKills">0</span> KILLS<br><button class="landBtn" type="button" aria-label="Landscape">⤢</button> <button id="dfView" type="button">View</button> <button id="dfExit" type="button">Exit</button></div></div>
+    <div class="top"><div><span id="dfName">DAP</span> · PILOT<div class="bar"><i id="dfTime"></i></div></div><div style="text-align:right"><span id="dfKills">0</span> KILLS<br><button class="landBtn" type="button" aria-label="Landscape">⤢</button> <button id="dfView" type="button">View</button> <button id="dfExit" type="button">Exit</button></div></div>
     <svg class="ret" id="dfRet" viewBox="-60 -60 120 120" aria-hidden="true"><g stroke="#e8fbff" stroke-width="2" fill="none"><path d="M-16 -9v18M-11 -9v18M11 -9v18M16 -9v18"/></g></svg>
     <div id="dfStick"><i></i></div>
     <div class="hint" id="dfHint">Left thumb: fly · ▲▼ altitude · FIRE = rockets · the miniguns aim themselves</div>
     <div class="alt"><button id="dfUp" type="button" aria-label="Climb">▲</button><button id="dfDown" type="button" aria-label="Descend">▼</button></div>
-    <div class="act"><button id="dfHf" type="button">HELLFIRE<small id="dfHfN">4</small></button><button id="dfRk" type="button">ROCKETS<small id="dfRkN">38</small></button></div>
+    <div class="act"><button id="dfHf" type="button"><span id="dfHfL">HELLFIRE</span><small id="dfHfN">4</small></button><button id="dfRk" type="button"><span id="dfRkL">ROCKETS</span><small id="dfRkN">38</small></button></div>
   </div>
   <div id="flash"></div>
   <canvas id="bfHud" aria-hidden="true"></canvas>
@@ -566,6 +569,7 @@ body.pc .titleFs{display:none}
         <div class="set" id="penTapSet"></div>
         <p id="saveNote"></p>
         <div class="set" id="updRow" hidden><span>Updates</span><button class="btn small" id="updCheck" type="button">Check now</button></div>
+        <div class="set"><span>Change log</span><button class="btn small" id="newsBtn" type="button">What's new</button></div>
         <h3 class="subh">Credits</h3>
         <p class="fine">Sound effects by Filip_Hancho_Unltd. · Instagram: <a href="https://www.instagram.com/filip_hancho/" target="_blank" rel="noopener">@filip_hancho</a></p>
         <p class="fine">Little Bird, Black Hawk, Apache and minigun recordings: recorded and cut by the Ad Lords developer</p>
@@ -704,6 +708,13 @@ body.pc .titleFs{display:none}
     </div>
   </div>
 
+  <div class="overlay" id="news" hidden>
+    <div class="card newsCard">
+      <h2 id="newsTitle">What's new</h2>
+      <div id="newsBody"></div>
+      <div class="btnRow"><button class="btn" id="newsOk" type="button">Nice</button></div>
+    </div>
+  </div>
   <div class="overlay" id="confirm" hidden>
     <div class="card">
       <h2 id="confirmTitle">Start over?</h2>
@@ -964,7 +975,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V80';
+const GAME_VERSION = 'V81';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -1210,7 +1221,7 @@ function downdraftTick(){
   if (!DD.src){ DD.g = AU.ctx.createGain(); DD.g.gain.value = 0; DD.g.connect(AU.sfx); DD.src = AU.ctx.createBufferSource(); DD.src.buffer = SMP.downdraft[0]; DD.src.loop = true; DD.src.connect(DD.g); DD.src.start(); }
   const fly = state === 'play' && SETTINGS.sound && ((MODE === 'heli' && HM.on) || (DF.on && DF.v)), alt = MODE === 'heli' && HM.on ? HM.pos.y - (HM.gy || 2.2) + 2.2 : DF.v ? DF.v.y : 99;
   const want = fly && !(HS.covering && inFirstPerson()) ? clamp(1 - (alt - 2.2)/10, 0, 1)*0.6 : 0;
-  DD.g.gain.setTargetAtTime(want, AU.ctx.currentTime, 0.25);
+  if (isFinite(want)) DD.g.gain.setTargetAtTime(want, AU.ctx.currentTime, 0.25);
 }
 // where a round lands decides what it sounds like: deck planks on the pier, tarmac on the airfield, nothing over water
 function surfAt(x, z){ if (LOC.cur === 'airfield') return 'imConc'; return Math.abs(x) <= halfW(z) + 0.3 && z < 6 ? 'imWood' : null; }
@@ -1430,7 +1441,7 @@ function hsTick(dt){
     for (const A of NET.av.values()) if (A.friend && A.e && A.e.hp > 0) em.push({id: 'mp' + A.e.slot, kind: HKIND(A.e.ty), persp: '3p', pos: A.e.pos, st: {load: 0.3}});
   } else if (live && MODE === 'def'){
     for (const v of vehicles){
-      if (v.done || !(v.type === 'blackhawk' || v.type === 'dap' || v.type === 'little') || !v.g) continue;
+      if (v.done || !(v.type === 'blackhawk' || v.type === 'dap' || v.type === 'little' || v.type === 'apache') || !v.g) continue;
       const kind = HKIND(v.type);
       if (DG.on && DG.v === v) em.push({id: 'veh' + v.uid, kind, persp: '1p', pos: null, st: {load: 0.2}});
       else if (DF.on && DF.v === v){ const P = DF.P || {}; em.push({id: 'veh' + v.uid, kind, persp: DF.view === 'cockpit' ? '1p' : '3p', pos: null, st: {load: clamp(Math.max(0, P.coll || DF.climb || 0)*0.8 + (P.loadA || 0)*0.6, 0, 1), yaw: clamp((P.wy || DF.sx || 0)/1.1, -1, 1), speed: P.vel ? P.vel.length()*4.86/120 : 0.3}}); }
@@ -3219,7 +3230,18 @@ function buildStreaks(flash){
 }
 function refreshStreaks(){ for (const b of $('streaks').children){ const k = b.dataset.k; if (!k) continue; const n = STOCK[k] || 0; b.classList.toggle('zero', !n); b.disabled = !n || !canDeploy(k); } }
 function requestVehicle(type){
-  if (type === 'apache') return gunshipStart();
+  if (type === 'apache'){
+    const mine = vehicles.find(o => o.type === 'apache' && !o.done && !o.ghost);
+    if (GS_.on && !GS_.follow) return gunshipStart();          // already overhead: resupply
+    if (mine){ mine.dur += 12; mine.hf += 2; toast('Apache resupplied', '#c8ffd0'); return; }
+    pendingChoice = 'apache'; prevState = state; state = 'choice';
+    $('choiceTitle').textContent = 'Apache';
+    $('choiceText').textContent = 'Fly it yourself (same controls as Gunship mode, your gunner works the 30mm), or take the gunner seat and let the pilot fly?';
+    $('choiceA').textContent = 'Fly it'; $('choiceB').textContent = 'Gunner seat';
+    $('choice').hidden = false;
+    return;
+  }
+  $('choiceA').textContent = 'Call another'; $('choiceB').textContent = 'Upgrade current';
   const active = vehicles.filter(v => v.type === type && !v.done && !v.ghost);
   if (active.length && type !== 'bulldozer'){
     pendingChoice = type; prevState = state; state = 'choice';
@@ -3233,14 +3255,22 @@ function requestVehicle(type){
 function spawnVehicle(type, ghost){
   const V = VEHICLES[type], n = vehicles.filter(v => v.type === type && !v.done).length;
   const v = {type, uid: ++vehUid, t: 0, dur: V.dur, lvl: 1, done: false, fireT: 0, fireT2: 0, side: n % 2 ? -1 : 1, ghost: !!ghost};
-  if (!ghost && NET.on && NET.started) netUp({t: 'veh', type, s: NET.me});
+  v.nu = NET.me*100000 + v.uid;       // id other players know this vehicle by
+  if (!ghost && NET.on && NET.started) netUp({t: 'veh', type, s: NET.me, u: v.nu, dur: v.dur});
   if (type === 'technical'){ Object.assign(v, buildTechnical()); v.x = VSLOT.technical[0]*(n % 2 ? -1 : 1); v.z = VSLOT.technical[1] - (n > 1 ? 3.2 : 0); v.g.scale.setScalar(0.9); }
   else if (type === 'abrams'){ Object.assign(v, buildAbrams()); v.x = VSLOT.abrams[0]*(n % 2 ? -1 : 1); v.z = VSLOT.abrams[1] - (n > 1 ? 3.6 : 0); v.g.scale.setScalar(0.85); }
   else if (type === 'blackhawk'){ Object.assign(v, buildBlackhawk()); v.side = n % 2 ? -1 : 1; v.x = v.side*12; v.z = 4; v.ph = rnd(0, 6); }
   else if (type === 'dap') dapSpawn(v, n);
+  else if (type === 'apache'){
+    const h = buildApache(); h.g.scale.setScalar(GS_SCALE);
+    // rocket pylons and the nose gun, in the model's own units (nose along -x)
+    const pod = z => { const o = new THREE.Object3D(); o.position.set(-0.06, -0.12, z); h.g.add(o); return o; };
+    Object.assign(v, {g: h.g, h, rotor: h.rotor, tail: h.tail, pods: [pod(0.33), pod(-0.33)], x: 0, y: 9, z: 22, yaw: 0, cnT: 1, mag: CANNON.mag, hf: 4});
+    v.vel0 = new THREE.Vector3(0, 0, -14);
+  }
   else if (type === 'little'){ Object.assign(v, buildLittle()); v.hull.scale.setScalar(0.36); v.x = v.side*9; v.z = 10; v.y = 7; v.ph = rnd(0, 6); v.yaw = 0; v.rkT = 2.5; v.volley = 0; }
   else { v.g = plowModel(); v.x = clamp(cx, -2.6, 2.6); v.z = BARRICADE_Z - 1.6; v.hp = 60 + wave*25; v.max = v.hp; }
-  v.g.position.set(v.x, 0, v.z); scene.add(v.g); vehicles.push(v);
+  v.g.position.set(v.x, type === 'apache' ? v.y : 0, v.z); scene.add(v.g); vehicles.push(v);
   if (!ghost) toast(V.name + '!', '#ffd08a');
   return v;
 }
@@ -3248,8 +3278,8 @@ function upgradeVehicle(type){
   const v = vehicles.find(o => o.type === type && !o.done && !o.ghost); if (!v) return spawnVehicle(type);
   v.lvl++; v.dur += type === 'dap' ? 16 : 12; toast(VEHICLES[type].name + ' Lv ' + v.lvl, '#ffd08a');
 }
-$('choiceA').onclick = () => { $('choice').hidden = true; state = prevState; spawnVehicle(pendingChoice); };
-$('choiceB').onclick = () => { $('choice').hidden = true; state = prevState; upgradeVehicle(pendingChoice); };
+$('choiceA').onclick = () => { $('choice').hidden = true; state = prevState; if (pendingChoice === 'apache'){ const v = spawnVehicle('apache'); if (state === 'play') dfStart(v); else v.flyNext = true; return; } spawnVehicle(pendingChoice); };
+$('choiceB').onclick = () => { $('choice').hidden = true; state = prevState; if (pendingChoice === 'apache'){ gunshipStart(); return; } upgradeVehicle(pendingChoice); };
 
 // helicopter detail by distance from the camera: full up close, simplified copies further out
 const HLOD = {queue: [], frame: 0, near: 16, far: 34};
@@ -3323,22 +3353,25 @@ function updateVehicles(dt){
         if (v.fireT2 <= 0){ v.fireT2 = 0.11; const p = v.cmuzzle.getWorldPosition(_v3); shoot(p.x, 1.1, p.z, ex[j], ez[j], 55, 2.6*lv, 3, 9); sfx('cal50', 0.5, v.x/6); }   // commander's .50 cal
       }
     } else if (v.type === 'blackhawk'){
+      if (DF.on && DF.v === v){ dfFly(v, dt, lv); if (v.t > v.dur){ v.done = true; dfEnd(); } continue; }
       const arrive = Math.min(1, v.t/2.5), leaving = v.t > v.dur - 2.5 ? (v.t - (v.dur - 2.5))/2.5 : 0;
       const tx = v.side*3.9, tz = -10 + Math.sin(v.t*0.35 + v.ph)*4;
       v.x += (tx + v.side*leaving*14 - v.x)*Math.min(1, dt*(1.2 + arrive)); v.z += (tz - v.z)*Math.min(1, dt*1.2);
-      const y = 4.8 + Math.sin(v.t*1.3)*0.2;
+      const y = 4.8 + Math.sin(v.t*1.3)*0.2; v.y = y;
       // nose turned out a little so the inboard door gun faces the crowd up the pier
       v.g.position.set(v.x, y, v.z); v.g.rotation.set(-0.05, -v.side*0.55 + Math.sin(v.t*0.5)*0.1, -v.side*0.08);
+      if (v.np) netGhostPose(v, dt);
       v.rotor.rotation.y += dt*28; v.tail.rotation.x += dt*70;
       v.g.updateMatrixWorld(true);
       const on = arrive > 0.8 && !leaving;
-      for (const gun of v.guns) gunAI(gun, dt, on, M134_STEP/rateMul, 1.2*lv, 'bh' + v.uid + gun.side, v.x);
+      for (const gun of v.guns) vGun(v, gun, dt, on, 1.2*lv, 'bh' + v.uid + gun.side, lv);
       if (v.t > v.dur){ v.done = true; }
       continue;
     } else if (v.type === 'dap'){
       dapUpdate(v, dt, lv);
       continue;
-    } else if (v.type === 'little'){ littleUpdate(v, dt, lv); continue;
+    } else if (v.type === 'little'){ if (DF.on && DF.v === v){ dfFly(v, dt, lv); if (v.t > v.dur){ v.done = true; dfEnd(); } continue; } littleUpdate(v, dt, lv); continue;
+    } else if (v.type === 'apache'){ apacheUpdate(v, dt, lv); continue;
     } else if (v.type === 'bulldozer'){
       v.z -= 4.2*dt;
       for (let i = 0; i < en; i++){
@@ -3357,7 +3390,7 @@ function updateVehicles(dt){
   }
   for (let k = vehicles.length - 1; k >= 0; k--){
     const v = vehicles[k];
-    if (v.done){ if (v.type !== 'bulldozer') chips(v.x, 1.5, v.z, SMOKE, 16, 3); scene.remove(v.g); vehicles.splice(k, 1); }
+    if (v.done){ if (v.type !== 'bulldozer') chips(v.x, 1.5, v.z, SMOKE, 16, 3); scene.remove(v.g); vehicles.splice(k, 1); netVehGone(v); }
   }
   NET.ghost = false;
 }
@@ -3482,6 +3515,7 @@ function littleUpdate(v, dt, lv){
   const wy = Math.atan2(-(tgt[0] - v.x), -(tgt[1] - v.z)); let dy = wy - v.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); v.yaw += dy*Math.min(1, dt*3);
   const fwd = -(vx*Math.sin(v.yaw) + vz*Math.cos(v.yaw)), side = vx*Math.cos(v.yaw) - vz*Math.sin(v.yaw);
   v.g.position.set(v.x, v.y, v.z); v.g.rotation.set(-0.12 - clamp(fwd, -6, 6)*0.03, v.yaw, clamp(-side*0.04, -0.4, 0.4));
+  if (v.np) netGhostPose(v, dt);
   v.rotor.rotation.y += dt*34; v.tail.rotation.x += dt*80; v.g.updateMatrixWorld(true);
   // fixed forward guns: pitch them down onto the target
   const d = Math.hypot(tgt[0] - v.x, tgt[1] - v.z) || 1, ph = -Math.atan2(v.y - 0.9, d) - v.g.rotation.x;
@@ -3534,14 +3568,12 @@ function dapUpdate(v, dt, lv){
   // nose-in pylon turn: crab the nose toward the centre so the crowd sits in the inboard gun's free forward arc
   const crab = 0.25*e*(1 - leaving);
   v.g.position.set(x, y, z); v.g.rotation.set(-0.07, v.yaw + crab, roll);
+  if (v.np) netGhostPose(v, dt);
   v.rotor.rotation.y += dt*28; v.tail.rotation.x += dt*70;
   v.g.updateMatrixWorld(true);
   const on = k >= 1 && !leaving, me = DG.on && DG.v === v;
   // door guns (the inboard, left one is yours in the door-gun seat)
-  for (const gun of v.guns){
-    if (me && gun === DG.gun){ dgGun(v, gun, dt, lv); continue; }
-    gunAI(gun, dt, on, M134_STEP/rateMul, 2.4*lv, 'dap' + v.uid + gun.side, x);
-  }
+  for (const gun of v.guns) vGun(v, gun, dt, on, 2.4*lv, 'dap' + v.uid + gun.side, lv);
   // fixed-forward wing guns can slew a few degrees
   for (const w of v.wing) gunAI(w, dt, on, M134_STEP/rateMul, 1.4*lv, w.side < 0 ? 'dapw' + v.uid : null, x, wingLimits, 30);
   // rocket pods: salvos into the thickest group ahead of the nose
@@ -3572,9 +3604,33 @@ function dapUpdate(v, dt, lv){
 // ---------- door-gun seat: you work the DAP's inboard M134 ----------
 const DG = {on: false, v: null, gun: null, th: 0.9, ph: -0.6, hold: false, kills0: 0, t: 0, keys: {}};
 const dapReady = () => vehicles.find(o => o.type === 'dap' && !o.done && !o.ghost && o.t > 3.4 && o.t < o.dur - 4);
+// every helicopter you call in can be flown, with the gunship's physics and controls
+const FLY = {
+  dap:       {name: 'DAP', arrive: 3.4, P: 'dap', pri: 'ROCKETS', sec: 'HELLFIRE', auto: 'the miniguns aim themselves'},
+  blackhawk: {name: 'BLACK HAWK', arrive: 2.5, P: 'dap', pri: null, sec: null, auto: 'your door gunners shoot on their own'},
+  little:    {name: 'LITTLE BIRD', arrive: 2, P: 'little', pri: 'MINIGUNS', sec: 'ROCKETS', auto: ''},
+  apache:    {name: 'APACHE', arrive: 0, P: 'apache', pri: 'ROCKETS', sec: 'HELLFIRE', auto: 'your gunner works the 30mm'},
+};
+function flyReady(){ for (let k = vehicles.length - 1; k >= 0; k--){ const o = vehicles[k]; if (FLY[o.type] && !o.done && !o.ghost && o.t >= FLY[o.type].arrive && o.t < o.dur - 4) return o; } return null; }
+// door-gun seats: your own DAP / Black Hawk, or a friend's in multiplayer (as their crew)
+function seatFree(v, seat){ const c = v.crew && v.crew[seat]; return c === undefined || c === NET.me; }
+function dgReady(){
+  for (let k = vehicles.length - 1; k >= 0; k--){ const o = vehicles[k];
+    if ((o.type === 'dap' || o.type === 'blackhawk') && !o.done && o.t > FLY[o.type].arrive && o.t < o.dur - 4 && !(DF.on && DF.v === o) && o.guns.some(g => seatFree(o, 'g' + g.side))) return o; }
+  return null;
+}
+// one door gun, whoever runs it: your seat, a friend's seat (shown here, their hits count on their screen), or the AI
+function vGun(v, gun, dt, on, dmg, voice, lv){
+  if (DG.on && DG.v === v && gun === DG.gun){ const g0 = NET.ghost; NET.ghost = false; dgGun(v, gun, dt, lv); NET.ghost = g0; return; }
+  const c = v.crew && v.crew['g' + gun.side];
+  if (c !== undefined && c !== NET.me){ const g0 = NET.ghost; NET.ghost = true; gunAI(gun, dt, on, M134_STEP/rateMul, dmg, voice, v.x); NET.ghost = g0; return; }
+  gunAI(gun, dt, on, M134_STEP/rateMul, dmg, voice, v.x);
+}
 function dgStart(){
-  const v = dapReady(); if (!v || GS_.on || DF.on || state !== 'play' || MODE !== 'def') return;
-  Object.assign(DG, {on: true, v, gun: v.guns.find(g => g.side < 0), hold: false, kills0: kills, t: 0});
+  const v = dgReady(); if (!v || GS_.on || DF.on || state !== 'play' || MODE !== 'def') return;
+  const gun = v.guns.find(g => g.side < 0 && seatFree(v, 'g' + g.side)) || v.guns.find(g => seatFree(v, 'g' + g.side)); if (!gun) return;
+  Object.assign(DG, {on: true, v, gun, hold: false, kills0: kills, t: 0});
+  netCrew(v, 'g' + gun.side, true);
   DG.th = DG.gun.th; DG.ph = DG.gun.ph;
   { const sol = gunSolve(DG.gun, v.ocx, v.ocz); if (sol){ DG.th = sol[0]; DG.ph = sol[1]; } }
   DG.gun.flashBase = 0.42; DG.gun.own = true;
@@ -3587,6 +3643,7 @@ function dgEnd(){
   if (!DG.on) return;
   if (LAND.on) toggleLandscape(false);
   if (DG.gun){ DG.gun.flashBase = 0.45; DG.gun.own = false; DG.gun.rng = 0; }
+  if (DG.v && DG.gun) netCrew(DG.v, 'g' + DG.gun.side, false);
   DG.on = false; DG.hold = false; DG.v = null; $('dg').hidden = true;
   if (state !== 'over'){ $('hud').hidden = false; $('bottom').hidden = false; }
   camera.near = 0.08; resize(); flash();
@@ -3637,21 +3694,28 @@ $('dgExit').onclick = () => dgEnd();
 
 // ---------- fly the DAP: you hold the stick and the missiles, the miniguns aim themselves ----------
 const DF = {on: false, v: null, sx: 0, sy: 0, climb: 0, fire: false, speed: 0, alt: 9, hf: 4, hfCd: 0, rkT: 0, kills0: 0, t: 0, stick: null};
-function dfStart(){
-  const v = dapReady(); if (!v || GS_.on || DG.on || state !== 'play' || MODE !== 'def') return;
-  Object.assign(DF, {on: true, v, sx: 0, sy: 0, climb: 0, fire: false, speed: 6, alt: v.y || 9, hf: 4 + (v.lvl - 1)*2, hfCd: 0, rkT: 0, kills0: kills, t: 0, sec: false});
+function dfStart(want){
+  const v = want && !want.done ? want : flyReady(); if (!v || GS_.on || DG.on || DF.on || state !== 'play' || MODE !== 'def') return;
+  const F = FLY[v.type];
+  Object.assign(DF, {on: true, v, sx: 0, sy: 0, climb: 0, fire: false, speed: 6, alt: v.y || 9, hf: v.type === 'apache' ? v.hf : 4 + (v.lvl - 1)*2, hfCd: 0, rkT: 0, kills0: kills, t: 0, sec: false});
   // on PC (classic flight) the DAP flies with the same physics, keys, mouse and chase camera as the standalone gunship
-  DF.P = heliSim() ? {pos: new THREE.Vector3(v.x, v.y, v.z), vel: new THREE.Vector3(), yaw: -v.yaw, pitch: 0, bank: 0, coll: 0, wr: 0, wp: 0, wy: 0, pq: 0, airT: 9, kicked: true, onGround: false,
-    mdx: 0, mdy: 0, lookYaw: 0, lookPitch: 0, camYaw: -v.yaw, camPitch: 0, hull: 100, noDmg: true, type: 'dap'} : null;
-  $('dfHint').textContent = DF.P && tsTwin() ? 'Two sticks fly it like the gunship · ROCKETS / HELLFIRE to fire · the miniguns aim themselves' : DF.P ? 'Click to capture the mouse · mouse rolls & pitches · W nose down / S flare · A/D yaw · Shift/Ctrl collective · fire = rockets · F switch to Hellfire · V freelook · the miniguns aim themselves'
-    : 'Left thumb: fly · ▲▼ altitude · FIRE = rockets · the miniguns aim themselves';
-  $('df').classList.toggle('sim', !!DF.P); $('dfView').hidden = !DF.P; DF.view = 'chase';
+  DF.P = heliSim() ? {pos: v.g.position.clone(), vel: new THREE.Vector3(), yaw: -v.yaw, pitch: 0, bank: 0, coll: 0, wr: 0, wp: 0, wy: 0, pq: 0, airT: 9, kicked: true, onGround: false,
+    mdx: 0, mdy: 0, lookYaw: 0, lookPitch: 0, camYaw: -v.yaw, camPitch: 0, hull: 100, noDmg: true, type: F.P} : null;
+  if (DF.P && v.vel0) DF.P.vel.copy(v.vel0);
+  const wpn = (F.pri ? (F.pri.toLowerCase() + (F.sec ? ' / ' + F.sec.toLowerCase() : '')) : 'no weapons of your own'), au = F.auto ? ' · ' + F.auto : '';
+  $('dfHint').textContent = DF.P && tsTwin() ? 'Two sticks fly it like the gunship · fire ' + wpn + au : DF.P ? 'Click to capture the mouse · mouse rolls & pitches · W nose down / S flare · A/D yaw · Shift/Ctrl collective' + (F.pri ? ' · fire = ' + F.pri.toLowerCase() : '') + (F.sec ? ' · F switch to ' + F.sec.toLowerCase() : '') + ' · V freelook' + au
+    : 'Left thumb: fly · ▲▼ altitude' + (F.pri ? ' · FIRE = ' + F.pri.toLowerCase() : '') + au;
+  $('dfName').textContent = F.name; $('dfRkL').textContent = F.pri || 'ROCKETS'; $('dfHfL').textContent = F.sec || 'HELLFIRE';
+  $('dfRk').hidden = !F.pri; $('dfHf').hidden = !F.sec;
+  $('df').classList.toggle('sim', !!DF.P); $('dfView').hidden = !DF.P || v.type !== 'dap'; DF.view = 'chase';
   $('df').hidden = false; $('hud').hidden = true; $('bottom').hidden = true; $('dfHint').style.opacity = 1; flash(); hsSeat();
   if (DF.P && PC.on) heliCapture(); else autoLand();
 }
+function dfSelName(){ const F = FLY[(DF.v || {}).type] || FLY.dap; return ((DF.sec ? F.sec : F.pri) || 'Nothing') + ' selected'; }
 function dfSwapView(){ if (!DF.on || !DF.P) return; DF.view = DF.view === 'cockpit' ? 'chase' : 'cockpit'; flash(); sfx('click'); toast(DF.view === 'cockpit' ? 'Cockpit' : 'Chase camera', '#c8ffd0'); }
 function dfEnd(){
   if (!DF.on) return;
+  if (DF.v && DF.v.type === 'apache'){ DF.v.hf = DF.hf; DF.v.hold = null; }
   if (DF.v && DF.v.crewHidden) dapCrew(DF.v, true); DF.view = 'chase'; camera.near = 0.08;
   if (LAND.on) toggleLandscape(false);
   const v = DF.v; DF.on = false; DF.v = null; DF.fire = false; $('dfStick').style.display = 'none';
@@ -3685,22 +3749,94 @@ function dfFly(v, dt, lv){
   m.roll = (m.roll || 0) + ((-sx*0.32) - (m.roll || 0))*Math.min(1, dt*3);
   v.g.position.set(v.x, v.y, v.z); v.g.rotation.set(-0.06 - m.speed*0.008, v.yaw, m.roll);
   }
-  v.rotor.rotation.y += dt*28; v.tail.rotation.x += dt*70;
+  if (v.type === 'apache'){ v.g.rotateY(-Math.PI/2); v.rotor.rotation.y += dt*30; v.tail.rotation.z += dt*45; }
+  else { const lb = v.type === 'little'; v.rotor.rotation.y += dt*(lb ? 34 : 28); v.tail.rotation.x += dt*(lb ? 80 : 70); }
   v.g.updateMatrixWorld(true);
+  m.rkT -= dt;
+  if (v.type !== 'dap'){ dfFlyWeapons(v, dt, lv); return dfFlyUi(v); }
   // the game works both door guns and the wing guns
-  for (const gun of v.guns) gunAI(gun, dt, true, M134_STEP/rateMul, 2.4*lv, 'dfc' + gun.side, v.x);
+  for (const gun of v.guns) vGun(v, gun, dt, true, 2.4*lv, 'dfc' + gun.side, lv);
   for (const w of v.wing) gunAI(w, dt, true, M134_STEP/rateMul, 1.4*lv, w.side < 0 ? 'dfw' : null, v.x, wingLimits, 30);
   // rockets: hold FIRE, they go where the nose points
-  m.rkT -= dt;
   if (m.fire && m.sec){ m.fire = false; dfHellfire(); }
   if (m.fire && m.rkT <= 0){
     m.rkT = v.rk ? 0.42 : 0.1; v.rk ^= 1;
     const from = v.pods[v.rk].getWorldPosition(new THREE.Vector3()), to = dfBoresight(v); to.x += rnd(-1.2, 1.2); to.z += rnd(-1.2, 1.2);
     if (DF.P && gPri('dap')){ const nd = simNose(DF.P, new THREE.Vector3(), ROCKET_DEP); gsShoot('rocket', from, from.clone().addScaledVector(nd, 30), {dmg: 24*lv, aoe: 2.8, followDF: 'rocket'}); } else gsShoot('rocket', from, to, {dmg: 24*lv, aoe: 2.8}); if (v.rk && !hsShot('bh', DF.view === 'cockpit' ? '1p' : '3p', 'rkt', 0.85, 0)) sfx('rocket', 0.8, v.rk ? 0.35 : -0.35, true);
   }
+  return dfFlyUi(v);
+}
+function dfFlyUi(v){
+  const m = DF;
   $('dfTime').style.width = Math.max(0, 100 - v.t/v.dur*100) + '%'; $('dfKills').textContent = fmt(kills - m.kills0);
-  $('dfHfN').textContent = m.hf; $('dfHf').disabled = !m.hf || m.hfCd > 0; $('dfRkN').textContent = '∞';
+  if (v.type === 'little'){ $('dfHfN').textContent = v.volley ? '…' : m.rkT > 0 ? Math.ceil(m.rkT) + 's' : 'RDY'; $('dfHf').disabled = m.rkT > 0 || !!v.volley; }
+  else { $('dfHfN').textContent = m.hf; $('dfHf').disabled = !m.hf || m.hfCd > 0; }
+  $('dfRkN').textContent = '∞';
   return true;
+}
+// the other helicopters' weapons while you fly them
+function dfFlyWeapons(v, dt, lv){
+  const m = DF, persp = m.view === 'cockpit' ? '1p' : '3p';
+  if (v.type === 'blackhawk'){ for (const gun of v.guns) vGun(v, gun, dt, true, 1.2*lv, 'dfb' + gun.side, lv); return; }
+  if (v.type === 'little'){
+    // fixed forward miniguns along the nose; F / HELLFIRE button fires a rocket volley where the nose points
+    for (const gun of v.guns){ gun.pitch.rotation.x += (-0.03 - gun.pitch.rotation.x)*Math.min(1, dt*6); gun.g.rotation.y = 0; }
+    const firing = m.fire && !m.sec;
+    if (m.fire && m.sec){ m.fire = false; dfVolley(v); }
+    if (firing){ v.fireT -= dt; while (v.fireT <= 0){ v.fireT += M134_STEP/rateMul; v.gs = (v.gs || 0) ^ 1; gunFire(v.guns[v.gs], 60, 1.15*lv, 1, 0.015); } }
+    else v.fireT = Math.max(0, v.fireT);
+    for (const gun of v.guns){ gun.spinV += ((firing ? 1 : 0) - gun.spinV)*Math.min(1, dt*(firing ? 6 : 1.2)); gunTick(gun, dt); }
+    if (firing){ v.guns[0].muzzle.getWorldPosition(_gq); if (!gunVoice('lb' + v.uid, 'fire', 0, 1.1, persp === '1p' ? {bank: 'lb_1p'} : {pos: _gq, bank: 'lb_3p_mg'})) sfx('heliGun', 0.6); }
+    if (v.volley > 0){
+      v.vt -= dt;
+      while (v.vt <= 0 && v.volley > 0){ v.vt += 0.125; v.volley--; const from = v.pods[v.volley & 1].getWorldPosition(new THREE.Vector3()), to = dfBoresight(v); to.x += rnd(-1.4, 1.4); to.z += rnd(-1.4, 1.4);
+        gsShoot('rocket', from, to, {dmg: 18*lv, aoe: 2.4}); if (v.volley === 13) v.vSnd = hsShot('lb', persp, 'volley', 1, 0); if (!v.vSnd && !(v.volley & 1)) sfx('rocket', 0.6, 0, true); }
+    }
+    return;
+  }
+  if (v.type === 'apache'){
+    // pilot: rockets on FIRE, Hellfires on the second weapon; the front-seater (AI, or a friend) works the 30mm
+    if (m.fire && m.sec){ m.fire = false; dfHellfire(); }
+    if (m.fire && !m.sec && m.rkT <= 0){
+      m.rkT = 0.115; v.rk = (v.rk || 0) ^ 1;
+      const from = v.pods[v.rk].getWorldPosition(new THREE.Vector3()), to = dfBoresight(v); to.x += rnd(-1, 1); to.z += rnd(-1, 1);
+      if (DF.P && gPri('apache')){ const nd = simNose(DF.P, new THREE.Vector3(), ROCKET_DEP); gsShoot('rocket', from, from.clone().addScaledVector(nd, 30), {dmg: 24*lv, aoe: 2.8, followDF: 'rocket'}); } else gsShoot('rocket', from, to, {dmg: 24*lv, aoe: 2.8});
+      if (!hsShot('ap', persp, 'rkt', 0.85, v.rk ? 0.3 : -0.3)) sfx('rocket', 0.7, v.rk ? 0.35 : -0.35, true);
+    }
+    apGunnerAI(v, dt);
+  }
+}
+function dfVolley(v){ if (DF.rkT > 0 || v.volley) return; v.volley = 14; v.vt = 0; v.vSnd = false; DF.rkT = 3.2/rateMul; }
+// the Apache's front seat when no player is in it: short bursts at whatever is closest to the barricade
+function apGunnerAI(v, dt){
+  if (v.crew && v.crew.gun !== undefined && v.crew.gun !== NET.me) return;      // a friend has the gun
+  v.cnT -= dt; if (v.cnT > 0) return;
+  if (v.mag <= 0){ v.mag = CANNON.mag; v.cnT = CANNON.reload; return; }
+  let best = -1, bz = -1e9;
+  for (let i = 0; i < en; i++){ if (eh[i] <= 0 || ez[i] < FAR + 4) continue; const d = Math.hypot(ex[i] - v.x, ez[i] - v.z); if (d < 70 && ez[i] > bz){ bz = ez[i]; best = i; } }
+  let tgt = best >= 0 ? new THREE.Vector3(ex[best], 0.6, ez[best]) : null;
+  if (!tgt){ const b = bosses.find(b => b.hp > 0); if (b) tgt = new THREE.Vector3(b.x, 1.5, b.z); }
+  if (!tgt){ v.cnT = 0.3; return; }
+  v.cnT = CANNON.rate; v.mag--;
+  const from = v.h.barrel.getWorldPosition(new THREE.Vector3()); tgt.x += rnd(-0.6, 0.6); tgt.z += rnd(-0.6, 0.6);
+  apAimTurret(v.h, _apD2.copy(tgt).sub(from).normalize());
+  gsShoot('cannon', from, tgt); if (!hsShot('ap', DF.on && DF.v === v && DF.view === 'cockpit' ? '1p' : '3p', '30mmb', 0.7, 0, from)) sfxAt('cannon30', from.x, from.y, from.z, 0.6);
+}
+const _apD2 = new THREE.Vector3();
+// the Apache when nobody is flying it: hovers where it was left (or arrives), its gunner keeps shooting
+function apacheUpdate(v, dt, lv){
+  if (v.flyNext && state === 'play' && !DF.on){ v.flyNext = false; dfStart(v); }
+  if (DF.on && DF.v === v){ dfFly(v, dt, lv); if (v.t > v.dur){ v.done = true; dfEnd(); } return; }
+  if (!v.np){
+    const leaving = v.t > v.dur - 2 ? (v.t - (v.dur - 2))/2 : 0;
+    if (!v.hold) v.hold = {x: v.x, y: Math.max(5, v.y), z: v.z};
+    if (leaving){ v.hold.y += dt*7; v.hold.z -= dt*16; }
+    v.x += (v.hold.x - v.x)*Math.min(1, dt*1.5); v.z += (v.hold.z - v.z)*Math.min(1, dt*1.5); v.y += (v.hold.y - v.y)*Math.min(1, dt*1.5);
+    v.g.position.set(v.x, v.y + Math.sin(v.t*1.2)*0.15, v.z); v.g.rotation.set(0, v.yaw, 0); v.g.rotateY(-Math.PI/2); v.g.rotateZ(0.06);
+  } else netGhostPose(v, dt);
+  v.rotor.rotation.y += dt*30; v.tail.rotation.z += dt*45; v.g.updateMatrixWorld(true);
+  if (!v.ghost && v.t > 1.5 && v.t < v.dur - 2) apGunnerAI(v, dt);
+  if (v.t > v.dur) v.done = true;
 }
 const _dfF = new THREE.Vector3(), _dfD = new THREE.Vector3();
 function dfBoresight(v){
@@ -3712,13 +3848,15 @@ function dfBoresight(v){
   return new THREE.Vector3(v.x, v.y, v.z).addScaledVector(d, Math.min(t, 60));
 }
 function dfHellfire(){
-  const v = DF.v; if (!DF.on || !v || DF.hf <= 0 || DF.hfCd > 0) return;
+  const v = DF.v; if (!DF.on || !v) return;
+  if (v.type === 'little'){ dfVolley(v); return; } if (v.type === 'blackhawk') return;
+  if (DF.hf <= 0 || DF.hfCd > 0) return;
   DF.hf--; DF.hfCd = 1;
   const bp = dfBoresight(v); let bi = -1, bh = 0;
   for (let i = 0; i < en; i++){ if (eh[i] <= 0) continue; const d = Math.hypot(ex[i] - bp.x, ez[i] - bp.z); if (d < 9 && eh[i]/(1 + d*0.2) > bh){ bh = eh[i]/(1 + d*0.2); bi = i; } }
-  const nb = nearBoss(bp, 12), tg = !DF.P ? (nb ? {boss: nb} : bi >= 0 ? {id: eid[bi]} : {}) : gSec('dap') ? {followDF: 'hellfire'} : {};
+  const nb = nearBoss(bp, 12), tg = !DF.P ? (nb ? {boss: nb} : bi >= 0 ? {id: eid[bi]} : {}) : gSec(v.type === 'apache' ? 'apache' : 'dap') ? {followDF: 'hellfire'} : {};
   const from = v.pods[DF.hf & 1].getWorldPosition(new THREE.Vector3());
-  gsShoot('hellfire', from, tg.followDF ? from.clone().addScaledVector(simNose(DF.P, new THREE.Vector3(), ROCKET_DEP), 30) : bp, tg); if (!hsShot('bh', DF.view === 'cockpit' ? '1p' : '3p', 'tow', 1)) sfx('hellfire', 1, 0, true);
+  gsShoot('hellfire', from, tg.followDF ? from.clone().addScaledVector(simNose(DF.P, new THREE.Vector3(), ROCKET_DEP), 30) : bp, tg); if (!hsShot(HKIND(v.type), DF.view === 'cockpit' ? '1p' : '3p', 'tow', 1)) sfx('hellfire', 1, 0, true);
 }
 function dfCamera(){
   const v = DF.v; if (!v) return false;
@@ -3734,13 +3872,14 @@ function dfCamera(){
     } else {
       if (v.crewHidden) dapCrew(v, true); if (camera.near !== 0.08) camera.near = 0.08;
       // same chase cam as the gunship: follows the airframe's full attitude, a beat behind
-      chaseCam(P, v.g, false, CHASE.df, dt, far);
+      chaseCam(P, v.g, v.type === 'apache', v.type === 'apache' ? CHASE.apache : CHASE.df, dt, far);
       camera.fov = CHASE.fov;
     }
     camera.updateProjectionMatrix();
-    const bp = dfBoresight(v).project(camera), g = gPri('dap') ? 'GUID ' : '';
-    bfHud({cockpit: !!ck, aim: bp.z < 1 && Math.abs(bp.x) < 1.3 && Math.abs(bp.y) < 1.3 ? bp : null, msl: !!DF.sec, hdg: P.yaw*57.2958, alt: P.pos.y*3.3, kts: P.vel.length()*4.86, pitch: hudAtt(P).p, bank: hudAtt(P).b, flr: '—',
-      lines: [(DF.sec ? '  ' : '▸ ') + g + 'RKT RDY', (DF.sec ? '▸ ' : '  ') + (gSec('dap') ? 'GUID ' : '') + 'AT MSL ' + (DF.hf > 0 && DF.hfCd <= 0 ? 'RDY' : 'CDN')]});
+    const bp = dfBoresight(v).project(camera), lt = v.type === 'apache' ? 'apache' : 'dap', g = gPri(lt) ? 'GUID ' : '';
+    const lines = v.type === 'blackhawk' ? ['DOOR GUNS AUTO'] : v.type === 'little' ? [(DF.sec ? '  ' : '▸ ') + 'M134 x2', (DF.sec ? '▸ ' : '  ') + 'RKT ' + (v.volley ? 'FIRING' : DF.rkT > 0 ? 'CDN' : 'RDY')]
+      : [(DF.sec ? '  ' : '▸ ') + g + 'RKT RDY', (DF.sec ? '▸ ' : '  ') + (gSec(lt) ? 'GUID ' : '') + 'AT MSL ' + (DF.hf > 0 && DF.hfCd <= 0 ? 'RDY' : 'CDN')].concat(v.type === 'apache' ? [(v.crew && v.crew.gun !== undefined ? 'GUNNER ' + netName(v.crew.gun).toUpperCase() : 'GUNNER AI') + ' 30MM'] : []);
+    bfHud({cockpit: !!ck, aim: bp.z < 1 && Math.abs(bp.x) < 1.3 && Math.abs(bp.y) < 1.3 ? bp : null, msl: !!DF.sec, hdg: P.yaw*57.2958, alt: P.pos.y*3.3, kts: P.vel.length()*4.86, pitch: hudAtt(P).p, bank: hudAtt(P).b, flr: '—', lines});
     return true;
   }
   const fx = -Math.sin(v.yaw), fz = -Math.cos(v.yaw), far = camera.aspect < 1 ? 1.35 : 1;
@@ -3750,6 +3889,7 @@ function dfCamera(){
   return true;
 }
 $('dfBtn').onclick = () => dfStart();
+$('crewBtn').onclick = () => crewBoard();
 $('dfExit').onclick = () => dfEnd();
 $('dfView').onclick = e => { e.stopPropagation(); dfSwapView(); };
 $('dfHf').onclick = () => dfHellfire();
@@ -3901,6 +4041,12 @@ function apPilotMfd(h){
 }
 function gsEnd(){
   if (!GS_.on) return;
+  if (GS_.follow){
+    const v = GS_.follow; GS_.follow = null; v.g.visible = true; netCrew(v, 'gun', false);
+    GS_.on = false; GS_.phase = ''; GS_.firing = false; flash(); $('gs').hidden = true;
+    if (state !== 'over'){ $('hud').hidden = false; $('bottom').hidden = false; }
+    camera.near = 0.08; resize(); return;
+  }
   if (LAND.on) toggleLandscape(false);
   GS_.phase = 'leave'; GS_.t = 0;
   flash(); $('gs').hidden = true; if (state !== 'over') $('hud').hidden = false;
@@ -3939,8 +4085,15 @@ function gsTargetNear(p){
 }
 function gsUpdate(dt){
   const P = GS_; P.t += dt;
+  if (P.follow){
+    const v = P.follow;
+    if (v.done || !vehicles.includes(v)){ gsEnd(); return; }
+    P.pos.copy(v.g.position); P.dir.set(-1, 0, 0).applyQuaternion(v.g.quaternion); P.dir.y = 0; if (P.dir.lengthSq() < 1e-4) P.dir.set(0, 0, -1); P.dir.normalize();
+    P.gun.copy(P.pos).addScaledVector(P.dir, 2.4); P.gun.y -= 0.9;
+  } else {
   if (P.phase !== 'leave') P.ang += dt*0.24;
   gsPose(P.ang);
+  }
   if (P.phase === 'arrive'){
     // swoop in from behind the camera to the orbit
     // sweep in low over the pier so you see it from the top view, then climb into the orbit
@@ -3976,7 +4129,8 @@ function gsUpdate(dt){
 }
 function gsSync(dt){
   const P = GS_;
-  if (P.heli){ gsPlaceHeli(); P.heli.rotor.rotation.y += dt*30; P.heli.tail.rotation.z += dt*45; }
+  if (P.follow){ P.follow.g.visible = P.phase !== 'gun'; if (P.follow.h) apAimTurret(P.follow.h, _apD2.copy(P.aim).sub(P.gun).normalize()); }
+  if (P.heli && !P.follow){ gsPlaceHeli(); P.heli.rotor.rotation.y += dt*30; P.heli.tail.rotation.z += dt*45; }
   if (P.phase === 'arrive' || P.phase === 'leave') return false;     // normal top camera
   // gun camera looks at the aim point from under the nose
   if (P.gunCam){ P.gunCam.position.copy(P.gun); P.gunCam.lookAt(P.aim); P.gunCam.aspect = P.phase === 'gun' ? camera.aspect : 320/300; P.gunCam.updateProjectionMatrix(); }
@@ -3991,7 +4145,7 @@ function gsSync(dt){
     return true;
   }
   if (P.phase === 'gun'){
-    P.heli.g.visible = false;
+    if (P.heli) P.heli.g.visible = false;
     camera.position.copy(P.gun); camera.lookAt(P.aim);
     camera.fov = 38; camera.updateProjectionMatrix();
     $('gsTime').style.width = Math.max(0, 100 - P.t/P.dur*100) + '%';
@@ -4399,7 +4553,7 @@ function actPress(a){
   if (DF.on){
     if (DF.P){   // classic-flight keys
       if (a === 'fire' || a === 'hFire') DF.fire = true; else if (a === 'missile' || a === 'hSec') { if (a === 'hSec') DF.sec = true; else dfHellfire(); }
-      else if (a === 'hSwitch'){ DF.sec = !DF.sec; sfx('click'); toast(DF.sec ? 'Hellfire selected' : 'Rockets selected', '#c8ffd0'); } else if (a === 'hPri') DF.sec = false;
+      else if (a === 'hSwitch'){ DF.sec = !DF.sec; sfx('click'); toast(dfSelName(), '#c8ffd0'); } else if (a === 'hPri') DF.sec = false;
       else if (a === 'hZoom') HM.zoom = true; else if (a === 'hFree') HM.free = true;
       else if (a === 'hView' || a === 'view') dfSwapView();
       return;
@@ -4458,7 +4612,7 @@ cv.addEventListener('wheel', e => {
   // helicopters: the wheel swaps weapons (rockets ⇄ Hellfire, miniguns ⇄ rocket volley), one step per notch
   if ((MODE === 'heli' && HM.on) || (DF.on && DF.P)){
     const now = performance.now(); if (now - (INPUT.wheelT || 0) < 160) return; INPUT.wheelT = now;
-    if (DF.on && DF.P){ DF.sec = !DF.sec; sfx('click'); toast(DF.sec ? 'Hellfire selected' : 'Rockets selected', '#c8ffd0'); }
+    if (DF.on && DF.P){ DF.sec = !DF.sec; sfx('click'); toast(dfSelName(), '#c8ffd0'); }
     else if (HM.seat === 'pilot') hmSelect(HM.wsel === 'sec' ? 'pri' : 'sec');
     return;
   }
@@ -5403,7 +5557,10 @@ function sync(dt){
     for (const v of vehicles) if (v.type !== 'bulldozer') fx += '<span style="color:#ffd08a">' + VEHICLES[v.type].name + (v.lvl > 1 ? ' Lv' + v.lvl : '') + ' ' + Math.max(0, Math.ceil(v.dur - v.t)) + 's</span>';
     for (const g of gates) if (g.broken) fx += '<span style="color:#e6d4ff">' + g.text + ' back in ' + Math.ceil(g.rebuild) + 's</span>';
     $('fx').innerHTML = fx;
-    { const ok = !!dapReady() && !GS_.on && !DG.on && !DF.on; if ($('dgBtn').hidden === ok) $('dgBtn').hidden = !ok; if ($('dfBtn').hidden === ok) $('dfBtn').hidden = !ok; }
+    { const free = !GS_.on && !DG.on && !DF.on, fv = free && flyReady(), dv = free && dgReady(), cv2 = free && NET.started && crewTarget();
+      if ($('dfBtn').hidden === !!fv) $('dfBtn').hidden = !fv; if (fv){ const t = '🚁 Fly ' + VEHICLES[fv.type].name; if ($('dfBtn').textContent !== t) $('dfBtn').textContent = t; }
+      if ($('dgBtn').hidden === !!dv) $('dgBtn').hidden = !dv;
+      if ($('crewBtn').hidden === !!cv2) $('crewBtn').hidden = !cv2; if (cv2){ const t = '🪖 Gunner · ' + netName(cv2.owner) + '’s ' + VEHICLES[cv2.type].name; if ($('crewBtn').textContent !== t) $('crewBtn').textContent = t; } }
     refreshStreaks();
     refreshAmmo();
   }
@@ -6822,7 +6979,7 @@ const MP_MODES = {
   coopsky: {name: 'Co-op Sky',       kind: 'heli', max: 4, desc: 'Up to 4 helicopters against the waves and the enemy helicopters.'},
   duel:    {name: 'Sky Duel',        kind: 'heli', max: 4, pvp: true, noWaves: true, desc: 'Every helicopter for itself. First to 10 kills wins.'},
   duel2:   {name: 'Sky Duel 2v2',    kind: 'heli', max: 4, pvp: true, teams: true, noWaves: true, desc: 'Two teams of two helicopters. First team to 15 kills.'},
-  cmd:     {name: 'Wave Commander',  kind: 'def',  max: 4, cmd: true, desc: 'Defenders hold the pier for 10 waves; commanders spend their budget sending the horde. 1v1 or 2v2.'},
+  cmd:     {name: 'Wave Commander',  kind: 'def',  max: 4, cmd: true, desc: 'Endless waves: defenders hold the pier as long as they can; commanders spend their budget sending the horde. Any mix of up to 4.'},
 };
 const MP_SIG = () => SETTINGS.mpServer || 'wss://0.peerjs.com/peerjs';
 const MP_ICE = [{urls: 'stun:stun.l.google.com:19302'}, {urls: 'stun:stun1.l.google.com:19302'}, {urls: 'stun:global.stun.twilio.com:3478'}];
@@ -6848,6 +7005,63 @@ function netBarrelLoot(b){
   const personal = VEHICLES[r] || r === 'freeze' || r === 'repair';
   if (personal){ if (by === NET.me){ grant(r); sfx('reward'); toast('You got ' + b.reward.label, '#c8ffd0'); } else { netSend(netPeerOf(by), {t: 'loot', r, by}); toast(who + ' got ' + b.reward.label, '#e8fbff'); } }
   else { grant(r); sfx('reward'); netAll({t: 'loot', r, by, name: who}); toast((by === NET.me ? 'You' : who) + ' shared ' + b.reward.label, '#c8ffd0'); }
+}
+// ---------- shared helicopters: everyone sees where the owner's helicopter really is, and friends can crew it ----------
+const netName = slot => slot === NET.me ? mpName() : ((NET.players.find(p => p.slot === slot) || {}).name || 'Player');
+const netVehByU = u => vehicles.find(v => v.nu === u && !v.done);
+const NET_HELI = {dap: 1, blackhawk: 1, little: 1, apache: 1};
+// owner -> everyone, ~12 times a second: position + attitude of each of my helicopters
+function netVehPoses(){
+  for (const v of vehicles){
+    if (v.ghost || v.done || !NET_HELI[v.type] || !v.g) continue;
+    const p = v.g.position, q = v.g.quaternion;
+    const js = JSON.stringify({t: 'vp', u: v.nu, p: [+p.x.toFixed(2), +p.y.toFixed(2), +p.z.toFixed(2)], q: [+q.x.toFixed(4), +q.y.toFixed(4), +q.z.toFixed(4), +q.w.toFixed(4)], d: Math.round(v.dur - v.t)});
+    if (NET.host) netAllS(js); else netSendS(netHostPeer(), js);
+  }
+}
+function netOnVehPose(m){
+  const v = netVehByU(m.u); if (!v || !v.ghost) return;
+  v.np = v.np || {p: new THREE.Vector3(), q: new THREE.Quaternion(), first: true};
+  v.np.p.fromArray(m.p); v.np.q.fromArray(m.q); v.dur = v.t + Math.max(0, m.d) + 3; v.np.at = performance.now();
+}
+// a ghost helicopter eases toward where its owner says it is
+function netGhostPose(v, dt){
+  const n = v.np; if (!n) return;
+  if (n.first){ n.first = false; v.g.position.copy(n.p); v.g.quaternion.copy(n.q); }
+  else { const k = Math.min(1, dt*10); v.g.position.lerp(n.p, k); v.g.quaternion.slerp(n.q, k); }
+  v.x = v.g.position.x; v.y = v.g.position.y; v.z = v.g.position.z;
+}
+function netVehGone(v){ if (!v.ghost && NET.on && NET.started && v.nu) netUp({t: 'vend', u: v.nu}); }
+// claim or release a seat (door gun 'g-1' / 'g1', Apache front seat 'gun') on any helicopter
+function netCrew(v, seat, on){
+  v.crew = v.crew || {};
+  if (on) v.crew[seat] = NET.me; else if (v.crew[seat] === NET.me) delete v.crew[seat];
+  if (NET.on && NET.started && v.nu) netUp({t: 'crew', u: v.nu, seat, s: NET.me, on: on ? 1 : 0});
+}
+function netOnCrew(m){
+  const v = netVehByU(m.u); if (!v) return;
+  v.crew = v.crew || {};
+  if (m.on){ v.crew[m.seat] = m.s; if (!v.ghost) toast(netName(m.s) + (m.seat === 'gun' ? ' is your Apache gunner' : ' took a door gun'), '#c8ffd0'); }
+  else if (v.crew[m.seat] === m.s) delete v.crew[m.seat];
+}
+// a friend's helicopter with a free gunner seat
+function crewTarget(){
+  for (const v of vehicles){
+    if (!v.ghost || v.done || !v.np || performance.now() - v.np.at > 3000) continue;
+    if (v.type === 'apache' && seatFree(v, 'gun')) return v;
+  }
+  return null;
+}
+function crewBoard(){
+  if (GS_.on || DG.on || DF.on || state !== 'play' || MODE !== 'def') return;
+  const v = crewTarget(); if (!v) return;
+  autoLand();
+  Object.assign(GS_, {on: true, follow: v, firing: false, phase: 'gun', t: 0, dur: 1e9, kills: 0, rockets: 6, hellfires: 4, rkCd: 0, hfCd: 0, fireT: 0, salvo: 0, wasFp: fp, mag: CANNON.mag, reload: 0});
+  { const d = densestEnemy(); GS_.aim.set(d >= 0 ? ex[d] : 0, 0, d >= 0 ? Math.max(ez[d], -40) : -22); }
+  if (!GS_.gunCam) GS_.gunCam = new THREE.PerspectiveCamera(38, 1, 0.3, 300);
+  netCrew(v, 'gun', true);
+  $('gs').hidden = false; $('hud').hidden = true; $('bottom').hidden = true; $('gsHint').style.opacity = 1; GS_.started = time; flash();
+  toast('Front seat of ' + netName(v.owner) + '’s Apache · 30mm, rockets and Hellfires are yours', '#c8ffd0');
 }
 const netMe = () => NET.players.find(p => p.slot === NET.me) || {slot: NET.me, name: mpName(), heli: SETTINGS.mpHeli || 'apache', team: 0, side: 'def'};
 const mpName = () => (SETTINGS.mpName || 'Player').slice(0, 14);
@@ -7000,7 +7214,9 @@ function netOnG(P, m){
     case 'wave': NET.shopOpen = false; NET.shopEnd = 0; if (!NET.host){ $('shop').hidden = true; NET.waitShop = false; wave = m.wave - 1; startWave(); } return;
     case 'shop': NET.shopOpen = true; NET.shopEnd = m.T ? performance.now() + m.T*1000 : 0; if (!NET.host && MODE === 'def' && NET.side === 'def'){ un = 0; openShop(); } if (!NET.host && NET.side === 'cmd') netCmdShopBonus(); return;
     case 'kill': if (!NET.host){ kills++; coins += ROLES[m.role] ? ROLES[m.role].coin*(1 + 0.03*wave)*(1 + PERK.coins)*netCoinK() : 0; } return;
-    case 'veh': if (NET.host) netAll(m, P); if (m.s !== NET.me && MODE === 'def' && VEHICLES[m.type] && m.type !== 'apache') spawnVehicle(m.type, true); return;
+    case 'veh': if (NET.host) netAll(m, P); if (m.s !== NET.me && MODE === 'def' && VEHICLES[m.type]){ const v = spawnVehicle(m.type, true); v.nu = m.u; v.owner = m.s; if (m.dur) v.dur = m.dur + 3; } return;
+    case 'vend': if (NET.host) netAll(m, P); { const v = netVehByU(m.u); if (v && v.ghost){ v.done = true; if (DG.on && DG.v === v) dgEnd(); } } return;
+    case 'crew': if (NET.host) netAll(m, P); netOnCrew(m); return;
     case 'bar': if (NET.host){ const b = barrels.find(o => o.id === m.id); if (b && b.hp > 0){ b.hp -= m.d; b.dirty = true; b.hit = 0.08; if (b.hp <= 0){ b.lastBy = P.slot; breakBarrel(b); } } } return;
     case 'loot': grant(m.r); sfx('reward'); toast((m.by === NET.me ? 'You' : m.name || 'A teammate') + (VEHICLES[m.r] || m.r === 'freeze' || m.r === 'repair' ? ' got ' : ' shared ') + ((REWARDS.find(r => r.id === m.r) || {}).label || m.r), '#c8ffd0'); return;
     case 'sup': if (NET.host){ if (m.k === 'freeze'){ freezeT = 4.5; sfx('freeze'); toast('Horde frozen', '#c6ecff'); } else if (m.k === 'repair'){ wall = Math.min(100, wall + 25); sfx('repair'); toast('Barricade repaired', '#b9f5c1'); } } return;
@@ -7022,6 +7238,7 @@ function netOnS(P, d){
   if (typeof d === 'string'){
     let m; try { m = JSON.parse(d); } catch(_){ return; }
     if (m.t === 'p'){ if (NET.host && P.slot >= 0){ m.s = P.slot; netAllS(JSON.stringify(m), P); } NET.pose[m.s] = m; m.at = performance.now(); }
+    else if (m.t === 'vp'){ if (NET.host) netAllS(d, P); netOnVehPose(m); }
     return;
   }
   if (!NET.host){ NET.snap = d; NET.snapAt = performance.now(); }      // newest world snapshot wins; applied once per frame
@@ -7068,7 +7285,6 @@ const netAllReady = () => NET.players.filter(p => p.side !== 'cmd' || !netMode()
 function netCheckReady(){
   if (!NET.host || !NET.started || !NET.shopOpen || !netAllReady()) return;
   NET.shopOpen = false; NET.shopEnd = 0; NET.ready.clear(); $('shop').hidden = true;
-  if (netMode().cmd && wave >= 10){ netOver({t: 'over', win: 'def', msg: 'The defenders held all 10 waves'}, true); return; }
   startWave(); netAll({t: 'wave', wave});
 }
 
@@ -7086,6 +7302,7 @@ function netTick(dt){
     else p = {t: 'p', s: NET.me, m: NET.side === 'cmd' ? 'c' : 'd', cx: +cx.toFixed(2), w: weapon, n: gunners.length, f: state === 'play' && gunners.length ? 1 : 0};
     const js = JSON.stringify(p); if (NET.host) netAllS(js); else netSendS(netHostPeer(), js);
   }
+  if (MODE === 'def'){ NET.vpT = (NET.vpT || 0) - dt; if (NET.vpT <= 0){ NET.vpT = 1/12; netVehPoses(); } }
   // the host streams the world
   if (NET.host && !netMode().pvp){ NET.snapT -= dt; if (NET.snapT <= 0){ NET.snapT = 0.1; const buf = netSnapshot(); for (const P of NET.peers.values()) if (P.slot >= 0 && P.g && P.g.readyState === 'open' && P.g.bufferedAmount < 512*1024) try { P.g.send(buf); } catch(_){} } }
   // mirrors: apply the newest snapshot, send my hits
@@ -7255,7 +7472,7 @@ function netGameOver(){
     toast('Respawned', '#e8fbff'); return true;
   }
   if (!NET.host && NET.mirror) return true;          // the host decides when the pier falls
-  if (NET.host){ netOver({t: 'over', win: M.cmd ? 'cmd' : 'none', msg: M.cmd ? 'The commanders broke the barricade' : 'The pier fell'}, true); return true; }
+  if (NET.host){ netOver({t: 'over', win: M.cmd ? 'cmd' : 'none', msg: M.cmd ? 'The commanders broke the barricade on wave ' + wave : 'The pier fell'}, true); return true; }
   return false;
 }
 function netOver(m, mine){
@@ -7790,7 +8007,7 @@ function updShow(){
 window.adUpdate = info => {
   const t = info && info.type;
   if (t === 'content' || t === 'apk'){ if (!UPD.pending || t === 'apk') UPD.pending = info; UPD.dismissed = false; updShow(); }
-  else if (t === 'none') toast('You have the latest version', '#c8ffd0');
+  else if (t === 'none'){ toast('You have the latest version (' + GAME_VERSION + ')', '#c8ffd0'); newsShow(true); }
   else if (t === 'allow') toast('Allow “Install unknown apps” for Ad Lords, then tap Install again', '#e8fbff');
   else if (t === 'progress'){ $('updTxt').textContent = 'Downloading update… ' + (info.pct >= 0 ? info.pct + '%' : ''); $('updBar').hidden = false; }
   else if (t === 'error') toast('Update check failed' + (info.why ? ': ' + info.why : ''), '#ffd0c8');
@@ -7801,6 +8018,32 @@ $('updGo').onclick = () => {
   else { $('updBar').hidden = true; try { persist(); } catch(_){} AdLordsNative.reload(); }
 };
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
+// ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
+const NEWS = [
+  ['V81', ['Fly any helicopter you call in on the pier (Little Bird, Black Hawk, DAP and now the Apache) with the same controls as Gunship mode',
+           'Apache call-in: fly it yourself or take the gunner seat',
+           'Multiplayer crews: friends can jump into your helicopter as the Apache gunner or a DAP / Black Hawk door gunner',
+           'Wave Commander has no wave limit any more',
+           'Fixed the Windows app asking to install an update it already had']],
+  ['V80', ['Co-op: everyone plays the host\'s map, enemy look, horde and barrels',
+           'Barrel ammo is shared; whoever breaks a barrel gets its vehicle',
+           'Wave Commander: barrels keep coming (ammo only), unit cooldowns, timed waves, a 15 s shop where commanders earn nothing, side balance for uneven teams']],
+  ['V79', ['Cabin recordings play untouched in first person', 'Apache cockpit lined up with the model', 'Weapon fire rates match their recordings']],
+  ['V78', ['Flight model rebuilt from Little Bird footage: loops, lighter roll, faster descents, fast dives', 'Rounds carry the helicopter\'s speed, with an impact marker', 'Multiplayer: co-op, sky co-op, duels, 2v2 and Wave Commander', 'Motion-captured characters and Character White']],
+  ['V77', ['Recorded Little Bird, Black Hawk, Apache and minigun sounds, with distance and echo', 'New Little Bird model']],
+];
+function newsShow(force){
+  let seen = ''; try { seen = localStorage.getItem('adlords-news') || ''; } catch(_){}
+  if (!force && seen === GAME_VERSION) return;
+  try { localStorage.setItem('adlords-news', GAME_VERSION); } catch(_){}
+  if (!force && !seen) return;        // first ever start: nothing to compare with
+  $('newsTitle').textContent = force ? 'You\'re up to date · ' + GAME_VERSION : 'Updated to ' + GAME_VERSION;
+  $('newsBody').innerHTML = NEWS.slice(0, (i => force || i < 0 ? NEWS.length : Math.max(1, i))(NEWS.findIndex(n => n[0] === seen))).map(([v, items]) => `<h3>${v}</h3><ul>${items.map(i => '<li>' + i + '</li>').join('')}</ul>`).join('');
+  $('news').hidden = false;
+}
+$('newsOk').onclick = () => { $('news').hidden = true; };
+$('newsBtn').onclick = () => newsShow(true);
+setTimeout(() => { if (state !== 'play') newsShow(false); }, 1500);
 $('updCheck').onclick = () => { if (window.AdLordsNative && AdLordsNative.checkUpdate){ AdLordsNative.checkUpdate(); toast('Checking for updates…', '#e8fbff'); } };
 if (window.AdLordsNative && AdLordsNative.checkUpdate) $('updRow').hidden = false;
 setInterval(() => { if (state === 'play' || state === 'dying'){ if (!$('updBar').hidden && UPD.pending && !/Downloading/.test($('updTxt').textContent)) $('updBar').hidden = true; } else updShow(); }, 1500);

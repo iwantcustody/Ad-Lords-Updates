@@ -20,7 +20,8 @@ native = h.hexdigest()[:16]
 hd = hashlib.sha1()
 for rel in ['desktop/main.js', 'desktop/preload.js', 'desktop/package.json', 'desktop/build/icon.png']:
     fp = os.path.join(root, rel)
-    if os.path.exists(fp): hd.update(rel.encode()); hd.update(open(fp, 'rb').read())
+    # line endings don't count: a Windows checkout turns LF into CRLF, which made every Windows build think it was out of date
+    if os.path.exists(fp): hd.update(rel.encode()); hd.update(open(fp, 'rb').read().replace(b'\r\n', b'\n') if not rel.endswith('.png') else open(fp, 'rb').read())
 desktop = hd.hexdigest()[:16]
 os.makedirs(os.path.join(root, 'desktop'), exist_ok=True)
 json.dump({'hash': desktop, 'version': ver}, open(os.path.join(root, 'desktop', 'build-info.json'), 'w'))

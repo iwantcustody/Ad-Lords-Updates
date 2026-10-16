@@ -73,6 +73,12 @@ async function install(){
   } catch (e) { tell({type: 'error', why: String(e && e.message || e)}); }
 }
 
+// F11 / the in-game button: one toggle that also leaves any page-requested (HTML) full screen
+function toggleFull(){
+  if (!win) return;
+  if (win.isFullScreen() || win.webContents.isFullscreen?.()){ js('document.fullscreenElement && document.exitFullscreen().catch(()=>{})'); win.setFullScreen(false); }
+  else win.setFullScreen(true);
+}
 function createWindow(){
   win = new BrowserWindow({width: 1600, height: 900, minWidth: 800, minHeight: 450, backgroundColor: '#0b2a3c', title: 'Ad Lords', show: false,
     icon: path.join(__dirname, 'build', 'icon.png'),
@@ -80,7 +86,8 @@ function createWindow(){
   win.once('ready-to-show', () => { win.maximize(); win.show(); });
   win.webContents.on('will-prevent-unload', e => e.preventDefault());       // the game's "leave mid-flight?" prompt never blocks closing the window
   win.webContents.on('before-input-event', (e, inp) => {
-    if (inp.type === 'keyDown' && inp.key === 'F11'){ win.setFullScreen(!win.isFullScreen()); e.preventDefault(); }
+    if (inp.type === 'keyDown' && inp.key === 'F4' && inp.alt){ e.preventDefault(); app.quit(); return; }     // Alt+F4 always closes, even mid-flight
+    if (inp.type === 'keyDown' && inp.key === 'F11' && !inp.isAutoRepeat){ e.preventDefault(); toggleFull(); }
     if (inp.type === 'keyDown' && inp.key === 'F12' && inp.control && inp.shift) win.webContents.toggleDevTools();
   });
   win.webContents.setWindowOpenHandler(({url}) => { if (/^https:/.test(url)) require('electron').shell.openExternal(url); return {action: 'deny'}; });
@@ -104,9 +111,11 @@ app.whenReady().then(() => {
   ipcMain.on('ad:check', () => check(true));
   ipcMain.on('ad:install', () => install());
   ipcMain.on('ad:reload', () => { activate(); if (win) { win.webContents.session.clearCache().finally(() => win.loadURL('app://game/index.html')); } });
-  ipcMain.on('ad:fullscreen', () => { if (win) win.setFullScreen(!win.isFullScreen()); });
+  ipcMain.on('ad:quit', () => app.quit());
+  ipcMain.on('ad:fullscreen', () => toggleFull());
   createWindow();
 });
 if (!app.requestSingleInstanceLock()) app.quit();
 else app.on('second-instance', () => { if (win){ if (win.isMinimized()) win.restore(); win.focus(); } });
 app.on('window-all-closed', () => app.quit());
+app.on('before-quit', () => { if (win && !win.isDestroyed()) win.webContents.removeAllListeners('will-prevent-unload'); if (win) win.destroy(); });

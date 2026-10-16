@@ -499,6 +499,7 @@ body.pc .titleFs{display:none}
       <p id="pauseNote">Your run is saved at the start of every wave.</p>
       <button class="btn" id="resumeBtn" type="button">Resume</button>
       <div class="btnRow"><button class="btn soft" id="pSettingsBtn" type="button">Settings</button><button class="btn soft" id="quitBtn" type="button">Main menu</button></div>
+      <button class="btn ghost" id="exitAppBtn" type="button" hidden>Exit game</button>
     </div>
   </div>
 
@@ -892,7 +893,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V74';
+const GAME_VERSION = 'V75';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -3716,7 +3717,9 @@ function showNextCard(){
   $('introStats').innerHTML = stats.map(s => `<span>${s}</span>`).join('');
   prevState = 'play'; state = 'card'; $('intro').hidden = false; sfx('card');
 }
-$('introBtn').onclick = () => { $('intro').hidden = true; state = 'play'; if (cardQueue.length) showNextCard(); };
+$('introBtn').onclick = () => { $('intro').hidden = true; state = 'play'; if (cardQueue.length) showNextCard(); else flyRecapture(); };
+// back to flying from a pop-up on PC: grab the mouse again (the click that closed the pop-up counts as the gesture)
+function flyRecapture(){ if (state === 'play' && PC.on && heliSim() && ((MODE === 'heli' && HM.on && HM.seat === 'pilot') || (DF.on && DF.P))) heliCapture(); }
 
 const KNOCK_COST = [120, 240, 460, 900, 1750, 3400, 6700, 13000, 25500, 50000];
 // weapon levels: 100 first, ×5 each step, the last two steps ×2
@@ -3962,6 +3965,13 @@ cv.addEventListener('wheel', e => {
   if (INPUT.rebind){ rebindTake(code); e.preventDefault(); return; }
   if (state !== 'play') return;
   e.preventDefault();
+  // helicopters: the wheel swaps weapons (rockets ⇄ Hellfire, miniguns ⇄ rocket volley), one step per notch
+  if ((MODE === 'heli' && HM.on) || (DF.on && DF.P)){
+    const now = performance.now(); if (now - (INPUT.wheelT || 0) < 160) return; INPUT.wheelT = now;
+    if (DF.on && DF.P){ DF.sec = !DF.sec; sfx('click'); toast(DF.sec ? 'Hellfire selected' : 'Rockets selected', '#c8ffd0'); }
+    else if (HM.seat === 'pilot') hmSelect(HM.wsel === 'sec' ? 'pri' : 'sec');
+    return;
+  }
   const list = INPUT.map[code] || [];
   for (const a of list){ if (MODE === 'heli' && HM.on && (a === 'prevW' || a === 'nextW')){ HM.climb = a === 'nextW' ? 1 : -1; clearTimeout(INPUT.wT); INPUT.wT = setTimeout(() => { HM.climb = 0; }, 180); } else actPress(a); }
 }, {passive: false});
@@ -4183,8 +4193,10 @@ function autoLand(){ if (!PC.on && SETTINGS.autoLand !== false && !LAND.on && ty
 // so classic flight goes fullscreen and locks the keyboard; elsewhere a leave-page prompt is the safety net
 async function heliCapture(){
   try {
-    if (SETTINGS.heliFull !== false && !document.fullscreenElement && document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen({navigationUI: 'hide'});
-    if (document.fullscreenElement && navigator.keyboard && navigator.keyboard.lock) await navigator.keyboard.lock();
+    // browsers go full screen for classic flight; the Windows app leaves that to F11 so one key turns it on and off
+    if (!(window.AdLordsNative && AdLordsNative.desktop) && SETTINGS.heliFull !== false && !document.fullscreenElement && document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen({navigationUI: 'hide'});
+    // browsers only: Ctrl+W would close the tab. The Windows app has no tabs, and the lock would swallow Alt+F4
+    if (!(window.AdLordsNative && AdLordsNative.desktop) && document.fullscreenElement && navigator.keyboard && navigator.keyboard.lock) await navigator.keyboard.lock();
   } catch(_){}
   try { if (!document.pointerLockElement && cv.requestPointerLock) cv.requestPointerLock(); } catch(_){}
 }
@@ -4249,6 +4261,7 @@ function aiSquadTick(dt){
 }
 // continuous controls from held keys and the controller sticks, every frame
 function inputTick(dt){
+  if (document.pointerLockElement && (state !== 'play' || ['intro', 'choice', 'shop', 'over', 'pause', 'settings', 'confirm', 'title'].some(id => $(id) && !$(id).hidden))) document.exitPointerLock();
   gpPoll(dt); tsTick(); motionPoll(); tiltTick(); lsTick(dt); gyMeterTick();
   if (BH.on && performance.now() - BH.t > 150) bfHudHide();
   aiSquadTick(dt); downdraftTick(); trPreviewTick(dt);
@@ -6192,10 +6205,13 @@ function pauseGame(){
   pausedFrom = state; state = 'paused'; $('pause').hidden = false;
   $('pauseNote').textContent = MODE === 'heli' ? 'The Apache is holding its hover.' : 'Your run is saved each time you clear a wave' + (RUN ? ' (last: wave ' + RUN.wave + ').' : '.');
 }
-function resumeGame(){ $('pause').hidden = true; if (state === 'paused') state = pausedFrom || 'play'; last = performance.now(); }
+function resumeGame(){ $('pause').hidden = true; if (state === 'paused') state = pausedFrom || 'play'; last = performance.now(); flyRecapture(); }
 $('pauseBtn').onclick = pauseGame;
 $('resumeBtn').onclick = resumeGame;
 $('quitBtn').onclick = () => { $('pause').hidden = true; openTitle(); };
+// Windows app: a way out from the pause menu, and Alt+F4 always works
+if (window.AdLordsNative && AdLordsNative.quit){ $('exitAppBtn').hidden = false; $('exitAppBtn').onclick = () => { try { persist(); } catch(_){} AdLordsNative.quit(); }; }
+addEventListener('keydown', e => { if (e.altKey && e.key === 'F4' && window.AdLordsNative && AdLordsNative.quit){ e.preventDefault(); try { persist(); } catch(_){} AdLordsNative.quit(); } }, true);
 document.addEventListener('visibilitychange', () => { if (document.hidden){ if (state === 'play') pauseGame(); } });
 addEventListener('pagehide', () => { if (state === 'play') pauseGame(); });
 // ---- settings ----

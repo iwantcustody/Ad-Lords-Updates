@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('AdLordsNative', {
   installUpdate: () => ipcRenderer.send('ad:install'),
   reload: () => ipcRenderer.send('ad:reload'),
   fullscreen: () => ipcRenderer.send('ad:fullscreen'),
+  quit: () => ipcRenderer.send('ad:quit'),
   // phone-only features: harmless no-ops on a PC
   volume: () => {}, orientation: () => {}, vibrate: () => {},
 });

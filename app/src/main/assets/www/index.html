@@ -1091,7 +1091,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V86';
+const GAME_VERSION = 'V87';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -1359,17 +1359,19 @@ function m134Load(){
 const gunBuf = (v, n) => (v.bank && HS.buf[v.bank + '_' + n]) || M134.buf[n];
 const gunWhole = (v, n) => (v.bank && HS.buf[v.bank + '_' + n]) ? true : M134.whole[n];
 function m134Shot(v, name, vol){
-  const c = AU.ctx, s = c.createBufferSource(), g = c.createGain(); s.buffer = gunBuf(v, name); if (!s.buffer) return null; s.playbackRate.value = v.rate;
+  if (v.bank && !HS.buf[v.bank + '_' + name]) return null;      // a recorded bank plays only its own takes (no generic windup or spin-down mixed in)
+  const c = AU.ctx, s = c.createBufferSource(), g = c.createGain(); s.buffer = gunBuf(v, name); if (!s.buffer) return null; s.playbackRate.value = v.bank ? 1 : v.rate;
   g.gain.value = vol; s.connect(g); g.connect(v.out); const t = c.currentTime; s.start(t);
   // V85: the recorded "stop" runs on into a long hot-barrel hiss; keep only the end of the burst, then spool down
   if (name === 'stop'){ g.gain.setValueAtTime(vol, t + 0.28); g.gain.linearRampToValueAtTime(0.0001, t + 0.5); s.stop(t + 0.55);
-    const b = gunBuf(v, 'spindown'); if (b){ const s2 = c.createBufferSource(), g2 = c.createGain(); s2.buffer = b; s2.playbackRate.value = v.rate; g2.gain.value = vol*0.8; s2.connect(g2); g2.connect(v.out); s2.start(t + 0.22); } }
+    const b = v.bank ? null : gunBuf(v, 'spindown'); if (b){ const s2 = c.createBufferSource(), g2 = c.createGain(); s2.buffer = b; s2.playbackRate.value = v.rate; g2.gain.value = vol*0.8; s2.connect(g2); g2.connect(v.out); s2.start(t + 0.22); } }
   return s;
 }
 function m134Loop(v, name){
+  if (v.bank && !HS.buf[v.bank + '_' + name]) return null;
   const c = AU.ctx, s = c.createBufferSource(), g = c.createGain(); s.buffer = gunBuf(v, name);
   const L = gunWhole(v, name) ? [0, s.buffer.duration] : M134_LOOP[name];
-  s.loop = true; s.loopStart = L[0]; s.loopEnd = L[1]; s.playbackRate.value = v.rate;
+  s.loop = true; s.loopStart = L[0]; s.loopEnd = L[1]; s.playbackRate.value = v.bank ? 1 : v.rate;
   g.gain.setValueAtTime(0.0001, c.currentTime); g.gain.exponentialRampToValueAtTime(1, c.currentTime + 0.03);
   s.connect(g); g.connect(v.out); s.start(c.currentTime, L[0] + Math.random()*(L[1] - L[0]));
   return {s, g};
@@ -1381,7 +1383,7 @@ function gunVoice(id, want, pan = 0, vol = 1, o = null){
   if (!AU.ctx || !M134.ready || !SETTINGS.sound || AU.ctx.state !== 'running') return false;
   { const fp = inFirstPerson(), mine = mineGun(id);
     if (mine && fp){ if (o && o.pos) o = Object.assign({}, o, {pos: null}); if (o && o.bank && o.bank.includes('_3p_')) o = Object.assign({}, o, {bank: null}); }
-    else if (id !== 'player' && id !== 'dg' && !(o && o.bank)) o = Object.assign({}, o || {}, {bank: 'lb_3p_mg'});
+    else if (id !== 'player' && id !== 'dg' && !(o && o.bank)){ o = Object.assign({}, o || {}, {bank: 'lb_3p_mg'}); if (/^(hmai|ebh|dfc|dfw)/.test(id)) id = id.replace(/-?1$/, ''); }      // the take is both guns at once: one voice per aircraft
     if (mine && fp && want === 'fire') AU.duckUntil = AU.ctx.currentTime + 0.3; }
   let v = M134.v[id];
   if (v && o && o.bank && v.bank !== o.bank && !HS.buf[o.bank + '_fire']) hsNeed(o.bank.slice(0, 5));
@@ -1410,7 +1412,7 @@ function m134Tick(){
   const rr = 1 + 0.2*Math.min(2, rateMul - 1);
   for (const id of ids){
     const v = M134.v[id];
-    if (v.loop) v.loop.s.playbackRate.value = v.rate*rr;
+    if (v.loop) v.loop.s.playbackRate.value = v.bank ? 1 : v.rate*rr;
     const want = (now - v.seen < 0.25 && SETTINGS.sound && state === 'play') ? v.want : 'off';
     if (want !== v.state){
       if (want === 'fire'){
@@ -2526,7 +2528,9 @@ function gunLimitsOld(th, ph){
 function dapLimits(th, ph){
   ph = clamp(ph, -1.35, 0.22);      // up: stops short of the rotor blades; down: almost straight down
   // forward and abeam are clear; aft of ~110° the stores are right below the line of fire, so the gun stops there when aiming down
-  th = clamp(th, 0, ph < -0.12 ? 1.92 : 2.75);
+  th = clamp(th, 0, 2.75);
+  // V87: the stub wing and its pods only block a band of elevation aft of ~110 deg; under it (looking well down) or over it you can swing on back
+  if (th > 1.92 && ph < -0.12 && ph > -0.72) ph = ph > -0.42 ? -0.12 : -0.72;
   return [th, ph];
 }
 function aimGun(gun, side, th, ph){ gun.th = th; gun.ph = ph; gun.g.rotation.y = -side*th; gun.pitch.rotation.x = ph; }
@@ -8136,7 +8140,8 @@ function gunSightHud(gun){
   BH.t = performance.now();
   const x = BH.x; x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, W, H);
   gun.g.updateMatrixWorld(true); gun.muzzle.getWorldPosition(_gq); _gd.set(0, 0, -1).transformDirection(gun.pitch.matrixWorld); _gu.set(1, 0, 0).transformDirection(gun.pitch.matrixWorld);
-  const L = 60; _gs1.copy(_gq).addScaledVector(_gd, L).project(camera); _gs2.copy(_gq).addScaledVector(_gd, L).addScaledVector(_gu, L*Math.tan(M134_CONE)).project(camera);
+  const gy = MODE === 'heli' ? 0 : 0.9, L = _gd.y < -0.01 ? Math.min(1500, (_gq.y - gy)/(-_gd.y)) : 900;
+  _gs1.copy(_gq).addScaledVector(_gd, L).project(camera); _gs2.copy(_gq).addScaledVector(_gd, L).addScaledVector(_gu, Math.min(L*Math.tan(M134_CONE), M134_RING)).project(camera);
   if (_gs1.z > 1) return;
   const cx = (_gs1.x + 1)/2*W, cy = (1 - _gs1.y)/2*H, R = Math.max(14, Math.hypot((_gs2.x - _gs1.x)/2*W, (_gs2.y - _gs1.y)/2*H));
   x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 2; x.fillStyle = 'rgba(255,255,255,.92)';
@@ -8722,6 +8727,9 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V87', ['Black Hawk door gun: the sight sits where the rounds actually land again, at any range',
+           'Black Hawk door gun: you can swing aft past the stub wing when you look well down under it (or over it)',
+           'Little Bird outside minigun: your recording plays at its own pitch with only its own start and stop, once per aircraft (it is both guns in one take)']],
   ['V86', ['Missiles: TOWs, Hellfires and AGMs use a real missile model now, smaller than before',
            'PC (High and Ultra): the Desert airfield has a full airport beside the strip: terminal, jet bridge, control tower, warehouses and a second runway']],
   ['V85', ['Apache 30mm: 12-round magazine, one round every 0.1 s and a 1.3 s reload, measured from your BF6 clip; it no longer tops up between bursts',

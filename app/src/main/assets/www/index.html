@@ -1118,7 +1118,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V89';
+const GAME_VERSION = 'V90';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -1254,6 +1254,7 @@ const SFX_GAP = {flarePop: 0.2, imWood: 0.045, imConc: 0.045, imMetal: 0.06, whi
 function sfx(name, vol = 1, pan = 0, own = false, outNode = null){
   if (!AU.ctx || !SETTINGS.sound || AU.ctx.state !== 'running') return;
   if (!auBudget(own || outNode === AU.raw, vol)) return;
+  if (AU.lite && !own && outNode !== AU.raw && SMP_VOL[name] !== undefined) return;      // lite: no far-off recorded impacts
   const c = AU.ctx, t = c.currentTime, gap = SFX_GAP[name] || 0;
   if (gap && AU.last[name] && t - AU.last[name] < gap) return;
   AU.last[name] = t;
@@ -1371,6 +1372,15 @@ function smpLoad(){
     fetch('assets/sfx/' + k + '_' + i + '.mp3').then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
       .then(b => new Promise((res, rej) => AU.ctx.decodeAudioData(b, res, rej))).then(b => { SMP[k].push(b); if (k === 'ambTraffic') ambSet(); }).catch(e => console.warn('sample', k, i, e));
 }
+// V90 lite audio (phones only): in a crowded wave the far-off recorded sounds (other helicopters, their guns, impacts, reverb)
+// step aside for the original short synth blips, so the phone's audio never runs out of breath. It comes back when it calms down.
+const AUL = {t: 0};
+function auLiteTick(dt){
+  if (PC.on){ AU.lite = false; return; }
+  const heavy = en > 240 || DYN.avg > 30 || (AU.busy || 0) > 0.7;
+  AUL.t = clamp(AUL.t + (heavy ? dt : -dt*0.35), 0, 2);
+  if (!AU.lite && AUL.t > 1) AU.lite = true; else if (AU.lite && AUL.t <= 0) AU.lite = false;
+}
 // V89 voice budget: in a big wave hundreds of one-shots a second could pile up until the phone's audio thread choked and
 // went silent. New one-shots draw from a token bucket (yours get a bigger one); when it's empty the quietest ones are skipped.
 const AUB = {w: 18, o: 14, t: 0};
@@ -1434,6 +1444,7 @@ function m134Kill(l, fade = 0.05){ if (!l) return; const t = AU.ctx.currentTime;
 const mineGun = id => id !== 'player' && (OWN_GUNS.has(id) || /^(hmai|dfc|dfw)/.test(id));
 function gunVoice(id, want, pan = 0, vol = 1, o = null){
   if (!AU.ctx || !M134.ready || !SETTINGS.sound || AU.ctx.state !== 'running') return false;
+  if (AU.lite && !mineGun(id) && id !== 'player'){ if (M134.v[id]) M134.v[id].seen = -9; return false; }      // lite: others' guns use the short synth burst
   { const fp = inFirstPerson(), mine = mineGun(id);
     if (mine && fp){ if (o && o.pos) o = Object.assign({}, o, {pos: null}); if (o && o.bank && o.bank.includes('_3p_')) o = Object.assign({}, o, {bank: null}); }
     else if (id !== 'player' && id !== 'dg' && !(o && o.bank)){ o = Object.assign({}, o || {}, {bank: 'lb_3p_mg'}); if (/^(hmai|ebh|dfc|dfw)/.test(id)) id = id.replace(/-?1$/, ''); }      // the take is both guns at once: one voice per aircraft
@@ -1520,6 +1531,7 @@ function reverbInit(){
 function sfxAt(name, x, y, z, vol = 1, ref = 12){
   if (!AU.ctx || !SETTINGS.sound || AU.ctx.state !== 'running') return;
   if (AU.busy > 0.5 && vol < 0.25) return;
+  if (AU.lite){ const S0 = spatial(x, y, z, ref); if (vol*S0.vol > 0.08) sfx(name, vol*S0.vol, S0.pan, false); return; }
   if (!AU.revIn) reverbInit();
   const S = spatial(x, y, z, ref), v = vol*S.vol; if (v < 0.015) return;
   const out = spatChain(S, false);
@@ -1575,6 +1587,7 @@ function hsShot(kind, persp, what, vol = 1, pan = 0, pos = null, ref = 16){
 }
 // looping layers of one helicopter, crossfaded every frame from its flight state
 function hsVoice(id, kind, persp, pos, st){
+  if (AU.lite && pos) return false;      // lite: only your own helicopter keeps its recorded rotor
   const g = kind + '_' + persp; if (!hsNeed(g)) return false;
   const key = id + '|' + persp; let v = HS.voices[key];
   const c = AU.ctx, now = c.currentTime;
@@ -4622,7 +4635,7 @@ const WMAXLV = k => k === 'pistol' ? PISTOL_MAX : 5;
 // weapon upgrades get steep: each level costs ~3.6x the last, stronger guns start higher, and prices climb with the wave
 // (Lv 2 → 5 on the revolver at wave 15 is ~30k coins in total, it used to be ~3.6k)
 const W_UP_BASE = {smg: 140, ar: 180, revolver: 220, bailiff: 200, shotgun: 200, minigun: 260, sniper: 240, grenade: 240, rpg: 300};
-function wUpCost(k){ const step = wlv[k] - 1; return Math.round((W_UP_BASE[k] || 200)*Math.pow(3.6, step)*(1 + 0.08*Math.max(0, wave - 1))/10)*10; }
+function wUpCost(k){ const step = wlv[k] - 1; return Math.round((W_UP_BASE[k] || 200)*Math.pow(3.6, step)/10)*10; }   // V90: no longer climbs with the wave
 const SHOP = [
   {sec: 'Upgrades', id: 'dmg', name: 'Sharper rounds', desc: '+15% damage for every gun and vehicle', cost: l => Math.round(50*Math.pow(1.6, l)), max: 15, buy(){ dmgMul *= 1.15; }},
   {sec: 'Upgrades', id: 'rate', name: 'Quick trigger', desc: '+10% fire rate', cost: l => Math.round(50*Math.pow(1.6, l)), max: 10, buy(){ rateMul *= 1.1; }},
@@ -4631,11 +4644,11 @@ const SHOP = [
   {sec: 'Upgrades', id: 'gunner', name: 'Hire a gunner', desc: '+1 gunner, up to 5', cost: l => Math.round(80*Math.pow(1.8, l)), max: 4, ok: () => gunners.length < 5, buy(){ addGunner(); }},
   {sec: 'Upgrades', id: 'repair', name: 'Repair barricade', desc: '+35 barricade health', cost: () => 30 + wave*4, ok: () => wall < 100, buy(){ wall = Math.min(100, wall + 35); }},
   {sec: 'Upgrades', id: 'gates', name: 'Reinforce gates', desc: 'Rebuild now, +40% gate health', cost: l => Math.round(50*Math.pow(1.5, l)), max: 6, buy(){ for (const g of gates){ g.base = (g.base || 70)*1.4; g.max = g.base; g.hp = g.max; g.broken = false; g.g.visible = true; g.dirty = true; } }},
-  ...WKEYS.filter(k => k !== 'pistol').map(k => ({sec: 'Weapons', id: 'w_' + k, name: WEAPONS[k].name, desc: () => owned[k] ? (ammo[k] < wMax(k) ? '+' + fmt(Math.min(wGive(k), wMax(k) - ammo[k])) + ' ammo (holds ' + fmt(wMax(k)) + ')' : 'Ammo full') : 'Unlock with ' + fmt(wGive(k)) + ' ammo', cost: () => Math.round(WEAPONS[k].price*(1 + 0.12*(wave - 1))), ok: () => !(owned[k] && ammo[k] >= wMax(k)), buy(){ giveWeapon(k, true); }})),
+  ...WKEYS.filter(k => k !== 'pistol').map(k => ({sec: 'Weapons', id: 'w_' + k, name: WEAPONS[k].name, desc: () => owned[k] ? (ammo[k] < wMax(k) ? '+' + fmt(Math.min(wGive(k), wMax(k) - ammo[k])) + ' ammo (holds ' + fmt(wMax(k)) + ')' : 'Ammo full') : 'Unlock with ' + fmt(wGive(k)) + ' ammo', cost: () => WEAPONS[k].price, ok: () => !(owned[k] && ammo[k] >= wMax(k)), buy(){ giveWeapon(k, true); }})),
   ...WKEYS.filter(k => k !== 'pistol').map(k => ({sec: 'Weapon upgrades', id: 'u_' + k, get name(){ return WEAPONS[k].name + ' <small>Lv ' + wlv[k] + '/' + WMAXLV(k) + '</small>'; },
     desc: () => !owned[k] ? 'Get the ' + WEAPONS[k].name + ' first' : wlv[k] >= WMAXLV(k) ? 'Maxed' : '+35% damage (Lv ' + (wlv[k] + 1) + ')',
     cost: () => wUpCost(k), hide: () => !owned[k], isMaxed: () => wlv[k] >= WMAXLV(k), ok: () => owned[k] && wlv[k] < WMAXLV(k), buy(){ if (k === 'pistol') pistolUp(); else { wlv[k]++; toast(WEAPONS[k].name + ' Lv ' + wlv[k], '#ffe6a0'); buildBar(k); } }})),
-  ...Object.entries(VEHICLES).map(([k, V]) => ({sec: 'Vehicles', id: 'v_' + k, name: V.name, desc: V.desc, cost: () => { const n = (STOCK[k] || 0) + vehicles.filter(v => v.type === k && !v.done).length; return Math.round(V.price*(1 + 0.15*(wave - 1))*(1 + 0.3*n + 0.035*n*n)); }, ok: () => (!LAZY.has(k) || (lazyReady[k] && !(k === 'apache' && GS_.on))) && !(k === 'apache' && wave - (shopLv.apacheAt || -9) < 3), buy(){ if (k === 'apache') shopLv.apacheAt = wave; addStock(k, true); toast(V.name + ' added to your call-ins', '#ffd08a'); }})),
+  ...Object.entries(VEHICLES).map(([k, V]) => ({sec: 'Vehicles', id: 'v_' + k, name: V.name, desc: V.desc, cost: () => { const n = (STOCK[k] || 0) + vehicles.filter(v => v.type === k && !v.done).length; return Math.round(V.price*(1 + 0.3*n + 0.035*n*n)); }, ok: () => (!LAZY.has(k) || (lazyReady[k] && !(k === 'apache' && GS_.on))) && !(k === 'apache' && wave - (shopLv.apacheAt || -9) < 3), buy(){ if (k === 'apache') shopLv.apacheAt = wave; addStock(k, true); toast(V.name + ' added to your call-ins', '#ffd08a'); }})),
 ];
 function openShop(){
   if (GS_.on){ gsReset(); $('bottom').hidden = false; }
@@ -5160,7 +5173,7 @@ function inputTick(dt){
   if (document.pointerLockElement && (state !== 'play' || ['intro', 'choice', 'shop', 'over', 'pause', 'settings', 'confirm', 'title'].some(id => $(id) && !$(id).hidden))) document.exitPointerLock();
   gpPoll(dt); tsTick(); motionPoll(); tiltTick(); lsTick(dt); gyMeterTick();
   if (BH.on && performance.now() - BH.t > 150) bfHudHide();
-  aiSquadTick(dt); downdraftTick(); earProTick(); seatHudTick();
+  aiSquadTick(dt); downdraftTick(); earProTick(); seatHudTick(); auLiteTick(dt);
   if (state !== 'play' && state !== 'dying' && AU.ctx && AU.wind){ heliAudioTick(HM, dt); setRotor(0); } trPreviewTick(dt);
   if (state === 'play' && MODE === 'heli' && HM.on) radarTick(dt, HM); else if (state === 'play' && DF.on && DF.P) radarTick(dt, DF.P); else radarHide();
   if (state !== 'play'){ gyroTake(); return; }
@@ -7007,7 +7020,7 @@ try { for (const m of MAPS) RUNS[m] = JSON.parse(localStorage.getItem(runKey(m))
 RUN = RUNS.pier || null;   // LOC starts on the pier; applyLocation swaps in the chosen map's run
 function switchRunMap(from, to){ RUNS[from] = RUN; RUN = RUNS[to] || null; }
 function runSnapshot(){
-  return {v: 4, ts: Date.now(), wave, coins: Math.round(coins), wall: Math.round(wall), dmgMul, rateMul, shopLv: {...shopLv},
+  return {v: 4, pr90: true, ts: Date.now(), wave, coins: Math.round(coins), wall: Math.round(wall), dmgMul, rateMul, shopLv: {...shopLv},
     stock: {...STOCK}, owned: {...owned}, ammo: Object.fromEntries(WKEYS.map(k => [k, ammo[k] === Infinity ? -1 : ammo[k]])), wlv: {...wlv},
     gunners: gunners.length, gateBase: gates[0].base || 70, seen: [...seen], kills, time: Math.round(time)};
 }
@@ -7054,6 +7067,13 @@ function loadRun(r){
   for (const g of gates){ g.base = r.gateBase || 70; g.max = g.base; g.hp = g.max; g.dirty = true; }
   for (const k of r.seen || []) seen.add(k);
   Object.assign(STOCK, r.stock || {}); buildStreaks();
+  // V90: prices stopped climbing with the wave. A run saved before that gets back roughly what the climb cost it
+  // (purchases assumed spread evenly over the waves played so far)
+  if (!r.pr90 && wave > 1){ let back = 0;
+    for (const k of WKEYS){ if (k === 'pistol') continue;
+      if (owned[k]) back += WEAPONS[k].price*0.12*Math.max(0, wave/2 - 1);
+      const n = wlv[k] - 1; for (let s2 = 0; s2 < n; s2++){ const wb = Math.max(1, Math.round(wave*(s2 + 1)/(n + 1))); back += (W_UP_BASE[k] || 200)*Math.pow(3.6, s2)*0.08*(wb - 1); } }
+    back = Math.round(back/10)*10; if (back > 0){ coins += back; setTimeout(() => toast('Price change refund +' + fmt(back) + ' coins', '#ffe6a0'), 900); } }
   syncGuns(); buildBar();
   showShop();
 }
@@ -8798,6 +8818,8 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V90', ['Shop prices no longer climb with the wave: weapons, weapon upgrades and vehicles cost the same every wave (each extra level or extra vehicle still costs more). Runs saved before this get the difference back as coins when you continue',
+           'Phones: when a wave gets crowded, far-off sounds (other helicopters, their guns, impacts, echo) switch to the original short synth sounds so the audio keeps up; your own aircraft and guns keep their recordings']],
   ['V89', ['Black Hawk door gun: no invisible wall when looking down and back',
            'Phones: the flight sticks work again when you fly a called-in helicopter in wave mode',
            'Swiping moves the squad much further: about a third of the screen sweeps the whole width of the play area',

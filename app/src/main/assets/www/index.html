@@ -645,6 +645,7 @@ body.pc .titleFs{display:none}
         <p class="fine">Sound effects by Filip_Hancho_Unltd. · Instagram: <a href="https://www.instagram.com/filip_hancho/" target="_blank" rel="noopener">@filip_hancho</a></p>
         <p class="fine">Little Bird, Black Hawk, Apache and minigun recordings: recorded and cut by the Ad Lords developer</p>
         <p class="fine">Animations: Universal Animation Library by Quaternius (CC0) · Character White rigged with Mixamo</p>
+        <p class="fine">Low Poly Airport by pliotcandle and the Kh-38MT missile model, both from Sketchfab, supplied by the player</p>
         <p class="fine" id="appVer"></p>
       </section>
       <section class="bfPane" data-pane="ctrl">
@@ -1090,7 +1091,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V85';
+const GAME_VERSION = 'V86';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -2230,6 +2231,18 @@ function ambSet(){
   AU.trafficG.gain.setTargetAtTime(desert ? 0.16 : 0, t, 0.6);
   if (desert && !AU.trafficSrc && SMP.ambTraffic && SMP.ambTraffic.length){ const s2 = AU.ctx.createBufferSource(); s2.buffer = SMP.ambTraffic[0]; s2.loop = true; s2.connect(AU.trafficG); s2.start(); AU.trafficSrc = s2; }
 }
+// V86 (PC): the player's low-poly airport (pliotcandle, Sketchfab) stands off the right of the strip: terminal, jet bridge, tower,
+// two warehouses and its own runway, scaled up about 6x. Phones and Standard quality skip it.
+function airportPc(L){
+  const want = PC.on && gfxQ() !== 'standard';
+  if (L.airport){ L.airport.visible = want; return; }
+  if (!want || L.airportLoading || !SKIN_LOAD.load) return; L.airportLoading = true;
+  SKIN_LOAD.load('assets/airport_pc.json').then(gl => {
+    const g = gl.scene; g.scale.setScalar(6); g.position.set(74, -0.02, -70);
+    g.traverse(o => { if (o.isMesh){ o.castShadow = false; o.receiveShadow = true; const m = o.material; if (m && m.name === 'glass'){ m.transparent = true; m.opacity = 0.55; m.depthWrite = false; } } });
+    L.group.add(g); L.airport = g; g.visible = PC.on && gfxQ() !== 'standard';
+  }).catch(e => console.warn('airport', e));
+}
 function applyLocation(name){
   if (!LOC.sets[name]){ if (name === 'airfield') LOC.sets.airfield = buildAirfield(); else name = 'pier'; }
   const animating = PIER.t >= 0;
@@ -2239,6 +2252,7 @@ function applyLocation(name){
   if (mapChanged && state === 'title') refreshTitle();
   for (const k in LOC.sets) LOC.sets[k].group.visible = k === name;
   const L = LOC.sets[name];
+  if (name === 'airfield') airportPc(L);
   PIER.stages = L.stages; PIER.mode = L.mode;
   for (const k in LOC.sets) if (k !== name) for (const st of LOC.sets[k].stages) for (const tg of st.tugs || []) tg.visible = false;
   pierSet(PIER.stage);
@@ -4161,6 +4175,13 @@ function apAimTurret(h, dir){
 const GS_ = {on: false, phase: '', t: 0, dur: 22, ang: 0, aim: new THREE.Vector3(0, 0, -14), shots: [], kills: 0, rockets: 6, hellfires: 4, rkCd: 0, hfCd: 0, fireT: 0, salvo: 0, salvoT: 0, heli: null, cockpit: null, rt: null, gunCam: null, pos: new THREE.Vector3(), dir: new THREE.Vector3(), gun: new THREE.Vector3()};
 const GS_CENTER = new THREE.Vector3(0, 0, -15), GS_R = 14, GS_H = 12, GS_SCALE = 3.4;
 const shotGeo = new S(0.12, 8, 6), missileGeo = new C(0.06, 0.06, 0.7, 8).rotateX(Math.PI/2);
+// V86: a real missile model (Kh-38MT, from the player's packs) for TOWs, Hellfires and AGMs once it has loaded; the old stick until then
+const MSL = {geo: null, mat: null, loading: false};
+function mslLoad(){
+  if (MSL.loading || !SKIN_LOAD.load) return; MSL.loading = true;
+  SKIN_LOAD.load('assets/kh38.json').then(g => { g.scene.traverse(o => { if (o.isMesh && !MSL.geo){ MSL.geo = o.geometry.clone().scale(0.7, 0.7, 0.7); MSL.mat = o.material; } }); }).catch(e => console.warn('missile model', e));
+}
+function missileObj(mat){ if (!MSL.geo) mslLoad(); return new THREE.Mesh(MSL.geo || missileGeo, MSL.geo ? MSL.mat : mat); }
 const tracerMat = new THREE.MeshBasicMaterial({color: 0xfff1a0}), rocketMat = new THREE.MeshBasicMaterial({color: 0xffc070}), hfMat = toon(0xdfe6ee);
 function gsPose(ang){
   // position on the orbit, travel direction, and gun position under the nose
@@ -4242,7 +4263,7 @@ function cannonTick(P, dt){
   return true;
 }
 function gsShoot(kind, from, to, extra){
-  const m = kind === 'cannon' ? tracerObj(2.6, 0.07) : new THREE.Mesh(kind === 'hellfire' ? missileGeo : shotGeo, kind === 'rocket' ? rocketMat : hfMat);
+  const m = kind === 'cannon' ? tracerObj(2.6, 0.07) : kind === 'hellfire' ? missileObj(hfMat) : new THREE.Mesh(shotGeo, kind === 'rocket' ? rocketMat : hfMat);
   m.position.copy(from); scene.add(m);
   if (kind === 'cannon'){ _trX.copy(to).sub(from).normalize(); m.position.addScaledVector(_trX, 2.8); m.lookAt(_trD.copy(m.position).sub(_trX)); }
   const speed = kind === 'cannon' ? 70 : kind === 'rocket' ? 38 : 30;
@@ -6008,7 +6029,7 @@ function hmDamage(d){
   if (HM.hull <= 0){ HM.hull = 0; explode(HM.pos.x, HM.pos.z, 3, 0); chips(HM.pos.x, HM.pos.y, HM.pos.z, SMOKE, 30, 6); setTimeout(() => { if (state === 'dying' && MODE === 'heli') gameOver(); }, 1100); state = 'dying'; HM.firing = false; }
 }
 function hmShoot(kind, from, dir, speed, extra){
-  const m = kind === 'cannon' ? tracerObj(3.2, 0.08) : new THREE.Mesh(kind === 'hellfire' || kind === 'agm' ? missileGeo : shotGeo, kind === 'rocket' ? rocketMat : hfMat);
+  const m = kind === 'cannon' ? tracerObj(3.2, 0.08) : kind === 'hellfire' || kind === 'agm' ? missileObj(hfMat) : new THREE.Mesh(shotGeo, kind === 'rocket' ? rocketMat : hfMat);
   if (kind === 'rocket') m.scale.set(0.8, 0.8, 0.8); else if (kind === 'agm') m.scale.set(0.9, 0.9, 0.9); else if (kind === 'hellfire') m.scale.set(0.7, 0.7, 0.7);
   m.position.copy(from); scene.add(m);
   if (kind === 'cannon'){ _trX.copy(dir).normalize(); m.position.addScaledVector(_trX, 3.6); m.lookAt(_trD.copy(m.position).sub(_trX)); }   // starts clear of the gun sight; streak trails behind the round
@@ -6454,7 +6475,7 @@ function hmUpdate(dt){
     e.missT -= dt;
     if (e.missT <= 0 && wave >= 4){
       e.missT = rnd(9, 14);
-      const m = new THREE.Mesh(missileGeo, toon(0xff6b5b)); m.scale.setScalar(1.3); m.position.copy(e.pos); scene.add(m);
+      const m = missileObj(toon(0xff6b5b)); m.scale.setScalar(1.3); m.position.copy(e.pos); scene.add(m);
       P.emiss.push({m, v: P.pos.clone().sub(e.pos).normalize().multiplyScalar(16), life: 7, missile: true});
       sfx('hellfire', 0.6); P.warnT = 2.5;
     }
@@ -8701,6 +8722,8 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V86', ['Missiles: TOWs, Hellfires and AGMs use a real missile model now, smaller than before',
+           'PC (High and Ultra): the Desert airfield has a full airport beside the strip: terminal, jet bridge, control tower, warehouses and a second runway']],
   ['V85', ['Apache 30mm: 12-round magazine, one round every 0.1 s and a 1.3 s reload, measured from your BF6 clip; it no longer tops up between bursts',
            'Apache rockets: 7 per load, then a reload. Black Hawk / DAP: 4 per load with a bigger blast and the Apache rocket sound',
            'Black Hawk secondary is now the TOW: steer it with your reticle. The Apache gunner AGM uses the TOW recording',
@@ -8781,7 +8804,7 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
   addGunner(); resetArsenal();
   wave = 0;
   (document.fonts && document.fonts.load ? document.fonts.load('40px "Lilita One"') : Promise.resolve()).catch(() => {}).then(redrawLabels);
-  $('loading').hidden = true; MODE = 'def'; applyPC(); loadWeaponModels(); if (lookId() !== 'guard') equipChar(PROFILE.equipped); applyLocation(SETTINGS.location || 'pier'); applyEnemySkin(SETTINGS.enemySkin || 'classic'); bindSettings(); applyGraphics(); openTitle(); cloudInit();
+  $('loading').hidden = true; MODE = 'def'; applyPC(); loadWeaponModels(); mslLoad(); if (lookId() !== 'guard') equipChar(PROFILE.equipped); applyLocation(SETTINGS.location || 'pier'); applyEnemySkin(SETTINGS.enemySkin || 'classic'); bindSettings(); applyGraphics(); openTitle(); cloudInit();
   // heavy vehicles stream in after the menu is up; they only drop once ready
   let gunDone; const gunP = new Promise(r => { gunDone = r; });
   for (const veh of LAZY){

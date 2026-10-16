@@ -13,6 +13,10 @@ html,body{height:100%;margin:0;background:var(--deep);color:var(--ink);overflow:
 #wrap{position:relative;height:100%;max-width:520px;margin:0 auto;background:#bfe6f5;overflow:hidden}
 body.wide #wrap{max-width:none}
 body.pc #fab{display:none!important}
+/* PC: keyboard and mouse only. Touch sticks, on-screen buttons, pen and gyro settings go away; the weapon tiles stay as read-outs */
+body.pc #hm .tools,body.pc #hm .alt,body.pc #df .alt,body.pc #hmStick,body.pc #dfStick,body.pc #lookStick,body.pc #tiltBtn,body.pc #ts,body.pc #tsEdit,body.pc .landBtn,body.pc .tsEditBtn,body.pc #dfView,body.pc #dfExit,body.pc .touchOnly,body.pc #bfTabs [data-tab=gyro]{display:none!important}
+body.pc #hm .act,body.pc #df .act{pointer-events:none}
+body:not(.pc) .pcOnly{display:none!important}
 body.pc #pos{max-width:620px;margin:0 auto;width:100%}
 canvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none}
 #hud{position:absolute;left:0;right:0;top:0;padding:10px 14px 0;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:6px 8px;pointer-events:none;color:#fff}
@@ -629,10 +633,10 @@ body.pc .titleFs{display:none}
         <h3 class="subh">Call-in hotbar</h3>
         <p class="fine">Pick what each slot holds. Slots stay in place and grey out when you have none.</p>
         <div class="hotRow" id="hotSet"></div>
-        <h3 class="subh">Pen</h3>
-        <div class="set"><span>Pen test</span><span id="penDiag" class="pendiag">Hover or press your pen’s button over the game</span></div>
-        <h3 class="subh">Pen tap does…</h3>
-        <div class="set" id="penTapSet"></div>
+        <h3 class="subh touchOnly">Pen</h3>
+        <div class="set touchOnly"><span>Pen test</span><span id="penDiag" class="pendiag">Hover or press your pen’s button over the game</span></div>
+        <h3 class="subh touchOnly">Pen tap does…</h3>
+        <div class="set touchOnly" id="penTapSet"></div>
         <p id="saveNote"></p>
         <div class="set" id="updRow" hidden><span>Updates</span><button class="btn small" id="updCheck" type="button">Check now</button></div>
         <div class="set"><span>Change log</span><button class="btn small" id="newsBtn" type="button">What's new</button></div>
@@ -643,25 +647,28 @@ body.pc .titleFs{display:none}
         <p class="fine" id="appVer"></p>
       </section>
       <section class="bfPane" data-pane="ctrl">
-        <h3 class="subh">Gunner seats (touch)</h3>
+        <h3 class="subh">Gunship</h3>
         <div class="set">
+          <label for="sHf">Gunship flight</label><select id="sHf"><option value="auto">Auto (classic on PC)</option><option value="classic">Classic (Battlefield-style)</option><option value="arcade">Arcade (simple)</option></select>
+        </div>
+        <h3 class="subh touchOnly">Gunner seats (touch)</h3>
+        <div class="set touchOnly">
           <label for="gnAim">Aiming</label><select id="gnAim"><option value="swipe">Swipe to look · FIRE button shoots</option><option value="stick">Look stick · FIRE button shoots</option><option value="swipefire">Swipe to look and fire</option></select>
           <label for="gnSide">Look stick side</label><select id="gnSide"><option value="left">Left thumb</option><option value="right">Right thumb</option></select>
           <label for="gnFloat">Look stick follows your thumb</label><input class="sw" type="checkbox" id="gnFloat">
         </div>
-        <p class="fine">With the look stick you can still swipe the rest of the screen to aim. Volume up also fires in the app.</p>
-        <h3 class="subh">Flying (touch)</h3>
-        <div class="set">
+        <p class="fine touchOnly">With the look stick you can still swipe the rest of the screen to aim. Volume up also fires in the app.</p>
+        <h3 class="subh touchOnly">Flying (touch)</h3>
+        <div class="set touchOnly">
           <label for="tsMode">Touch flying</label><select id="tsMode"><option value="twin">Two sticks (full flight model)</option><option value="single">One stick (simple)</option></select>
           <label for="tsLayout">Stick layout</label><select id="tsLayout"><option value="mode2">Left: collective + yaw · Right: pitch + roll</option><option value="mode1">Left: pitch + yaw · Right: collective + roll</option><option value="swap">Left: pitch + roll · Right: collective + yaw</option></select>
           <label for="tsFloat">Sticks follow your thumb</label><input class="sw" type="checkbox" id="tsFloat">
           <label for="tsSticky">Collective stays where you leave it</label><input class="sw" type="checkbox" id="tsSticky">
           <label for="tsInv">Invert pitch stick</label><input class="sw" type="checkbox" id="tsInv">
-          <label for="sHf">Gunship flight</label><select id="sHf"><option value="auto">Auto (classic on PC)</option><option value="classic">Classic (Battlefield-style)</option><option value="arcade">Arcade (simple)</option></select>
           <span>Positions</span><button class="btn small" id="tsArrange" type="button">Arrange sticks</button>
         </div>
-        <h3 class="subh">Look of the sticks</h3>
-        <div class="set">
+        <h3 class="subh touchOnly">Look of the sticks</h3>
+        <div class="set touchOnly">
           <label for="tsSize">Stick size</label><input type="range" id="tsSize" min="40" max="110" step="2">
           <label for="tsOp">Stick opacity</label><input type="range" id="tsOp" min="0.15" max="1" step="0.05">
         </div>
@@ -669,8 +676,8 @@ body.pc .titleFs{display:none}
         <div class="set"><label for="sMouse">Mouse moves the squad</label><input class="sw" type="checkbox" id="sMouse"></div>
       </section>
       <section class="bfPane" data-pane="sens">
-        <h3 class="subh">Gunner seats</h3>
-        <div class="set">
+        <h3 class="subh touchOnly">Gunner seats</h3>
+        <div class="set touchOnly">
           <label for="gnSwipe">Swipe aim sensitivity</label><input type="range" id="gnSwipe" min="0.2" max="3" step="0.05">
           <label for="gnStick">Look stick sensitivity</label><input type="range" id="gnStick" min="0.2" max="3" step="0.05">
           <label for="gnExpo">Look stick fine aim near centre</label><input type="range" id="gnExpo" min="1" max="3" step="0.05">
@@ -683,8 +690,8 @@ body.pc .titleFs{display:none}
           <label for="agLittle">Little Bird</label><input type="range" id="agLittle" min="0.4" max="1.6" step="0.02">
         </div>
         <p class="fine">How fast each helicopter pitches, rolls and turns. The Apache starts a little calmer than the Black Hawk.</p>
-        <h3 class="subh">Flight sticks</h3>
-        <div class="set">
+        <h3 class="subh touchOnly">Flight sticks</h3>
+        <div class="set touchOnly">
           <label for="tsSens">Cyclic sensitivity (pitch/roll)</label><input type="range" id="tsSens" min="0.3" max="2.5" step="0.05">
           <label for="tsYaw">Yaw sensitivity</label><input type="range" id="tsYaw" min="0.3" max="2.5" step="0.05">
           <label for="tsDead">Dead zone</label><input type="range" id="tsDead" min="0" max="0.35" step="0.01">
@@ -722,6 +729,9 @@ body.pc .titleFs{display:none}
           <label for="sRadar">Air radar in helicopters</label><input class="sw" type="checkbox" id="sRadar">
           <label for="sLite">Light far crowd (faster, rougher)</label><input class="sw" type="checkbox" id="sLite">
           <label for="sMocap">Motion-captured animation (applies on restart)</label><input class="sw" type="checkbox" id="sMocap">
+          <label for="sQual" class="pcOnly">Graphics quality (PC)</label><select id="sQual" class="pcOnly"><option value="ultra">Ultra · bloom, film colour, MSAA, 4K shadows</option><option value="high">High · sharper shadows and textures</option><option value="standard">Standard · same as phones</option></select>
+          <label for="sBloom" class="pcOnly">Bloom strength (Ultra)</label><input type="range" id="sBloom" class="pcOnly" min="0" max="1" step="0.05">
+          <label for="sGrade" class="pcOnly">Film colour (Ultra)</label><input type="range" id="sGrade" class="pcOnly" min="0" max="1" step="0.05">
           <label for="sPc">PC mode (landscape, sharper)</label><select id="sPc"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select>
         </div>
       </section>
@@ -940,6 +950,7 @@ body.pc .titleFs{display:none}
 </script>
 <script src="three.min.js"></script>
 <script src="GLTFLoader.js"></script>
+<script src="postfx.js"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -1066,7 +1077,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V83';
+const GAME_VERSION = 'V84';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -2200,7 +2211,7 @@ function applyLocation(name){
   PIER.stages = L.stages; PIER.mode = L.mode;
   for (const k in LOC.sets) if (k !== name) for (const st of LOC.sets[k].stages) for (const tg of st.tugs || []) tg.visible = false;
   pierSet(PIER.stage);
-  scene.fog.color.setHex(L.fog); scene.fog.near = L.fogR[0]*(PC.on ? 1.3 : 1); scene.fog.far = L.fogR[1]*(PC.on ? 1.35 : 1); renderer.setClearColor(L.fog);
+  scene.fog.color.setHex(L.fog); scene.fog.near = L.fogR[0]*(PC.on ? (gfxQ() === 'ultra' ? 1.5 : 1.3) : 1); scene.fog.far = L.fogR[1]*(PC.on ? (gfxQ() === 'ultra' ? 1.6 : 1.35) : 1); renderer.setClearColor(L.fog);
   SKY.uniforms.uLo.value.setRGB(...L.sky[0]); SKY.uniforms.uHi.value.setRGB(...L.sky[1]);
   for (const gl of gulls) gl.m.visible = L.gulls;
 }
@@ -5683,6 +5694,68 @@ function sync(dt){
 }
 
 // ================= loop =================
+
+// ---- PC graphics quality: Standard (phone look) · High (4K-sharp textures, bigger shadows) · Ultra (+ post-processing) ----
+// Ultra renders through a composer: the scene into a multisampled buffer, a soft bloom for bright things (sun, tracers, flashes,
+// fire), then a film grade (gentle contrast, colour, highlight roll-off, vignette). Phones never touch any of this.
+const GFX = {q: 'standard', comp: null, bloom: null, grade: null, w: 0, h: 0, pr: 0, aniso: 1, anisoT: 0};
+const GRADE_SHADER = {
+  uniforms: {tDiffuse: {value: null}, amt: {value: 0.6}, vig: {value: 0.3}},
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position, 1.0); }',
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float amt, vig; varying vec2 vUv;
+    void main(){
+      vec4 t = texture2D(tDiffuse, vUv); vec3 c = t.rgb;
+      float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+      vec3 g = mix(vec3(l), c, 1.0 + 0.2*amt);                          // a little richer colour
+      g = mix(g, smoothstep(0.0, 1.0, g), 0.3*amt);                      // S-curve contrast
+      g += vec3(0.012, 0.004, -0.012)*amt*(1.0 - l);                      // warm the shadows a touch
+      g = mix(g, g/(1.0 + max(g - 0.9, 0.0)*1.2), amt);                  // roll highlights off instead of clipping
+      float d = distance(vUv, vec2(0.5));
+      g *= 1.0 - vig*amt*smoothstep(0.38, 0.9, d);
+      gl_FragColor = vec4(g, t.a);
+    }`
+};
+const gfxQ = () => !PC.on ? 'standard' : (SETTINGS.gfxQ || 'ultra');
+function gfxBuild(){
+  if (GFX.comp || !THREE.EffectComposer || !THREE.UnrealBloomPass) return !!GFX.comp;
+  const w = Math.max(2, cv.clientWidth), h = Math.max(2, cv.clientHeight);
+  let rt = null;
+  try { if (renderer.capabilities.isWebGL2 && THREE.WebGLMultisampleRenderTarget){ rt = new THREE.WebGLMultisampleRenderTarget(w, h, {format: THREE.RGBAFormat}); rt.samples = 4; } } catch(e){ rt = null; }
+  GFX.comp = new THREE.EffectComposer(renderer, rt || undefined);
+  GFX.comp.addPass(new THREE.RenderPass(scene, camera));
+  GFX.bloom = new THREE.UnrealBloomPass(new THREE.Vector2(w, h), 0.2, 0.22, 0.975); GFX.comp.addPass(GFX.bloom);
+  GFX.grade = new THREE.ShaderPass(GRADE_SHADER); GFX.comp.addPass(GFX.grade);
+  if (!rt && THREE.SMAAPass){ GFX.comp.addPass(new THREE.SMAAPass(w*renderer.getPixelRatio(), h*renderer.getPixelRatio())); }
+  GFX.w = 0; return true;
+}
+function applyQuality(){
+  GFX.q = gfxQ();
+  const ms = GFX.q === 'ultra' ? 4096 : GFX.q === 'high' ? 3072 : PC.on ? 2048 : 1024;
+  if (sun.shadow.mapSize.x !== ms){ sun.shadow.mapSize.set(ms, ms); if (sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map = null; } }
+  sun.shadow.radius = GFX.q === 'standard' ? 1 : 2.2; sun.shadow.bias = GFX.q === 'standard' ? sun.shadow.bias : -0.0004;
+  GFX.aniso = GFX.q === 'standard' ? 1 : Math.min(16, renderer.capabilities.getMaxAnisotropy ? renderer.capabilities.getMaxAnisotropy() : 1); GFX.anisoT = 0;
+  if (GFX.q === 'ultra') gfxBuild();
+  if (GFX.bloom){ GFX.bloom.strength = 0.42*(SETTINGS.gfxBloom ?? 0.55); GFX.bloom.radius = 0.22; }
+  if (GFX.grade) GFX.grade.uniforms.amt.value = SETTINGS.gfxGrade ?? 0.6;
+}
+// sharper textures at grazing angles (the pier boards, the runway, the sea): set on everything that loads, checked every few seconds
+function gfxAniso(dt){
+  if ((GFX.anisoT -= dt) > 0) return; GFX.anisoT = 3;
+  const a = GFX.aniso;
+  scene.traverse(o => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : null; if (!ms) return;
+    for (const m of ms) for (const k of ['map', 'normalMap', 'emissiveMap']){ const t = m[k]; if (t && t.anisotropy !== a){ t.anisotropy = a; t.needsUpdate = true; } } });
+}
+function renderMain(dt){
+  if (GFX.q !== 'standard') gfxAniso(dt);
+  if (GFX.q === 'ultra' && GFX.comp){
+    const w = cv.clientWidth, h = cv.clientHeight, pr = renderer.getPixelRatio();
+    if (w !== GFX.w || h !== GFX.h || pr !== GFX.pr){ GFX.w = w; GFX.h = h; GFX.pr = pr; GFX.comp.setPixelRatio(pr); GFX.comp.setSize(w, h); }
+    // scopes and cockpits already darken their edges; keep the vignette for the open views
+    GFX.grade.uniforms.vig.value = (MODE === 'heli' && HM.on && (HM.seat !== 'pilot' || HM.view === 'cockpit')) || DG.on ? 0 : 0.32;
+    GFX.comp.render(dt); return;
+  }
+  renderer.render(scene, camera);
+}
 let last = performance.now();
 const DYN = {avg: 16, t: 0, scale: 1};
 function dynRes(ms){
@@ -5711,7 +5784,7 @@ function frame(now){
   sync(state === 'play' || state === 'title' || state === 'dying' ? dt : 0);
   hsTick(dt); netTick(dt);
   heliLodTick();
-  if (!(HQ.on && !$('hq').hidden && $('hqCv').style.visibility !== 'hidden')) renderer.render(scene, camera);
+  if (!(HQ.on && !$('hq').hidden && $('hqCv').style.visibility !== 'hidden')) renderMain(dt);
   requestAnimationFrame(frame);
 }
 
@@ -6572,6 +6645,7 @@ function clearStick(){ HM.sx = 0; HM.sy = 0; stickEl.style.display = 'none'; sti
 cv.addEventListener('pointerdown', e => {
   if (MODE !== 'heli' || state !== 'play') return;
   if (e.pointerType === 'mouse' && heliSim()) return;
+  if (e.pointerType === 'pen' && PC.on) return;
   if (e.pointerType === 'pen'){
     penSeen = true;
     if (e.button === 2 || e.button === 5 || (e.buttons & 2) || (e.buttons & 32)){ penFire = true; HM.firing = true; return; }
@@ -6615,6 +6689,7 @@ cv.addEventListener('contextmenu', e => { if (MODE === 'heli') e.preventDefault(
 // Android S Pen / Wacom One: same, or a right-button mouse event, or only a contextmenu (we then hold fire briefly and keep extending).
 const SIDE = {on: false, pulseT: 0, src: ''};
 function sideFire(on, src){
+  if (on && PC.on && (src === 'mouse' || src === 'contextmenu' || SIDE.lastMouse)) return;   // PC: right-click is zoom
   if (on === SIDE.on && !src) return;
   SIDE.on = on; if (src) SIDE.src = src;
   if (MODE === 'heli' && HM.on && state === 'play'){ HM.firing = on; penFire = on; if (on && !SIDE.seen){ SIDE.seen = true; toast('Pen button: fire', '#e8fbff'); } }
@@ -6628,6 +6703,8 @@ function penReport(e){
 }
 for (const ty of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel']){
   addEventListener(ty, e => {
+    SIDE.lastMouse = e.pointerType === 'mouse';
+    if (PC.on && e.pointerType !== 'pen') return;
     if (e.pointerType === 'pen' || e.pointerType === 'mouse' && (e.button === 2 || e.buttons & 2)) penReport(e);
     if (!(MODE === 'heli' || DG.on || DF.on)) return;
     if (e.pointerType === 'touch') return;
@@ -6637,11 +6714,11 @@ for (const ty of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel']){
     else if (SIDE.on && !SIDE.pulseT && ty === 'pointermove' && (e.pointerType === 'pen' || e.pointerType === 'mouse')) sideFire(false);
   }, true);
 }
-addEventListener('mousedown', e => { if (e.button === 2 && ((MODE === 'heli' && !heliSim()) || DG.on)){ sideFire(true, 'mouse'); penReport(e); } }, true);
+addEventListener('mousedown', e => { if (e.button === 2 && !PC.on && ((MODE === 'heli' && !heliSim()) || DG.on)){ sideFire(true, 'mouse'); penReport(e); } }, true);
 addEventListener('mouseup', e => { if (e.button === 2 && SIDE.on && !SIDE.pulseT) sideFire(false); }, true);
 addEventListener('contextmenu', e => {
   penReport(e);
-  if (MODE === 'heli' || DG.on){ e.preventDefault(); if (!SIDE.on || SIDE.pulseT) { SIDE.pulseT = performance.now() + 500; sideFire(true, 'contextmenu'); } }
+  if (MODE === 'heli' || DG.on || DF.on){ e.preventDefault(); if (PC.on) return; if (!SIDE.on || SIDE.pulseT) { SIDE.pulseT = performance.now() + 500; sideFire(true, 'contextmenu'); } }
 }, true);
 function sideTick(){ if (SIDE.pulseT && performance.now() > SIDE.pulseT){ SIDE.pulseT = 0; sideFire(false); } }
 setInterval(sideTick, 100);
@@ -6660,8 +6737,7 @@ function applyPC(){
   const m = SETTINGS.pcMode || 'auto'; PC.on = m === 'on' || (m === 'auto' && detectPC());
   document.body.classList.toggle('pc', PC.on);
   if (PC.on && SETTINGS.mouseMove === undefined) SETTINGS.mouseMove = true;
-  const ms = PC.on ? 2048 : 1024;
-  if (sun.shadow.mapSize.x !== ms){ sun.shadow.mapSize.set(ms, ms); if (sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map = null; } }
+  applyQuality();
   DYN.scale = 1; applyGraphics(); setWide();
 }
 function setWide(){ const on = PC.on || (MODE === 'heli' && HM.on) || DG.on || DF.on || (GS_.on && GS_.phase === 'gun'); if (document.body.classList.contains('wide') !== on){ document.body.classList.toggle('wide', on); resize(); } }
@@ -7791,6 +7867,10 @@ $('sShadows').addEventListener('change', e => { SETTINGS.shadows = e.target.chec
 $('sMocap').addEventListener('change', e => { SETTINGS.mocap = e.target.checked; saveSettings(); toast('Restart the game to re-bake the crowd', '#e8fbff'); });
 $('sHq').addEventListener('change', e => { SETTINGS.hq = e.target.checked; applyGraphics(); saveSettings(); });
 $('sPc').addEventListener('change', e => { SETTINGS.pcMode = e.target.value; saveSettings(); applyPC(); applyLocation(LOC.cur); });
+$('sQual').value = SETTINGS.gfxQ || 'ultra'; $('sBloom').value = SETTINGS.gfxBloom ?? 0.55; $('sGrade').value = SETTINGS.gfxGrade ?? 0.6;
+$('sQual').addEventListener('change', e => { SETTINGS.gfxQ = e.target.value; saveSettings(); applyQuality(); applyLocation(LOC.cur); });
+$('sBloom').addEventListener('input', e => { SETTINGS.gfxBloom = +e.target.value; saveSettings(); applyQuality(); });
+$('sGrade').addEventListener('input', e => { SETTINGS.gfxGrade = +e.target.value; saveSettings(); applyQuality(); });
 $('sHf').addEventListener('change', e => { SETTINGS.heliFlight = e.target.value; saveSettings(); });
 $('sHs').addEventListener('input', e => { SETTINGS.heliSens = +e.target.value; saveSettings(); });
 $('sHi').addEventListener('change', e => { SETTINGS.heliInvert = e.target.checked; saveSettings(); });
@@ -8536,6 +8616,10 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V84', ['PC: new Graphics quality setting. Ultra adds bloom, film colour grading, multisample anti-aliasing, 4K shadows, sharper textures and a longer view',
+           'PC: Bloom strength and Film colour sliders in Settings > Graphics',
+           'PC: touch sticks, on-screen buttons and the pen, gyro and touch settings are hidden; keyboard and mouse only',
+           'PC: right-click is zoom in every seat; it no longer turns on pen controls in the Apache gunner seat']],
   ['V83', ['New main menu: Play, Loadouts, Friends and Recruit along the top',
            'Loadouts: Squad (pick your leader), Appearance (squad outfit and horde look) and Vehicles, with a 3D preview you can spin',
            'Vehicles: customize every vehicle by seat: rockets, missiles, upgrades, door guns, tank shells and more',

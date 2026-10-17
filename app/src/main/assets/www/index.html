@@ -673,6 +673,7 @@ body.pc .titleFs{display:none}
         <p class="fine">Little Bird, Black Hawk, Apache and minigun recordings: recorded and cut by the Ad Lords developer</p>
         <p class="fine">Animations: Universal Animation Library by Quaternius (CC0) · Character White rigged with Mixamo</p>
         <p class="fine">Low Poly Airport by pliotcandle and the Kh-38MT missile model, both from Sketchfab, supplied by the player</p>
+        <p class="fine">M2 Bradley, DShK technical and F/A-18F Super Hornet models from Sketchfab, supplied by the player</p>
         <p class="fine">Zombie models (zombie girl, zombie no. 1) from Sketchfab and zombie animations from Mixamo, supplied by the player</p>
         <p class="fine" id="appVer"></p>
       </section>
@@ -888,6 +889,7 @@ body.pc .titleFs{display:none}
         <div id="mpFriends" class="mpFriends"></div>
         <label class="mpField" id="mpHeliRow">Your aircraft<select id="mpHeli"><option value="apache">AH-64 Apache</option><option value="dap">MH-60L DAP</option><option value="little">AH-6 Little Bird</option></select></label>
         <label class="mpField" id="mpTeamRow">Your team<select id="mpTeam"><option value="0">Gold</option><option value="1">Blue</option></select></label>
+        <label class="mpField" id="mpCdRow">Unit spawn delay<select id="mpCd"><option value="0">Off (send instantly)</option><option value="0.5">Short (half)</option><option value="1" selected>Normal</option><option value="1.5">Long (1.5×)</option><option value="2">Very long (2×)</option></select></label>
         <label class="mpField" id="mpSideRow">Your side<select id="mpSide"><option value="def">Defender (hold the pier)</option><option value="cmd">Commander (send the horde)</option></select></label>
         <button class="btn" id="mpGo" type="button">Start</button>
         <button class="btn soft" id="mpLeave" type="button">Leave room</button>
@@ -1017,7 +1019,11 @@ const ASSETS = {
     // “Minigun M-134” by Nik Vega, CC BY 4.0 — split by its rig into receiver and spinning barrel cluster (metres, barrels along -z)
     m134:      {body: 'assets/m134_body.json', barrels: 'assets/m134_barrels.json', muzzle: -0.69},
     abrams:    {hull: null, turret: null, barrel: null},
-    technical: {truck: null, gun: null},
+    // V94: DShK technical (pickup + 12.7mm DShK); the old built-in truck is only a fallback if the file fails
+    technical: {model: 'assets/veh_technical.json'},
+    // M2 Bradley IFV (turret_lod is the turret + 25mm), F/A-18F Super Hornet (decimated, vertex colours, nose +z, metres)
+    bradley:   {model: 'assets/veh_bradley.json'},
+    jet:       {model: 'assets/fa18.json'},
     bulldozer: {body: null},
     // AH-64D Longbow airframe, crew stations, turret, rotors; stub-wing Hellfire racks and rocket pods from a second AH-64D model.
     // All parts share the hull frame (nose toward -x, ~1.9 units long); AP_RIG holds each part's pivot.
@@ -1038,7 +1044,7 @@ const DAP_MODELS = {
 };
 try { const pick = (JSON.parse(localStorage.getItem('adlords-settings') || '{}').dapLook) || 'pods'; ASSETS.vehicles.dap = {...DAP_MODELS[pick] || DAP_MODELS.pods}; } catch(e){ ASSETS.vehicles.dap = {...DAP_MODELS.pods}; }
 // heavy parts that load in the background after the menu is up
-const LAZY = new Set(['apache', 'blackhawk', 'dap', 'm134', 'little']);
+const LAZY = new Set(['apache', 'blackhawk', 'dap', 'm134', 'little', 'bradley', 'jet']);
 
 // ================= constants =================
 let MAIN = 4; const MAIN0 = 4, MAIN_W = 7.6, MAIN_W2 = 9.12, MOUTH = -30, FAR = -62, GUN_Z = 1.0, BARRICADE_Z = -0.7;
@@ -1104,13 +1110,15 @@ const wMax = k => { const v = Math.round(WEAPONS[k].max*capMul(k)); return k ===
 
 // vehicles: temporary support. Meshes come from ASSETS.vehicles when supplied.
 const VEHICLES = {
-  technical: {name: 'Technical', desc: 'Pickup with a mounted .50 cal on full auto. Rounds go through four girls.', dur: 30, price: 140, weight: 4},
+  technical: {name: 'Technical', desc: 'Pickup with a DShK 12.7mm heavy machine gun in the bed. Rounds go through four of the horde.', dur: 30, price: 140, weight: 4},
   abrams:    {name: 'M1 Abrams', desc: 'Main gun blasts crowds; a .50 cal on the turret aims on its own and punches through lines.', dur: 30, price: 240, weight: 3},
+  bradley:   {name: 'M2 Bradley', desc: '25mm Bushmaster in short explosive bursts, and a TOW missile for the biggest thing on the pier.', dur: 32, price: 300, weight: 2.4},
   blackhawk: {name: 'Black Hawk', desc: 'Hovers off the pier with two M134 door miniguns.', dur: 28, price: 280, weight: 3},
   dap:       {name: 'DAP Black Hawk', desc: 'Armed Black Hawk: circles the thickest part of the horde with door miniguns, wing guns and rocket pods. Take a door gun yourself.', dur: 48, price: 560, weight: 1.2},
   bulldozer: {name: 'Bulldozer', desc: 'Drives up the pier and flattens everything.', dur: 0, price: 110, weight: 5},
   apache:    {name: 'Apache', desc: 'Take the gunner seat: 30mm cannon, rockets and Hellfires. Once every 3 waves.', dur: 38, price: 650, weight: 1.5},
   little:    {name: 'Little Bird', desc: 'Fast AH-6 strafing runs up the pier: twin miniguns and quick rocket volleys.', dur: 26, price: 340, weight: 2.6},
+  jet:       {name: 'F/A-18 Strike', desc: 'A Super Hornet dives in for a 20mm gun run up the thickest part of the horde, then comes back around with bombs.', dur: 14, price: 380, weight: 1.8},
 };
 
 let best = 0;
@@ -1119,7 +1127,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V93';
+const GAME_VERSION = 'V94';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -2306,13 +2314,22 @@ function ambSet(){
 // two warehouses and its own runway, scaled up about 6x. Phones and Standard quality skip it.
 function airportPc(L){
   const want = PC.on && gfxQ() !== 'standard';
-  if (L.airport){ L.airport.visible = want; return; }
+  if (L.airport){ L.airport.visible = want; if (L.jets) L.jets.visible = want; return; }
   if (!want || L.airportLoading || !SKIN_LOAD.load) return; L.airportLoading = true;
   SKIN_LOAD.load('assets/airport_pc.json').then(gl => {
     const g = gl.scene; g.scale.setScalar(6); g.position.set(74, -0.02, -70);
     g.traverse(o => { if (o.isMesh){ o.castShadow = false; o.receiveShadow = true; const m = o.material; if (m && m.name === 'glass'){ m.transparent = true; m.opacity = 0.55; m.depthWrite = false; } } });
     L.group.add(g); L.airport = g; g.visible = PC.on && gfxQ() !== 'standard';
+    airJets(L);
   }).catch(e => console.warn('airport', e));
+}
+// V94: two Super Hornets parked on a concrete pad off the right of the strip
+function airJets(L){
+  SKIN_LOAD.load('assets/fa18.json').then(gl => { if (!L.airport || L.jets) return;
+    const pad = new THREE.Mesh(new THREE.PlaneGeometry(20, 28).rotateX(-Math.PI/2), toon(0x8d8a84)); pad.position.set(22, 0.02, -12); pad.rotation.y = 0.5; pad.receiveShadow = true; L.airport.parent.add(pad);
+    const grp = new THREE.Group(); grp.add(pad);
+    for (const [x, z, yaw] of [[18, -5, 2.4], [26, -17, 2.4]]){ const j = vehToon(gl.scene.clone(true), 1.05); j.scale.setScalar(JET_K); j.position.set(x, 0.02, z); j.rotation.y = yaw; grp.add(j); }
+    L.group.add(grp); L.jets = grp; grp.visible = L.airport.visible; }).catch(e => console.warn('parked jets', e));
 }
 function applyLocation(name){
   if (!LOC.sets[name]){ if (name === 'airfield') LOC.sets.airfield = buildAirfield(); else name = 'pier'; }
@@ -2534,8 +2551,9 @@ function fitModel(src, size, axis){
 const vAdd = (g, geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; g.add(m); return m; };
 function buildTechnical(){
   const g = new THREE.Group(), body = toon(0xe9e2d0), dark = toon(0x2a2d33), glass = toon(0x2a4466), tire = toon(0x1f2126), stripe = toon(0x2e9cc8);
-  if (loadedParts.technical?.truck) g.add(fitModel(loadedParts.technical.truck, 2.6, 'z'));
-  else {
+  const TM = loadedParts.technical?.model;
+  if (TM) return buildDshkTech(TM);
+  {
     vAdd(g, new B(1.4, 0.45, 2.6), body, 0, 0.55, 0);
     vAdd(g, new B(1.3, 0.55, 0.95), body, 0, 1.05, -0.55);
     vAdd(g, new B(1.2, 0.36, 0.04), glass, 0, 1.12, -1.03);
@@ -2553,6 +2571,122 @@ function buildTechnical(){
   const muzzle = new THREE.Object3D(); muzzle.position.set(0, 0.02, -1.15); gun.add(muzzle);
   return {g, gun, muzzle};
 }
+// V94: the DShK technical. Model is 5.2 long, nose +x; turned so the nose faces -z, the 'mount' node (cradle + DShK) swivels
+function vehToon(obj, k, plain = 0x2c2e30){
+  obj.traverse(o => { if (o.isMesh){ const m = o.material, map = m.map, vc = !map && !!(o.geometry.attributes.color); if (map && map.encoding !== THREE.LinearEncoding){ map.encoding = THREE.LinearEncoding; map.needsUpdate = true; }
+    o.material = new THREE.MeshToonMaterial({map, vertexColors: vc, gradientMap: gradSoft, side: THREE.DoubleSide, color: map || vc ? new THREE.Color(k, k, k) : new THREE.Color(plain)}); o.castShadow = true; } });
+  return obj;
+}
+function buildDshkTech(TM){
+  const g = new THREE.Group(), k = 2.6/5.2, inner = vehToon(TM.clone(true), 1.2), h = new THREE.Group();
+  inner.rotation.y = Math.PI/2; h.scale.setScalar(k); h.add(inner); g.add(h);
+  const gun = new THREE.Group(); gun.position.set(0, 1.94*k, 1.42*k); g.add(gun); g.updateMatrixWorld(true);
+  const mount = inner.getObjectByName('mount'); if (mount) gun.attach(mount);
+  const muzzle = new THREE.Object3D(); muzzle.position.set(0, 0, (0.26 - 1.42)*k); gun.add(muzzle);
+  return {g, gun, muzzle};
+}
+// V94: M2 Bradley. Model 6.55 long, gun toward +z; turned to face -z. turret_lod holds the turret and the 25mm
+const BRAD_K = 3.0/6.55;
+function buildBradley(){
+  const g = new THREE.Group(), M = loadedParts.bradley?.model, k = BRAD_K, turret = new THREE.Group(), muzzle = new THREE.Object3D();
+  turret.position.set(0, 2.05*k, 0.4*k); g.add(turret);
+  if (M){ const inner = vehToon(M.clone(true), 1.3), h = new THREE.Group(); inner.rotation.y = Math.PI; h.scale.setScalar(k); h.add(inner); g.add(h); g.updateMatrixWorld(true);
+    const t = inner.getObjectByName('turret_lod'); if (t) turret.attach(t); muzzle.position.set(0.16*k, (2.52 - 2.05)*k, (-2.36 - 0.4)*k); }
+  else { const od = toon(0x55603f), dk = toon(0x2a2d33); vAdd(g, new B(1.5, 0.7, 3.0), od, 0, 0.6, 0); vAdd(turret, new B(1.0, 0.4, 1.0), od, 0, 0.1, 0); vAdd(turret, cylZ(0.05, 1.1, 8), dk, 0.08, 0.2, -1.0); muzzle.position.set(0.08, 0.2, -1.55); }
+  turret.add(muzzle);
+  return {g, turret, muzzle};
+}
+function bradleyUpdate(v, dt, lv){
+  const L = SETTINGS.loadout.bradley || {};
+  v.fireT -= dt; v.fireT2 -= dt; v.tgtT = (v.tgtT || 0) - dt;
+  if (v.tgtT <= 0 || !(v.tgt >= 0 && v.tgt < en && eh[v.tgt] > 0)){ v.tgtT = 0.6; v.tgt = L.main === 'ap25' ? nearestEnemy(v.x, v.z - 2) : densestEnemy(); }
+  const i = v.tgt; if (!(i >= 0 && i < en && eh[i] > 0)) return;
+  const yaw = Math.atan2(-(ex[i] - v.x), -(ez[i] - v.z)); v.turret.rotation.y += (yaw - v.turret.rotation.y)*Math.min(1, dt*6);
+  if (v.fireT <= 0){
+    v.burst = (v.burst || 0) + 1; v.fireT = v.burst % 5 ? 0.3 : 1.1;   // M242 at 200 rounds a minute, five-round bursts
+    const p = v.muzzle.getWorldPosition(_v3), dx = ex[i] - p.x, dz = ez[i] - p.z, d = Math.hypot(dx, dz) || 1;
+    if (L.main === 'ap25') shoot(p.x, 1.0, p.z, p.x + dx/d*60, p.z + dz/d*60, 90, 10*lv, 8, 9, 1.2, 0.01, 3);
+    else { launch('shell', p.x, p.z, dx/d*48 + rnd(-0.8, 0.8), dz/d*48 + rnd(-0.8, 0.8), 15*lv*dmgMul, 1.5, 1.0); const q = projs[projs.length - 1]; q.quiet = true; q.m.scale.setScalar(0.45); }
+    sfx('cannon30', 0.75, v.x/6); v.turret.position.z = 0.4*BRAD_K + 0.05;
+  }
+  v.turret.position.z += (0.4*BRAD_K - v.turret.position.z)*Math.min(1, dt*10);
+  if (L.sec !== 'none' && v.fireT2 <= 0){   // TOW: the boss if there is one, otherwise the thickest crowd
+    v.fireT2 = L.up === 'tow2' ? 6 : 9; const b = bosses[0], j = b ? -1 : densestEnemy(); const tx = b ? b.x : j >= 0 ? ex[j] : ex[i], tz = b ? b.z : j >= 0 ? ez[j] : ez[i];
+    const p = v.turret.getWorldPosition(_v3), dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz) || 1;
+    launch('rocket', p.x - 0.3, p.z, dx/d*26, dz/d*26, 130*lv*dmgMul, 3.2, 1.4); sfx('hellfire', 0.7, v.x/6);
+  }
+}
+// V94: F/A-18 strike. Two runs up the pier from behind the barricade: a 20mm gun run walked through the thickest crowd, then bombs.
+const JET_K = 0.45, JET_V = 62;
+const bombGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.9, 8).rotateX(Math.PI/2);
+function buildJet(){
+  const g = new THREE.Group(), M = loadedParts.jet?.model;
+  if (M){ const inner = vehToon(M.clone(true), 1.05), h = new THREE.Group(); inner.rotation.y = Math.PI; inner.position.y = -1.6; h.scale.setScalar(JET_K); h.add(inner); g.add(h); }
+  else { const gr = toon(0x9aa3ad); vAdd(g, new B(0.8, 0.6, 7.5), gr, 0, 0, 0); vAdd(g, new B(6, 0.12, 2.2), gr, 0, 0, 0.6); vAdd(g, new B(2.6, 0.1, 1.2), gr, 0, 0, 3.2); }
+  const nose = new THREE.Object3D(); nose.position.set(0, -0.1, -3.6); g.add(nose);
+  return {g, nose};
+}
+function jetPass(v){
+  const i = densestEnemy(), b = bosses[0];
+  v.tx = b && v.pass ? b.x : i >= 0 ? ex[i] : 0; v.tz = b && v.pass ? b.z : i >= 0 ? ez[i] : -24;
+  v.x0 = clamp(v.tx*0.5 + rnd(-3, 3), -12, 12); v.dz = 170; v.gunT = 0; v.drop = 0;
+}
+function jetSpawn(v){ Object.assign(v, buildJet()); v.pass = 0; v.wait = 0.6; jetPass(v); v.x = v.x0; v.z = v.tz + v.dz; v.y = 40; }
+function jetY(dz){ return dz > 48 ? 8 + (dz - 48)*0.26 : dz > -14 ? 8 : 8 + (-14 - dz)*0.32; }
+function jetUpdate(v, dt, lv){
+  if (v.wait > 0){ v.wait -= dt; v.g.visible = false; jetSnd(v, 0); return; }
+  v.g.visible = true;
+  const L = SETTINGS.loadout.jet || {}, dz0 = v.dz; v.dz -= JET_V*dt;
+  const dz = v.dz, f = clamp((dz - 20)/150, 0, 1);
+  v.x = v.tx + (v.x0 - v.tx)*f; v.z = v.tz + dz; v.y = jetY(dz);
+  const slope = (jetY(dz + 1) - jetY(dz - 1))/2;
+  v.g.position.set(v.x, v.y, v.z); v.g.rotation.set(-Math.atan(slope), 0, Math.sin(v.t*1.7)*0.05); v.g.updateMatrixWorld(true);
+  if (v.pass === 0 && dz < 58 && dz > 14){            // M61: rounds walked from just short of the crowd to just past it
+    v.gunT -= dt; v.firing = true;
+    while (v.gunT <= 0){ v.gunT += 0.022;
+      const w = (58 - dz)/44, ix = v.tx + rnd(-1.1, 1.1), iz = v.tz + 9 - w*22 + rnd(-0.6, 0.6), p = v.nose.getWorldPosition(_v3);
+      SHOT_FAR = 1; shoot(p.x, p.y, p.z, ix, iz, 160, 1, 1, 5, 2.4, 0, 2, -0.05); SHOT_FAR = 0;
+      const tt = Math.hypot(ix - p.x, iz - p.z, p.y)/(160*(TRS().trSpeed || 1));
+      (v.hits = v.hits || []).push({x: ix, z: iz, t: tt});
+    }
+  } else v.firing = false;
+  for (let k = (v.hits || []).length - 1; k >= 0; k--){ const H = v.hits[k]; H.t -= dt; if (H.t > 0) continue; v.hits.splice(k, 1);
+    if (NET.ghost) continue;
+    for (let j = 0; j < en; j++) if (eh[j] > 0 && Math.abs(ex[j] - H.x) < 1 && Math.abs(ez[j] - H.z) < 1) hurtEnemy(j, 7*lv*dmgMul);
+    for (const b of bosses) if (Math.hypot(b.x - H.x, b.z - H.z) < 2.4){ b.hp -= 5*lv*dmgMul; b.dirty = true; b.hit = 0.1; }
+    if (Math.random() < 0.3) checkBoss(); }
+  if (v.pass === 1){                                   // bombs released ~31 ahead so they fall onto the target
+    const gbu = L.sec === 'gbu', at = gbu ? [31] : [34, 30];
+    for (let k = v.drop; k < at.length; k++) if (dz0 > at[k] && dz <= at[k]){ v.drop++;
+      const m = new THREE.Mesh(bombGeo, toon(0x4a5040)); m.scale.setScalar(gbu ? 1.3 : 1); scene.add(m);
+      const tz = v.tz + (gbu ? 0 : k ? -2.5 : 2.5), T = Math.sqrt(2*v.y/12);
+      (v.bombs = v.bombs || []).push({m, x: v.x, y: v.y, z: v.z, vx: (v.tx + (gbu ? 0 : rnd(-1, 1)) - v.x)/T, vz: (tz - v.z)/T, vy: 0, gbu}); }
+  }
+  for (let k = (v.bombs || []).length - 1; k >= 0; k--){ const b = v.bombs[k];
+    b.vy -= 12*dt; b.x += b.vx*dt; b.y += b.vy*dt; b.z += b.vz*dt; b.m.position.set(b.x, b.y, b.z); b.m.rotation.set(Math.atan2(-b.vy, Math.hypot(b.vx, b.vz))*-1, Math.atan2(-b.vx, -b.vz), 0, 'YXZ');
+    if (b.y <= 0.2){ scene.remove(b.m); v.bombs.splice(k, 1); explode(b.x, b.z, b.gbu ? 5 : 3.8, (b.gbu ? 260 : 130)*lv*dmgMul); shake = Math.max(shake, 0.55); } }
+  jetSnd(v, 1);
+  if (dz < -190){ if (v.pass === 0){ v.pass = 1; v.wait = 2.2; jetPass(v); } else if (!(v.bombs || []).length) v.done = true; }
+}
+// jet noise: filtered noise, louder and brighter as it closes, plus the M61's buzz while it fires
+let JET_NB = null;
+function jetSnd(v, on){
+  if (!AU.ctx || !SETTINGS.sound){ return; }
+  const c = AU.ctx;
+  if (!v.snd && on){
+    if (!JET_NB){ JET_NB = c.createBuffer(1, c.sampleRate*2, c.sampleRate); const d = JET_NB.getChannelData(0); let b = 0; for (let i = 0; i < d.length; i++){ b = b*0.97 + (Math.random()*2 - 1)*0.03; d[i] = b*6 + (Math.random()*2 - 1)*0.25; } }
+    const mk = (type, fq) => { const s = c.createBufferSource(); s.buffer = JET_NB; s.loop = true; const fl = c.createBiquadFilter(); fl.type = type; fl.frequency.value = fq; const g = c.createGain(); g.gain.value = 0; s.connect(fl); fl.connect(g); g.connect(AU.world || AU.sfx); s.start(); return {s, fl, g}; };
+    v.snd = {r: mk('lowpass', 600), w: mk('bandpass', 2400), gun: mk('bandpass', 700)};
+    const lfo = c.createOscillator(), lg = c.createGain(); lfo.type = 'square'; lfo.frequency.value = 100; lg.gain.value = 0.5; lfo.connect(lg); lg.connect(v.snd.gun.g.gain); lfo.start(); v.snd.lfo = lfo;
+  }
+  if (!v.snd) return;
+  const t = c.currentTime, cp = camera.position, d = Math.hypot(v.x - cp.x, v.y - cp.y, v.z - cp.z), closing = (v.z - cp.z) > 0 ? 1 : 0.55;
+  const k = on && !v.done ? clamp(26/(d + 6), 0, 1.2) : 0;
+  v.snd.r.g.gain.setTargetAtTime(k*0.9, t, 0.08); v.snd.w.g.gain.setTargetAtTime(k*0.35*closing, t, 0.08);
+  v.snd.r.fl.frequency.setTargetAtTime(300 + 900*k*closing, t, 0.1); v.snd.w.fl.frequency.setTargetAtTime(1600 + 2400*closing, t, 0.15);
+  v.snd.gun.g.gain.setTargetAtTime(v.firing && on ? clamp(30/(d + 8), 0, 1)*0.8 : 0, t, 0.02);
+}
+function jetSndOff(v){ if (!v.snd) return; try { for (const n of [v.snd.r, v.snd.w, v.snd.gun]) n.s.stop(); v.snd.lfo.stop(); } catch(e){} v.snd = null; }
 function buildAbrams(){
   const g = new THREE.Group(), tan = toon(0xbfa878), tanD = toon(0x8d7a52), dark = toon(0x2a2d33);
   if (loadedParts.abrams?.hull) g.add(fitModel(loadedParts.abrams.hull, 3.2, 'z'));
@@ -2812,8 +2946,8 @@ function rewardIcon(id){
   else if (id === 'gunner'){ const m = new THREE.Mesh(gunnerGeoHi, CHAR); m.scale.setScalar(0.6); m.position.y = -0.5; g.add(m); }
   else if (id === 'pistolup'){ const m = gunModel('pistol'); m.traverse(o => { if (o.isMesh) o.material = goldM; }); m.scale.setScalar(2.2); m.rotation.y = Math.PI/2; m.rotation.z = 0.3; g.add(m); const pl = new THREE.Group(); pl.add(new THREE.Mesh(new B(0.36, 0.1, 0.1), toon(0x6bff7a))); pl.add(new THREE.Mesh(new B(0.1, 0.36, 0.1), toon(0x6bff7a))); pl.position.set(0.3, 0.32, 0); g.add(pl); }
   else if (VEHICLES[id]){
-    const v = id === 'technical' ? buildTechnical().g : id === 'abrams' ? buildAbrams().g : id === 'blackhawk' ? buildBlackhawk().g : id === 'dap' ? buildDap().g : id === 'apache' ? buildApache().g : id === 'little' ? buildLittle().g : plowModel();
-    v.scale.setScalar(id === 'blackhawk' ? 0.3 : id === 'dap' ? 0.26 : id === 'apache' ? 0.75 : id === 'little' ? 0.34 : 0.42); v.position.y = id === 'blackhawk' || id === 'dap' ? -0.1 : id === 'little' ? -0.45 : -0.35; v.rotation.y = 0.6; g.add(v);
+    const v = id === 'technical' ? buildTechnical().g : id === 'bradley' ? buildBradley().g : id === 'jet' ? buildJet().g : id === 'abrams' ? buildAbrams().g : id === 'blackhawk' ? buildBlackhawk().g : id === 'dap' ? buildDap().g : id === 'apache' ? buildApache().g : id === 'little' ? buildLittle().g : plowModel();
+    v.scale.setScalar(id === 'jet' ? 0.13 : id === 'blackhawk' ? 0.3 : id === 'dap' ? 0.26 : id === 'apache' ? 0.75 : id === 'little' ? 0.34 : 0.42); v.position.y = id === 'blackhawk' || id === 'dap' ? -0.1 : id === 'little' ? -0.45 : -0.35; v.rotation.y = 0.6; g.add(v);
   }
   if (id !== 'gunner' && id !== 'blackhawk' && id !== 'dap' && !(id === 'little' && loadedParts.little?.body)) outline(g, 0x6bff7a);
   return g;
@@ -3441,25 +3575,30 @@ function densestEnemy(){
   }
   return best;
 }
-const VSLOT = {technical: [3.0, -2.4], abrams: [-2.9, -2.7]};
+const VSLOT = {technical: [3.0, -2.4], abrams: [-2.9, -2.7], bradley: [2.9, -6.4]};
 let pendingChoice = null;
 
 // ================= call-ins: vehicles and support you hold until you want them =================
 const STOCK = {};
 let _strOn = null;
-const STREAKS = ['technical', 'abrams', 'blackhawk', 'dap', 'little', 'apache', 'bulldozer', 'freeze', 'repair'];
-const STREAK_LABEL = {technical: 'Technical', abrams: 'Abrams', blackhawk: 'Black Hawk', dap: 'DAP', little: 'Little Bird', apache: 'Apache', bulldozer: 'Dozer', freeze: 'Freeze', repair: 'Repair'};
+const STREAKS = ['technical', 'abrams', 'bradley', 'blackhawk', 'dap', 'little', 'apache', 'jet', 'bulldozer', 'freeze', 'repair'];
+const STREAK_LABEL = {technical: 'Technical', abrams: 'Abrams', bradley: 'Bradley', jet: 'F/A-18', blackhawk: 'Black Hawk', dap: 'DAP', little: 'Little Bird', apache: 'Apache', bulldozer: 'Dozer', freeze: 'Freeze', repair: 'Repair'};
 const HELI_SVG = '<path d="M2 6h28M16 6v3"/><path d="M5 13c2-3 6-4 13-4h5c3 0 5 2 5 4s-2 3-5 3H11l-6 1z" fill="currentColor"/><path d="M5 13l-3-3"/>';
 const STREAK_SVG = {
   technical: '<path d="M3 15v-4l5-1 3-4h7v5h10v4z" fill="currentColor"/><circle cx="9" cy="16" r="2.4"/><circle cx="23" cy="16" r="2.4"/><path d="M19 9l7-4"/>',
   abrams: '<path d="M3 16h26l-3 3H6zM7 12h17l3 4H5z" fill="currentColor"/><path d="M13 12V9h7v3M20 10h10"/>',
   little: '<path d="M4 5h24M16 5v3"/><ellipse cx="13" cy="12" rx="6" ry="4" fill="currentColor"/><path d="M19 12h10M28 9v6M8 18h12M10 16v2M17 16v2"/>',
   blackhawk: HELI_SVG, dap: HELI_SVG + '<path d="M12 16v3M20 16v3"/>', apache: '<path d="M3 6h26M16 6v3"/><path d="M4 12c3-2 8-3 14-3h4c3 0 4 2 4 3l-4 2H12L4 13z" fill="currentColor"/><path d="M14 15l-2 3h8l-2-3"/>',
+  bradley: '<path d="M3 16h26l-2 3H5zM5 11h20l3 5H4z" fill="currentColor"/><path d="M12 11V8h7v3M19 9h9M9 8h2"/>',
+  jet: '<path d="M16 1l2 6 9 5v2l-9-2-1 5 3 2v2l-4-1-4 1v-2l3-2-1-5-9 2v-2l9-5z" fill="currentColor"/>',
   bulldozer: '<path d="M8 15V8h9v4h5v3z" fill="currentColor"/><path d="M3 9v8h4"/><circle cx="12" cy="17" r="2"/><circle cx="20" cy="17" r="2"/>',
   freeze: '<path d="M16 2v18M8 6l16 10M24 6L8 16"/>', repair: '<path d="M10 20l9-9M19 4a5 5 0 1 0 5 8z" fill="currentColor"/>',
 };
 function addStock(k, quiet){
   STOCK[k] = (STOCK[k] || 0) + 1;
+  // V94: a call-in that isn't on the hotbar takes an empty slot, or one whose call-in you have none of
+  if (!hotbar().includes(k)){ const h = hotbar().slice(); let j = h.indexOf(''); if (j < 0) j = h.findIndex(t => t && !(STOCK[t] > 0) && t !== 'repair'); if (j < 0) j = h.findIndex(t => t && !(STOCK[t] > 0));
+    if (j >= 0){ h[j] = k; SETTINGS.hotbar = h; saveSettings(); if (typeof renderHotbarSet === 'function') renderHotbarSet(); } }
   if (!quiet){ toast(STREAK_LABEL[k] + ' ready', '#ffd08a'); sfx('reward'); }
   buildStreaks(k);
 }
@@ -3480,7 +3619,7 @@ function deploy(k){
 }
 // call-in hotbar: eight fixed slots, each bound to a call-in type (Settings → Call-in hotbar) and a key (1–8 by default).
 // a slot always shows; with none in stock it's greyed out
-const hotbar = () => { const h = Array.isArray(SETTINGS.hotbar) && SETTINGS.hotbar.length === 8 ? SETTINGS.hotbar : STREAKS.filter(k => k !== 'freeze'); return h; };
+const hotbar = () => { const h = Array.isArray(SETTINGS.hotbar) && SETTINGS.hotbar.length === 8 ? SETTINGS.hotbar : STREAKS.filter(k => k !== 'freeze' && k !== 'bradley' && k !== 'jet'); return h; };
 function buildStreaks(flash){
   const el = $('streaks'); el.innerHTML = '';
   const bn = bindsGet();
@@ -3510,7 +3649,7 @@ function requestVehicle(type){
   }
   $('choiceA').textContent = 'Call another'; $('choiceB').textContent = 'Upgrade current';
   const active = vehicles.filter(v => v.type === type && !v.done && !v.ghost);
-  if (active.length && type !== 'bulldozer'){
+  if (active.length && type !== 'bulldozer' && type !== 'jet'){
     pendingChoice = type; prevState = state; state = 'choice';
     $('choiceTitle').textContent = VEHICLES[type].name;
     $('choiceText').textContent = 'One is already in the fight. Call a second one, or make the current one stronger and last longer?';
@@ -3525,6 +3664,8 @@ function spawnVehicle(type, ghost){
   v.nu = NET.me*100000 + v.uid;       // id other players know this vehicle by
   if (!ghost && NET.on && NET.started) netUp({t: 'veh', type, s: NET.me, u: v.nu, dur: v.dur});
   if (type === 'technical'){ Object.assign(v, buildTechnical()); v.x = VSLOT.technical[0]*(n % 2 ? -1 : 1); v.z = VSLOT.technical[1] - (n > 1 ? 3.2 : 0); v.g.scale.setScalar(0.9); }
+  else if (type === 'bradley'){ Object.assign(v, buildBradley()); v.x = VSLOT.bradley[0]*(n % 2 ? -1 : 1); v.z = VSLOT.bradley[1] - (n > 1 ? 3.6 : 0); v.fireT2 = 3; }
+  else if (type === 'jet') jetSpawn(v);
   else if (type === 'abrams'){ Object.assign(v, buildAbrams()); v.x = VSLOT.abrams[0]*(n % 2 ? -1 : 1); v.z = VSLOT.abrams[1] - (n > 1 ? 3.6 : 0); v.g.scale.setScalar(0.85); }
   else if (type === 'blackhawk'){ Object.assign(v, buildBlackhawk()); v.side = n % 2 ? -1 : 1; v.x = v.side*12; v.z = 4; v.ph = rnd(0, 6); }
   else if (type === 'dap') dapSpawn(v, n);
@@ -3539,7 +3680,7 @@ function spawnVehicle(type, ghost){
   else { v.g = plowModel(); v.x = clamp(cx, -2.6, 2.6); v.z = BARRICADE_Z - 1.6; v.hp = 60 + wave*25; v.max = v.hp; }
   { const up = (SETTINGS.loadout[type] || {}).up;
     if (up === 'durable' || up === 'loiter') v.dur *= 1.4; if (up === 'blade') v.hp = v.max = v.hp*1.6; }
-  v.g.position.set(v.x, type === 'apache' ? v.y : 0, v.z); scene.add(v.g); vehicles.push(v);
+  v.g.position.set(v.x, type === 'apache' || type === 'jet' ? v.y : 0, v.z); scene.add(v.g); vehicles.push(v);
   if (!ghost) toast(V.name + '!', '#ffd08a');
   return v;
 }
@@ -3609,7 +3750,8 @@ function updateVehicles(dt){
         v.fireT -= dt; if (v.fireT <= 0){ const p = v.muzzle.getWorldPosition(_v3);
           if (L.gun === 'm134'){ v.fireT = 0.04; shoot(p.x, 1.1, p.z, ex[i], ez[i], 60, 1.4*lv, 2 + apx, 9, 1.2, 0.04); if (Math.random() < 0.3) sfx('heliGun', 0.35, v.x/6); }
           else if (L.gun === 'mk19'){ v.fireT = 0.34; const dx = ex[i] - p.x, dz = ez[i] - p.z, d = Math.hypot(dx, dz) || 1; launch('grenade', p.x, p.z, dx/d*18, dz/d*18, 16*lv*dmgMul, 2.2); sfx('grenade', 0.6, v.x/6); }
-          else { v.fireT = 0.085; shoot(p.x, 1.1, p.z, ex[i], ez[i], 55, 3.2*lv, 4 + apx, 9); sfx('cal50', 0.8, v.x/6); }   // M2 .50 cal: heavy penetration
+          else if (L.gun === 'cal50'){ v.fireT = 0.085; shoot(p.x, 1.1, p.z, ex[i], ez[i], 55, 3.2*lv, 4 + apx, 9); sfx('cal50', 0.8, v.x/6); }
+          else { v.fireT = 0.1; shoot(p.x, 1.2, p.z, ex[i], ez[i], 58, 3.6*lv, 4 + apx, 9, 1.2, 0.02, 2); sfx('cal50', 0.85, v.x/6); }   // DShK 12.7mm   // M2 .50 cal: heavy penetration
           v.flashT = 0.04; }
       }
     } else if (v.type === 'abrams'){
@@ -3650,6 +3792,8 @@ function updateVehicles(dt){
       continue;
     } else if (v.type === 'little'){ if (DF.on && DF.v === v){ dfFly(v, dt, lv); if (v.t > v.dur){ v.done = true; dfEnd(); } continue; } littleUpdate(v, dt, lv); continue;
     } else if (v.type === 'apache'){ apacheUpdate(v, dt, lv); continue;
+    } else if (v.type === 'bradley'){ bradleyUpdate(v, dt, lv);
+    } else if (v.type === 'jet'){ jetUpdate(v, dt, lv); continue;
     } else if (v.type === 'bulldozer'){
       v.z -= 4.2*((SETTINGS.loadout.bulldozer || {}).up === 'speed' ? 1.4 : 1)*dt;
       for (let i = 0; i < en; i++){
@@ -3668,7 +3812,7 @@ function updateVehicles(dt){
   }
   for (let k = vehicles.length - 1; k >= 0; k--){
     const v = vehicles[k];
-    if (v.done){ if (v.type !== 'bulldozer') chips(v.x, 1.5, v.z, SMOKE, 16, 3); scene.remove(v.g); vehicles.splice(k, 1); netVehGone(v); }
+    if (v.done){ if (v.type === 'jet'){ jetSndOff(v); for (const b of v.bombs || []) scene.remove(b.m); } else if (v.type !== 'bulldozer') chips(v.x, 1.5, v.z, SMOKE, 16, 3); scene.remove(v.g); vehicles.splice(k, 1); netVehGone(v); }
   }
   NET.ghost = false;
 }
@@ -5550,7 +5694,7 @@ function update(dt){
       if (bosses.some(b => Math.hypot(b.x - p.x, b.z - p.z) < 2.4)) boom = true;
     }
     p.m.position.set(p.x, Math.max(0.1, p.y), p.z);
-    if (boom){ explode(p.x, p.z, p.aoe, p.dmg); scene.remove(p.m); projs.splice(k, 1); }
+    if (boom){ explode(p.x, p.z, p.aoe, p.dmg, p.quiet); scene.remove(p.m); projs.splice(k, 1); }
   }
 
   // bullets
@@ -7556,7 +7700,7 @@ function netDrop(P){
   NET.peers.delete(P.id); try { P.pc.close(); } catch(_){}
   if (NET.host){
     const pl = NET.players.find(p => p.slot === P.slot);
-    if (pl){ NET.players = NET.players.filter(p => p !== pl); netAvatarRemove(P.slot); netAll({t: 'roster', players: NET.players, mode: NET.mode}); netAll({t: 'left', slot: P.slot, name: pl.name}); toast(pl.name + ' left', '#ffd2cc'); NET.ready.delete(P.slot); netCheckReady(); }
+    if (pl){ NET.players = NET.players.filter(p => p !== pl); netAvatarRemove(P.slot); netAll({t: 'roster', players: NET.players, mode: NET.mode, cdk: NET.cdk ?? 1}); netAll({t: 'left', slot: P.slot, name: pl.name}); toast(pl.name + ' left', '#ffd2cc'); NET.ready.delete(P.slot); netCheckReady(); }
     mpRender();
   } else if (P.slot === 0){
     // the host is gone: the session is over
@@ -7610,7 +7754,7 @@ function netOnG(P, m){
       P.slot = slot;
       NET.players.push({slot, name: String(m.name || 'Player').slice(0, 14), heli: m.heli || 'apache', team: slot % 2, side: NET.players.filter(p => p.side === 'cmd').length < NET.players.filter(p => p.side === 'def').length ? 'cmd' : 'def', ch: m.ch, ver: m.ver, fc: /^[A-Z2-9]{6}$/.test(m.fc || '') ? m.fc : ''});
       netSend(P, {t: 'welcome', slot, code: NET.code, mode: NET.mode, ver: GAME_VERSION});
-      netAll({t: 'roster', players: NET.players, mode: NET.mode});
+      netAll({t: 'roster', players: NET.players, mode: NET.mode, cdk: NET.cdk ?? 1});
       toast(m.name + ' joined', '#c8ffd0'); sfx('reward'); mpRender();
       if (m.ver && m.ver !== GAME_VERSION) netSend(P, {t: 'note', msg: 'Your game is ' + m.ver + ', the host has ' + GAME_VERSION + '. Update both to the same version.'});
       return;
@@ -7618,8 +7762,8 @@ function netOnG(P, m){
     case 'welcome': NET.me = m.slot; NET.mode = m.mode; netStatus('In room ' + m.code + '. Waiting for the host to start.'); mpRender(); return;
     case 'full': netStatus('That room is full or already playing', true); netLeave(true); mpRender(); return;
     case 'note': toast(m.msg, '#ffe6a0'); return;
-    case 'roster': NET.players = m.players; NET.mode = m.mode; mpRender(); return;
-    case 'set': if (NET.host){ const p = NET.players.find(q => q.slot === P.slot); if (p){ for (const k of ['heli', 'team', 'side', 'ch']) if (m[k] !== undefined) p[k] = m[k]; netAll({t: 'roster', players: NET.players, mode: NET.mode}); mpRender(); } } return;
+    case 'roster': NET.players = m.players; NET.mode = m.mode; if (m.cdk !== undefined) NET.cdk = +m.cdk; mpRender(); return;
+    case 'set': if (NET.host){ const p = NET.players.find(q => q.slot === P.slot); if (p){ for (const k of ['heli', 'team', 'side', 'ch']) if (m[k] !== undefined) p[k] = m[k]; netAll({t: 'roster', players: NET.players, mode: NET.mode, cdk: NET.cdk ?? 1}); mpRender(); } } return;
     case 'start': netBegin(m); return;
     case 'bye': netDrop(P); return;
     case 'left': netAvatarRemove(m.slot); toast(m.name + ' left', '#ffd2cc'); return;
@@ -7664,11 +7808,11 @@ function netStart(){
   if (!NET.host || NET.started) return;
   const M = netMode();
   if (M.cmd && !NET.players.some(p => p.side === 'cmd')){ netStatus('Wave Commander needs at least one commander', true); return; }
-  const msg = {t: 'start', mode: NET.mode, players: NET.players, loc: LOC.cur || SETTINGS.location || 'pier', skin: skinCur || SETTINGS.enemySkin || 'classic'};
+  const msg = {t: 'start', mode: NET.mode, cdk: NET.cdk ?? 1, players: NET.players, loc: LOC.cur || SETTINGS.location || 'pier', skin: skinCur || SETTINGS.enemySkin || 'classic'};
   netAll(msg); netBegin(msg);
 }
 function netBegin(m){
-  NET.started = true; NET.mode = m.mode; NET.players = m.players; socRecent(NET.players); hqClose(); $('invite').hidden = true; NET.ready.clear(); NET.score = {}; NET.cash = 30; NET.lastBy = -1; NET.ucd = {}; NET.shopOpen = false; NET.shopEnd = 0; NET.waitShop = false;
+  NET.started = true; NET.mode = m.mode; if (m.cdk !== undefined) NET.cdk = +m.cdk; NET.players = m.players; socRecent(NET.players); hqClose(); $('invite').hidden = true; NET.ready.clear(); NET.score = {}; NET.cash = 30; NET.lastBy = -1; NET.ucd = {}; NET.shopOpen = false; NET.shopEnd = 0; NET.waitShop = false;
   for (const p of NET.players) NET.score[p.slot] = {k: 0, d: 0};
   const M = netMode(), me = netMe();
   NET.side = M.cmd ? me.side : 'def';
@@ -7737,8 +7881,8 @@ function netTick(dt){
     if (NET.host && left <= 0){ for (const p of NET.players) NET.ready.add(p.slot); netCheckReady(); }
   }
   if (NET.side === 'cmd'){ for (const k in NET.ucd) NET.ucd[k] = Math.max(0, NET.ucd[k] - dt); }
-  // commanders earn nothing while the defenders are shopping
-  if (NET.side === 'cmd'){ if (!NET.shopOpen) NET.cash += dt*(3 + 0.6*wave)*cmdIncomeK(); NET.cmdT = (NET.cmdT || 0) - dt; if (NET.cmdT <= 0){ NET.cmdT = 0.25; mpCmdRender(); } }
+  // V94: commanders keep earning while the defenders are shopping
+  if (NET.side === 'cmd'){ NET.cash += dt*(3 + 0.6*wave)*cmdIncomeK(); NET.cmdT = (NET.cmdT || 0) - dt; if (NET.cmdT <= 0){ NET.cmdT = 0.25; mpCmdRender(); } }
   NET.hudT = (NET.hudT || 0) - dt; if (NET.hudT <= 0){ NET.hudT = 0.5; mpHud(); }
 }
 
@@ -7977,7 +8121,7 @@ function mpRender(){
   const M = netMode();
   $('mpCode').textContent = NET.code; $('mpModeName').textContent = M.name; $('mpModeDesc').textContent = M.desc;
   $('mpModeSel').hidden = !NET.host; $('mpModeSel').value = NET.mode; $('mpGo').hidden = !NET.host; $('mpGo').disabled = NET.players.length < 2 && !SETTINGS.mpSolo;
-  $('mpHeliRow').hidden = M.kind !== 'heli'; $('mpSideRow').hidden = !M.cmd; $('mpTeamRow').hidden = !M.teams;
+  $('mpHeliRow').hidden = M.kind !== 'heli'; $('mpSideRow').hidden = !M.cmd; $('mpCdRow').hidden = !M.cmd; $('mpCd').value = String(NET.cdk ?? 1); $('mpCd').disabled = !NET.host; $('mpTeamRow').hidden = !M.teams;
   const me = netMe(); $('mpHeli').value = me.heli || 'apache'; $('mpSide').value = me.side || 'def'; $('mpTeam').value = String(me.team || 0);
   $('mpList').innerHTML = NET.players.map(p => `<li style="--c:${MP_COLS[p.slot % 4]}"><b>${p.name.replace(/[<>&]/g, '')}</b>${p.slot === 0 ? '<i>host</i>' : ''}${p.slot === NET.me ? '<i>you</i>' : ''}<span>${M.kind === 'heli' ? ({apache: 'Apache', dap: 'DAP', little: 'Little Bird'})[p.heli] || '' : ''}${M.teams ? ' · team ' + (p.team ? 'Blue' : 'Gold') : ''}${M.cmd ? (p.side === 'cmd' ? 'commander' : 'defender') : ''}</span></li>`).join('') +
     Array.from({length: Math.max(0, M.max - NET.players.length)}, () => '<li class="open">open slot</li>').join('');
@@ -7985,7 +8129,7 @@ function mpRender(){
 function mpSet(k, v){
   const me = NET.players.find(p => p.slot === NET.me); if (me) me[k] = v;
   if (k === 'heli'){ SETTINGS.mpHeli = v; saveSettings(); }
-  if (NET.host){ netAll({t: 'roster', players: NET.players, mode: NET.mode}); mpRender(); } else netSend(netHostPeer(), {t: 'set', [k]: v});
+  if (NET.host){ netAll({t: 'roster', players: NET.players, mode: NET.mode, cdk: NET.cdk ?? 1}); mpRender(); } else netSend(netHostPeer(), {t: 'set', [k]: v});
 }
 function mpHud(){
   const el = $('mpHud'); if (!el || el.hidden) return;
@@ -8003,10 +8147,10 @@ function mpCmdRender(){
   el.querySelectorAll('button').forEach(b => { const k = b.dataset.u, U = MP_UNITS[k], cd = NET.ucd[k] || 0; b.disabled = NET.cash < U.cost || (U.wave && wave < U.wave) || cd > 0; b.querySelector('small').textContent = cd > 0 ? cd.toFixed(cd < 1 ? 1 : 0) + 's' : U.cost + (k === 'swarm' ? ' · pack' : ''); });
   $('mpCash').textContent = Math.floor(NET.cash);
 }
-function netCmdShopBonus(){ const b = Math.round((25 + 5*wave)*cmdIncomeK()); NET.cash += b; toast('Wave ' + wave + ' over · +' + b + ' budget · defenders are shopping (no income)', '#ffe6a0'); }
+function netCmdShopBonus(){ const b = Math.round((25 + 5*wave)*cmdIncomeK()); NET.cash += b; toast('Wave ' + wave + ' over · +' + b + ' budget · defenders are shopping', '#ffe6a0'); }
 function mpCmdBuy(role){
   const U = MP_UNITS[role]; if (!U || NET.cash < U.cost || (NET.ucd[role] || 0) > 0) return;
-  NET.cash -= U.cost; NET.ucd[role] = U.cd || 0; sfx('buy');
+  NET.cash -= U.cost; NET.ucd[role] = (U.cd || 0)*(NET.cdk ?? 1); sfx('buy');
   const lane = +$('mpLane').value || 0, x = lane*halfW(FAR)*0.6;
   const msg = {t: 'send', role, n: 1, x};
   if (NET.host) netSpawnUnits(NET.me, msg); else netSend(netHostPeer(), msg);
@@ -8021,7 +8165,8 @@ $('mpHostBtn').onclick = () => { SETTINGS.mpName = $('mpName').value.trim().slic
 $('mpJoinBtn').onclick = () => { SETTINGS.mpName = $('mpName').value.trim().slice(0, 14) || 'Player'; saveSettings(); netJoin($('mpJoinCode').value); };
 $('mpJoinCode').addEventListener('keydown', e => { if (e.key === 'Enter') $('mpJoinBtn').click(); e.stopPropagation(); });
 $('mpName').addEventListener('keydown', e => e.stopPropagation());
-$('mpModeSel').onchange = e => { if (!NET.host) return; NET.mode = e.target.value; netAll({t: 'roster', players: NET.players, mode: NET.mode}); mpRender(); };
+$('mpCd').onchange = e => { if (!NET.host) return; NET.cdk = +e.target.value; netAll({t: 'roster', players: NET.players, mode: NET.mode, cdk: NET.cdk}); mpRender(); };
+$('mpModeSel').onchange = e => { if (!NET.host) return; NET.mode = e.target.value; netAll({t: 'roster', players: NET.players, mode: NET.mode, cdk: NET.cdk ?? 1}); mpRender(); };
 $('mpHeli').onchange = e => mpSet('heli', e.target.value);
 $('mpTeam').onchange = e => mpSet('team', +e.target.value);
 $('mpSide').onchange = e => mpSet('side', e.target.value);
@@ -8426,7 +8571,9 @@ Object.assign(LO_OPTS.up, {
   crew: {name: 'Veteran crew', desc: 'The door guns hit 25% harder.'},
   blade: {name: 'Reinforced blade', desc: 'Pushes through 60% more before it breaks.'},
   speed: {name: 'Uprated engine', desc: 'Drives up the pier 40% faster.'}});
-LO_OPTS.gun = {cal50: {name: 'M2 .50 cal', sub: 'Heavy machine gun', desc: 'Steady fire; each round goes through four of the horde.'},
+LO_OPTS.gun = {dshk: {name: 'DShK', sub: '12.7mm heavy MG', desc: 'The truck’s own gun. Heavy rounds; each one goes through four of the horde.'},
+  m61: {name: 'M61 Vulcan', sub: '20mm rotary', desc: 'The gun run: 6,000 rounds a minute walked through the crowd.'},
+  cal50: {name: 'M2 .50 cal', sub: 'Heavy machine gun', desc: 'Steady fire; each round goes through four of the horde.'},
   m134: {name: 'M134 Minigun', sub: '7.62mm rotary', desc: 'A wall of lead: very fast, lighter rounds.'},
   mk19: {name: 'Mk 19', sub: '40mm grenade launcher', desc: 'Lobs grenades into the thick of the horde. Slow, but every one splashes.'}};
 LO_OPTS.main = {heat: {name: 'HEAT shell', sub: '120mm', desc: 'A big blast where it lands.'},
@@ -8438,11 +8585,16 @@ LO_OPTS.cannon = {m230: {name: 'M230 chain gun', sub: '30mm', desc: 'The front s
 LO_SLOTS.apache.pri.push('heavy'); LO_SLOTS.apache.up.push('warheads'); LO_SLOTS.apache.cannon = ['m230'];
 LO_SLOTS.dap.pri.push('heavy'); LO_SLOTS.dap.up.push('warheads'); LO_SLOTS.dap.door = ['m134'];
 LO_SLOTS.little.pri.push('gau19'); LO_SLOTS.little.up.push('warheads');
-Object.assign(LO_SLOTS, {technical: {gun: ['cal50', 'm134', 'mk19'], up: ['none', 'durable', 'ap']}, abrams: {main: ['heat', 'canister', 'sabot'], coax: ['cal50', 'm240'], up: ['none', 'durable']},
+Object.assign(LO_OPTS.main, {he25: {name: 'M242 HEI-T', sub: '25mm', desc: 'Explosive bursts into the thickest crowd.'}, ap25: {name: 'M242 APDS', sub: '25mm', desc: 'Armour-piercing bursts at the closest enemies; each round goes through a line of them.'}});
+Object.assign(LO_OPTS.sec, {tow: {name: 'TOW', sub: 'BGM-71', desc: 'Every 9 s, at the boss if there is one.'}, none: {name: 'None', desc: 'No missiles.'},
+  mk82: {name: 'Mk 82 ×2', sub: '500 lb bombs', desc: 'Two bombs either side of the crowd.'}, gbu: {name: 'GBU-12', sub: 'Laser-guided', desc: 'One heavier bomb dead on the target (the boss if there is one).'}});
+Object.assign(LO_OPTS.up, {tow2: {name: 'Fast reload', desc: 'A TOW every 6 s.'}});
+Object.assign(LO_SLOTS, {technical: {gun: ['dshk', 'cal50', 'm134', 'mk19'], up: ['none', 'durable', 'ap']}, bradley: {main: ['he25', 'ap25'], sec: ['tow', 'none'], up: ['none', 'durable', 'tow2']}, jet: {gun: ['m61'], sec: ['mk82', 'gbu']}, abrams: {main: ['heat', 'canister', 'sabot'], coax: ['cal50', 'm240'], up: ['none', 'durable']},
   blackhawk: {door: ['m134', 'm240'], up: ['none', 'loiter', 'crew']}, bulldozer: {up: ['none', 'blade', 'speed']}});
 // rocket modifiers from the loadout: heavy rockets hit harder and fire slower; heavy warheads widen the blast
 function loRkt(t){ const L = SETTINGS.loadout[t] || {}, heavy = L.pri === 'heavy'; return {dmgK: heavy ? 2.2 : 1, aoeK: (heavy ? 1.4 : 1)*(L.up === 'warheads' ? 1.35 : 1), rateK: heavy ? 2.2 : 1}; }
 SETTINGS.loadout = SETTINGS.loadout || {};
+if (!SETTINGS.v94tech){ SETTINGS.v94tech = true; SETTINGS.loadout.technical = Object.assign({}, SETTINGS.loadout.technical || {}, {gun: 'dshk'}); }   // V94: the DShK is the technical's gun now
 if (!SETTINGS.v85dap){ SETTINGS.v85dap = true; SETTINGS.loadout.dap = Object.assign({}, SETTINGS.loadout.dap || {}, {sec: 'ghf'}); }   // V85: the DAP carries TOWs
 for (const [t, sl] of Object.entries(LO_SLOTS)){ SETTINGS.loadout[t] = Object.assign({}, ...Object.entries(sl).map(([k, o]) => ({[k]: o[0]})), SETTINGS.loadout[t] || {});
   for (const k in sl) if (!sl[k].includes(SETTINGS.loadout[t][k])) SETTINGS.loadout[t][k] = sl[k][0]; }
@@ -8484,6 +8636,7 @@ const ICO = {
   tank: '<svg viewBox="0 0 56 34"><path d="M6 24h38l4-6H10z"/><path d="M16 18l3-6h16l3 6M30 13h22"/><circle cx="12" cy="28" r="3"/><circle cx="20" cy="28" r="3"/><circle cx="28" cy="28" r="3"/><circle cx="36" cy="28" r="3"/><circle cx="44" cy="28" r="3"/></svg>',
   truck: '<svg viewBox="0 0 56 34"><path d="M4 24V16h22l6-8h12l6 8h2v8z"/><circle cx="14" cy="26" r="4"/><circle cx="42" cy="26" r="4"/><path d="M10 16V8h8M14 8V5"/></svg>',
   heli: '<svg viewBox="0 0 56 34"><path d="M4 6h48M28 6v6"/><path d="M14 18c0-4 4-6 10-6h8c6 0 10 3 10 7s-4 6-10 6H22c-5 0-8-3-8-7z"/><path d="M42 18h10l2-4M24 25l-2 5h14l-2-5"/></svg>',
+  jet: '<svg viewBox="0 0 56 34"><path d="M4 17h30l14-4 4 4-4 4-14-4"/><path d="M18 17l-8-12h5l12 12-12 12h-5z"/><path d="M6 17l-3-6h3l4 6-4 6H3z"/></svg>',
   dozer: '<svg viewBox="0 0 56 34"><path d="M16 22V10h14l4 6h8v6z"/><path d="M4 8v18l8-2V12z"/><circle cx="22" cy="27" r="3"/><circle cx="38" cy="27" r="3"/><path d="M19 30h22"/></svg>',
   rocket: '<svg viewBox="0 0 56 34"><path d="M6 17h36l8-4v8l-8-4M12 13v8M18 13v8"/></svg>',
   missile: '<svg viewBox="0 0 56 34"><path d="M4 17h40l6-3v6l-6-3M14 11l4 6-4 6M30 13v8"/></svg>',
@@ -8495,6 +8648,8 @@ const ICO = {
 const VEH_INFO = {
   technical: {cls: 'Technical', seats: 2, tags: ['Anti-Soldier', 'Light Vehicle'], ico: 'truck', seat: {gunner: ['gun', 'up']}, desc: 'A pickup with a pintle-mounted gun. Parks at the barricade and chews through the front of the horde.'},
   abrams:    {cls: 'Main Battle Tank', seats: 2, tags: ['Anti-Vehicle', 'Hard Target'], ico: 'tank', seat: {driver: ['main', 'up'], gunner: ['coax']}, desc: 'Built for the biggest targets, but it flattens crowds too. The commander’s gun aims itself.'},
+  bradley:   {cls: 'Infantry Fighting Vehicle', seats: 3, tags: ['Anti-Soldier', 'Anti-Vehicle'], ico: 'tank', seat: {gunner: ['main', 'sec', 'up']}, desc: 'Parks up the pier and works the horde over with 25mm bursts. Its TOW goes for the boss.'},
+  jet:       {cls: 'Strike Fighter', seats: 2, tags: ['Air Strike', 'Crowd Control'], ico: 'jet', seat: {driver: ['gun', 'sec']}, desc: 'Two passes and gone: a 20mm gun run walked through the thickest crowd, then bombs on the same spot (or the boss).'},
   blackhawk: {cls: 'Transport Helicopter', seats: 4, tags: ['Transport', 'Door Guns'], ico: 'heli', seat: {driver: ['up'], gunner: ['door']}, desc: 'Hovers off the pier while two side-mounted guns cover the lanes. Fly it yourself, or take a door gun.'},
   dap:       {cls: 'Armed Black Hawk', seats: 4, tags: ['Anti-Soldier', 'Anti-Vehicle'], ico: 'heli', seat: {driver: ['pri', 'sec', 'cm', 'up'], gunner: ['door']}, desc: 'Wing guns, rocket pods and two door miniguns. The pilot works the pods; the crew works the guns.'},
   apache:    {cls: 'Attack Helicopter', seats: 2, tags: ['Anti-Vehicle', 'Anti-Soldier'], ico: 'heli', seat: {driver: ['pri', 'sec', 'cm', 'up'], gunner: ['cannon']}, desc: 'Highly effective against everything on the ground, especially when both crew positions are manned.'},
@@ -8653,6 +8808,8 @@ function hqVehModel(t){
   if (t === 'blackhawk' || t === 'dap' || t === 'little'){ if (!lazyReady.m134) return null; }
   if (t === 'technical') return buildTechnical().g;
   if (t === 'abrams') return buildAbrams().g;
+  if (t === 'bradley') return buildBradley().g;
+  if (t === 'jet'){ const b = buildJet(); b.g.scale.setScalar(0.42); b.g.position.y = 0.9; return b.g; }
   if (t === 'blackhawk') return buildBlackhawk().g;
   if (t === 'dap') return buildDap().g;
   if (t === 'little'){ const b = buildLittle(); b.hull.scale.setScalar(0.36); return b.g; }
@@ -8847,6 +9004,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V94', ['New call-ins: M2 Bradley (25mm bursts + a TOW for the boss) and an F/A-18 strike (a 20mm gun run, then bombs)', 'The Technical is now a pickup with a DShK 12.7mm in the bed (the old built-in truck is gone)', 'Airfield (PC High/Ultra): two Super Hornets parked off the strip', 'Wave Commander: commanders keep earning while the defenders shop', 'Wave Commander: the host picks the unit spawn delay in the lobby (off, short, normal, long, very long)', 'Call-ins that aren\'t on your hotbar take an empty slot (or one you have none of) when you get them']],
   ['V93', ['New horde look: Zombies (Loadouts > Appearance, or Settings). Soldiers, runners, packs, bloaters, lungers and an alpha, all shambling with your Mixamo zombie walks']],
   ['V92', ['Rocket reticle: it still drifts with your momentum, but only about a third as far, and snaps back as soon as you stop or change direction']],
   ['V91', ['Apache 30mm gunner: fixed firing twice as fast as it should (one round every 0.1 s, as measured)',

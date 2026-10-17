@@ -115,7 +115,7 @@ body.pc #hm .act,body.pc #df .act{pointer-events:none}
 body.pad #ts,body.pad #hmStick,body.pad #hm .alt,body.pad #hm .act,body.pad #dfStick,body.pad #lookStick,body.pad .tsEditBtn,body.pad #df .act{display:none!important}
 #hm .act.ovl{display:block;position:static}#hm .act.ovl button{position:fixed;border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important;color:transparent!important;min-width:0!important;min-height:0!important;padding:0!important;border-radius:6px}#hm .act.ovl button:active{background:rgba(255,255,255,.12)!important}
 body:not(.pc) .pcOnly{display:none!important}
-body.pc #pos{max-width:620px;margin:0 auto;width:100%}
+body.pc #pos,body.tab #pos{max-width:620px;margin:0 auto;width:100%}
 canvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none}
 #hud{position:absolute;left:0;right:0;top:0;padding:10px 14px 0;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:6px 8px;pointer-events:none;color:#fff}
 #hud .l,#hud .r{font-family:var(--display);font-size:20px;line-height:1.05;text-shadow:0 2px 0 rgba(11,42,60,.55)}
@@ -150,8 +150,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #hurt{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 80px 20px rgba(255,80,70,.7);opacity:0;transition:opacity .25s}
 #frost{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 90px 30px rgba(150,220,255,.85);opacity:0;transition:opacity .3s}
 #streaks{position:absolute;right:6px;top:21%;display:grid;grid-template-columns:repeat(2,52px);gap:6px;z-index:3}
-body.pc #streaks{right:14px;top:20%;grid-template-columns:repeat(2,66px);gap:8px}
-body.pc .streak{min-height:58px}
+body.pc #streaks,body.tab #streaks{right:14px;top:20%;grid-template-columns:repeat(2,66px);gap:8px}
+body.pc .streak,body.tab .streak{min-height:58px}
 body.nostreak #streaks{display:none}
 .streak{position:relative;width:100%;min-height:50px;padding:6px 2px 4px;border-radius:12px;border:2px solid #ffd08a;background:rgba(40,24,4,.72);color:#ffd08a;font-family:var(--display);font-size:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;box-shadow:0 3px 0 rgba(0,0,0,.35)}
 .streak svg{width:34px;height:23px}
@@ -162,7 +162,7 @@ body.nostreak #streaks{display:none}
 .streak.none{opacity:.18;border-style:dashed}
 .streak i{position:absolute;top:2px;left:4px;font-style:normal;font-family:var(--body);font-weight:800;font-size:9px;color:#fff;opacity:.85}
 .streak span{font-size:9.5px;line-height:1.05;text-align:center}
-body.pc .streak span{font-size:11px}
+body.pc .streak span,body.tab .streak span{font-size:11px}
 .hotRow{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;text-align:left;font-size:13px}
 .streak.new{animation:streakIn .6s ease-out}
 @keyframes streakIn{0%{transform:scale(1.5)}100%{transform:scale(1)}}
@@ -229,7 +229,7 @@ body.pc .streak span{font-size:11px}
 .bfPane{display:none}.bfPane.on{display:block}
 .senTabs{display:flex;gap:4px;margin:12px 0 4px;border-bottom:1px solid rgba(255,255,255,.1)}.senTabs button{background:none;border:0;border-bottom:2px solid transparent;color:rgba(230,238,242,.6);font:800 12px var(--body);letter-spacing:1px;text-transform:uppercase;padding:7px 10px;cursor:pointer}.senTabs button.on{color:#fff;border-bottom-color:var(--gold)}
 .senPane{display:none}.senPane.on{display:block}body.pc .senTabs .touchOnly{display:none}
-.pcWrap{position:relative;width:100%;max-width:520px;margin:8px auto;border-radius:10px;overflow:hidden;background:#000}.pcWrap img{display:block;width:100%;height:auto}.pcWrap svg{position:absolute;inset:0;width:100%;height:100%}
+.pcWrap{position:relative;width:100%;max-width:520px;margin:8px auto;border-radius:10px;overflow:hidden;background:#0d1419}.pcWrap img{display:block;width:100%;height:auto}.pcWrap svg{position:absolute;inset:0;width:100%;height:100%}
 #pcSvg .hs{fill:rgba(120,220,255,0);stroke:rgba(255,255,255,.0);cursor:pointer}#pcSvg .hs.on{fill:rgba(255,210,80,.75)}#pcSvg .hs.ask{stroke:#ffd34d;stroke-width:6;fill:rgba(255,211,77,.18)}#pcSvg .hs.ok{fill:rgba(90,230,120,.7)}#pcSvg .hs.bad{fill:rgba(255,90,80,.7)}
 #pcSvg .dz{fill:rgba(255,80,80,.18);stroke:rgba(255,120,120,.6);stroke-width:3}#pcSvg .dot{fill:#ffd34d;stroke:#000;stroke-width:3}#pcSvg .bar{fill:rgba(255,210,80,.85)}
 
@@ -271,8 +271,8 @@ body.pc .streak span{font-size:11px}
 #radar{position:absolute;z-index:5;left:calc(10px + env(safe-area-inset-left,0px));top:calc(62px + env(safe-area-inset-top,0px));width:104px;height:104px;pointer-events:none;display:none}
 #radar.on{display:block}
 #seatHud{position:absolute;z-index:5;left:50%;bottom:calc(4px + env(safe-area-inset-bottom,0px));width:70px;height:70px;transform:translateX(-50%);pointer-events:none;display:none}#seatHud.on{display:block}
-body.pc #seatHud{width:100px;height:100px}
-body.pc #radar{width:140px;height:140px}
+body.pc #seatHud,body.tab #seatHud{width:100px;height:100px}
+body.pc #radar,body.tab #radar{width:140px;height:140px}
 #loadout{z-index:30;background:rgba(3,8,12,.8)}
 .loCard{background:linear-gradient(180deg,#0d1419,#0a0f13)!important;color:#e6eef2;width:min(940px,96vw)!important;max-width:none!important;max-height:92vh;display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.08);border-radius:6px!important;padding:16px 18px!important}
 .loCard h2{color:#fff;letter-spacing:2px;text-transform:uppercase;font-size:20px}
@@ -877,7 +877,7 @@ body.pc .titleFs{display:none}
         <button class="btn soft" id="padCalBtn" type="button">Test &amp; calibrate controller</button>
         <div id="padCal" hidden>
           <p class="fine" id="pcMsg">Press any button: it lights up on the picture. Tap a button on the picture to test that one.</p>
-          <div class="pcWrap"><img src="assets/hud/pad_outline.jpg" alt="Controller outline"><svg id="pcSvg" viewBox="0 0 1536 1024" aria-hidden="true"></svg></div>
+          <div class="pcWrap"><img src="assets/hud/pad_outline.png" alt="Controller outline"><svg id="pcSvg" viewBox="0 0 1536 1024" aria-hidden="true"></svg></div>
           <p class="fine" id="pcRaw"></p>
         </div>
         </div>
@@ -912,7 +912,7 @@ body.pc .titleFs{display:none}
           <label for="sQual" class="pcOnly">Graphics quality (PC)</label><select id="sQual" class="pcOnly"><option value="ultra">Ultra · bloom, film colour, MSAA, 4K shadows</option><option value="high">High · sharper shadows and textures</option><option value="standard">Standard · same as phones</option></select>
           <label for="sBloom" class="pcOnly">Bloom strength (Ultra)</label><input type="range" id="sBloom" class="pcOnly" min="0" max="1" step="0.05">
           <label for="sGrade" class="pcOnly">Film colour (Ultra)</label><input type="range" id="sGrade" class="pcOnly" min="0" max="1" step="0.05">
-          <label for="sPc">PC mode (landscape, sharper)</label><select id="sPc"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select>
+          <label for="sPc">PC mode (landscape, sharper)</label><select id="sPc"><option value="auto">Auto</option><option value="on">On</option><option value="tablet">Tablet (PC layout, touch controls)</option><option value="off">Off</option></select>
         </div>
       </section>
       <section class="bfPane" data-pane="hud">
@@ -1299,7 +1299,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V114';
+const GAME_VERSION = 'V115';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -8068,19 +8068,27 @@ function detectPC(){
 }
 // V109: Potato mode: the game draws about 240 pixels across and blows them up, DOOM-style, with every extra switched off
 const POTATO = () => !!SETTINGS.potato;
-const pxBase = () => POTATO() ? Math.max(0.05, 240/Math.max(1, cv.clientWidth || innerWidth)) : PC.on ? Math.min(2, window.devicePixelRatio || 1) : SETTINGS.hq ? Math.min(1.75, window.devicePixelRatio || 1) : 1;
+const pxBase = () => POTATO() ? Math.max(0.05, 240/Math.max(1, cv.clientWidth || innerWidth)) : PC.on || TAB.on ? Math.min(TAB.on ? 1.5 : 2, window.devicePixelRatio || 1) : SETTINGS.hq ? Math.min(1.75, window.devicePixelRatio || 1) : 1;
+// V115: tablets get the PC layout (HUD, menus, wide screens, sharper rendering) but keep their touch controls
+const TAB = {on: false};
+function detectTablet(){
+  const touch = navigator.maxTouchPoints > 0 || 'ontouchstart' in window, ua = navigator.userAgent;
+  const ipad = /iPad/.test(ua) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua)), androidTab = /Android/.test(ua) && !/Mobile/.test(ua);
+  return touch && (ipad || androidTab || Math.min(screen.width, screen.height) >= 600);
+}
 function applyPC(){
   const m = SETTINGS.pcMode || 'auto'; PC.on = m === 'on' || (m === 'auto' && detectPC());
-  document.body.classList.toggle('pc', PC.on);
+  TAB.on = !PC.on && (m === 'tablet' || (m === 'auto' && detectTablet()));
+  document.body.classList.toggle('pc', PC.on); document.body.classList.toggle('tab', TAB.on);
   if (PC.on && SETTINGS.mouseMove === undefined) SETTINGS.mouseMove = true;
   applyQuality();
   DYN.scale = 1; applyGraphics(); landCheck(); setWide();
 }
 // phone held sideways (V88): full-width layout everywhere, touch controls stay
 const LANDP = {on: false};
-function landCheck(){ const on = !PC.on && innerWidth > innerHeight*1.15 && innerHeight < 640; if (on !== LANDP.on){ LANDP.on = on; document.body.classList.toggle('land', on); setWide(); resize(); } }
+function landCheck(){ const on = !PC.on && !TAB.on && innerWidth > innerHeight*1.15 && innerHeight < 640; if (on !== LANDP.on){ LANDP.on = on; document.body.classList.toggle('land', on); setWide(); resize(); } }
 addEventListener('resize', landCheck); addEventListener('orientationchange', () => setTimeout(landCheck, 250));
-function setWide(){ const on = PC.on || LANDP.on || (MODE === 'heli' && HM.on) || DG.on || DF.on || (GS_.on && GS_.phase === 'gun'); if (document.body.classList.contains('wide') !== on){ document.body.classList.toggle('wide', on); resize(); } }
+function setWide(){ const on = PC.on || TAB.on || LANDP.on || (MODE === 'heli' && HM.on) || DG.on || DF.on || (GS_.on && GS_.phase === 'gun'); if (document.body.classList.contains('wide') !== on){ document.body.classList.toggle('wide', on); resize(); } }
 async function toggleLandscape(force){
   const want = force === undefined ? !LAND.on : force;
   if (window.AdLordsNative){ AdLordsNative.orientation(want ? 'landscape' : 'auto'); LAND.on = want; setTimeout(resize, 350); return; }   // Android app: the activity turns itself
@@ -10357,6 +10365,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V115', ['The controller test picture is a clean outline now (no glow)', 'Tablets are detected and get the PC layout: the wide menus, the PC HUD arrangement and sharper rendering, while keeping the touch controls. Settings → Graphics → PC mode also has a Tablet option to switch it by hand']],
   ['V114', ['Controller: RB now swaps between primary and secondary (miniguns and rockets on the Little Bird, primary and secondary missiles on the others) and RT fires whichever is selected', 'Settings → Sensitivity has tabs: Keyboard & mouse, Touch (phones) and Controller. The Controller tab has pitch/roll, yaw, collective and gunner-aim sensitivity, a dead zone for each stick, and a test screen: the controller outline lights up what you press, shows where each stick is against its dead zone, and lets you tap a button to check it reads correctly']],
   ['V113', ['Controller flying: left stick collective and yaw, right stick pitch and roll, RT fires, LT aims (zoom), RB missiles, D-pad right flares, X seat, Y camera (LB is free). Change any of it in Settings → Controls', 'With a controller connected the on-screen sticks and buttons disappear, flying switches to the full flight model, and the HUD shows the controller buttons', 'Phones get the full Battlefield-style helicopter HUD: the weapon box with the rocket pods, flares, seat map and health bar. The touch buttons now sit right on those tiles']],
   ['V112', ['AA sites are clusters now: 3 or 4 quarter-size vehicles where the one big one stood. Each launches missiles and runs two tracer miniguns, but a whole cluster only hits 20% harder than the old single vehicle', 'Little Bird rockets: each press fires a pair, one right after the other (pair, pair, pair, then a single), with two magazines of 7. A used magazine comes back after 30 s', 'Apache primary: guided missiles by default, steered wherever you keep the reticle like the TOW, but much faster and sharper. Or pick Light rockets in Loadouts: the Little Bird’s pairs, in magazines of 12']],

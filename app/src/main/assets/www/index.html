@@ -574,6 +574,7 @@ button.ccard{cursor:pointer}
 #hm svg.ret{position:absolute;width:120px;height:120px;transform:translate(-50%,-50%);overflow:visible;left:50%;top:50%}
 #hm .lock{position:absolute;width:46px;height:46px;border:2px solid #ff6b5b;border-radius:4px;transform:translate(-50%,-50%);display:none}
 #hm .lock.acq{border-color:#ffd23a;border-style:dashed;animation:blink .5s steps(2) infinite}#hm .lock.ok{border-color:#ff3b30;border-width:3px;box-shadow:0 0 10px rgba(255,59,48,.7)}
+#hmDmg{position:absolute;inset:0;pointer-events:none;--k:0}#hmDmg::before{content:'';position:absolute;inset:0;opacity:var(--k);background:radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(70,0,0,.55) 78%,rgba(30,0,0,.85) 100%)}#hmDmg svg{position:absolute;inset:0;width:100%;height:100%}#hmDmg .c1,#hmDmg .c2{display:none}#hmDmg[data-c="1"] .c1,#hmDmg[data-c="2"] .c1,#hmDmg[data-c="2"] .c2{display:inline}
 #hmRadar{position:absolute;left:50%;top:calc(22% + 30px);transform:translateX(-50%);font:800 12px var(--body);letter-spacing:2px;color:#7dff9a;text-shadow:0 0 6px rgba(0,0,0,.7)}#hmRadar[hidden]{display:none}
 #hm .warn.paint{color:#ffd23a;animation:blink .8s steps(2) infinite}
 #hmTags .hmh.foe{color:#ff3b30!important;font-weight:800;letter-spacing:1px;text-shadow:0 0 3px #000,0 1px 2px #000;background:none!important;border:0!important}
@@ -716,7 +717,7 @@ body.pc .titleFs{display:none}
     <svg id="hmAtt" viewBox="-40 -40 80 80" aria-hidden="true"><g fill="none" stroke="#e8fbff" stroke-width="2.5" stroke-linecap="round"><path d="M-26 -22L26 22M26 -22L-26 22"/><circle r="7" fill="#7b6cff" stroke="none"/><path d="M0 8v26M-6 34h12"/></g></svg>
     <div class="lock" id="hmLock"></div>
     <div id="hmDot" aria-hidden="true"></div>
-    <div class="warn" id="hmWarn">MISSILE</div><div id="hmRadar" hidden>UNDER RADAR</div>
+    <div id="hmDmg" aria-hidden="true"><svg viewBox="0 0 1000 600" preserveAspectRatio="none"><g class="c1" fill="none" stroke="rgba(235,245,255,.55)" stroke-width="1.6"><path d="M80 520l60-40 30-70 70-30M140 480l-40-60M170 410l50 20M240 380l30-60"/><path d="M930 90l-50 40-20 60-60 20M880 130l50 30M860 190l-30 50"/></g><g class="c2" fill="none" stroke="rgba(235,245,255,.6)" stroke-width="1.8"><path d="M470 0l20 60-30 50 40 40-10 70M490 60l60 10M460 110l-50 20M500 150l50 40"/><path d="M0 250l70 10 40 50 80-10M70 260l10-60M110 310l-20 60"/><path d="M1000 420l-90 20-40 60-70 10M910 440l20 70M870 500l-40-50"/></g></svg></div><div class="warn" id="hmWarn">MISSILE</div><div id="hmRadar" hidden>UNDER RADAR</div>
     <div class="hint" id="hmHint"></div>
     <div id="hmStick"><i></i></div>
     <div id="hmTags"></div>
@@ -1264,7 +1265,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V107';
+const GAME_VERSION = 'V108';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -1494,10 +1495,10 @@ function heliAudioTick(P, dt){
   P.loadA = (P.loadA || 0) + (load - (P.loadA || 0))*Math.min(1, dt*3);
   const dm = on ? clamp((0.75 - (P.hull || 100)/100)/0.6, 0, 1) : 0;     // V104: starts sooner and gets much louder as the airframe gives out
   AU.wind.gain.setTargetAtTime(on ? 0.012*(0.3 + 0.7*sp*sp) : 0, t, 0.15);
-  AU.rumble.gain.setTargetAtTime(on ? 0.75*P.loadA + 0.38*dm : 0, t, 0.1);
+  AU.rumble.gain.setTargetAtTime(on ? 0.75*P.loadA + 0.76*dm : 0, t, 0.1);     // V107: the damage parts of the cockpit sound are twice as loud
   AU.rotShelf.gain.setTargetAtTime(on ? clamp(5*Math.min(0, coll) + 3*P.loadA + 7*dm + (inFirstPerson() ? 2 : 0), -6, 8) : 0, t, 0.2);
-  AU.surgeD.gain.setTargetAtTime(on ? 0.5*dm : 0, t, 0.3); AU.rotorLfoG.gain.setTargetAtTime(on ? 0.9 - 0.4*dm : 0.9, t, 0.3);
-  AU.dmgN.gain.setTargetAtTime(dm ? dm*(HS.covering ? 0.4 : 1)*(Math.random() < 0.3 ? rnd(0.04, 0.09) : 0.015) : 0, t, 0.012);
+  AU.surgeD.gain.setTargetAtTime(on ? 1.0*dm : 0, t, 0.3); AU.rotorLfoG.gain.setTargetAtTime(on ? 0.9 - 0.4*dm : 0.9, t, 0.3);
+  AU.dmgN.gain.setTargetAtTime(dm ? dm*(HS.covering ? 0.4 : 1)*(Math.random() < 0.3 ? rnd(0.08, 0.18) : 0.03) : 0, t, 0.012);
   const scrape = on && P.onGround && hs > 0.8 ? clamp(hs/6, 0, 1) : 0;
   AU.scrape.gain.setTargetAtTime(0.035*scrape*rnd(0.6, 1.2), t, 0.03);
   AU.rotSpd.gain.setTargetAtTime(on ? 1 + 0.6*Math.min(1, sp) : 1, t, 0.2);
@@ -6871,7 +6872,8 @@ function ebhTick(e, dt){
 }
 function hmDamage(d){
   if (HM.hull <= 0) return;
-  HM.hull -= d*(HM.armor || 1); HM.sinceHit = 0; hurt = 0.4; shake = Math.max(shake, 0.25); sfx('thud', 0.8);
+  HM.hull -= d*(HM.armor || 1); HM.sinceHit = 0; hurt = 0.4; shake = Math.max(shake, 0.25 + Math.min(0.3, d*0.01)); sfx('thud', 0.8);
+  if (HM.heli){ const P = HM.pos; chips(P.x + rnd(-1, 1)*HB, P.y + rnd(0, 0.6)*HB, P.z + rnd(-1, 1)*HB, SPARK, 6 + Math.min(14, d|0), 5); chips(P.x, P.y, P.z, DEBRIS, 2 + Math.min(6, (d/4)|0), 4); }
   if (HM.hull <= 0){ HM.hull = 0; explode(HM.pos.x, HM.pos.z, 3, 0); chips(HM.pos.x, HM.pos.y, HM.pos.z, SMOKE, 30, 6); setTimeout(() => { if (state === 'dying' && MODE === 'heli') gameOver(); }, 1100); state = 'dying'; HM.firing = false; }
 }
 function hmShoot(kind, from, dir, speed, extra){
@@ -7238,10 +7240,21 @@ function hmLockTick(P, dt){
 }
 // damage you can see: smoke from about half health, fire as well when it's critical, and a caution tone
 function hmDamageFx(P, dt){
+  { // V107: you feel it too: the screen edges darken and pulse, the glass cracks in first person, the HUD flickers when it's critical
+    const k = P.heli && P.hull > 0 && state === 'play' ? clamp((60 - P.hull)/50, 0, 1) : 0, el = $('hmDmg');
+    P.hbT = (P.hbT || 0) + dt*(1.2 + 1.6*k); const pulse = P.hull < 28 ? 0.75 + 0.25*Math.sin(P.hbT*6.28) : 1;
+    el.style.setProperty('--k', (k*0.85*pulse).toFixed(3));
+    const ck = P.hull > 0 && inFirstPerson() ? (P.hull < 50 ? 1 : 0) + (P.hull < 28 ? 1 : 0) : 0; if (el.dataset.c !== String(ck)){ el.dataset.c = ck; }
+    $('hm').style.opacity = P.hull > 0 && P.hull < 20 && Math.random() < 0.12 ? rnd(0.55, 0.85) : '';
+    if (P.hull > 0 && P.hull < 28 && state === 'play') shake = Math.max(shake, 0.05 + 0.08*(28 - P.hull)/28);
+  }
   if (!P.heli || P.hull <= 0 || P.hull >= 55) return;
+  // sparks and bits shaking loose, more often the worse it gets
+  P.spT = (P.spT || 0) - dt;
+  if (P.spT <= 0){ P.spT = rnd(0.25, 0.9)*(P.hull/55 + 0.3); const a = rnd(0, 6.28), r = rnd(0.5, 1.4)*HB; chips(P.pos.x + Math.cos(a)*r, P.pos.y + rnd(0, 0.8)*HB, P.pos.z + Math.sin(a)*r, SPARK, 6, 4); if (Math.random() < 0.4) chips(P.pos.x, P.pos.y, P.pos.z, DEBRIS, 2, 3); }
   P.smT = (P.smT || 0) - dt; const crit = P.hull < 28;
-  if (P.smT <= 0){ P.smT = crit ? 0.04 : 0.11 - 0.05*(55 - P.hull)/55; const y = P.pos.y + 0.6*HB; chips(P.pos.x + rnd(-0.4, 0.4), y, P.pos.z + rnd(-0.4, 0.4), SMOKE, crit ? 2 : 1, 1.2); if (crit) chips(P.pos.x, y - 0.2, P.pos.z, ORANGE, 1, 1.8); }
-  if (crit){ P.cauT = (P.cauT || 0) - dt; if (P.cauT <= 0 && AU.ctx && SETTINGS.sound){ P.cauT = 1.1; const t = AU.ctx.currentTime; tone(t, 0.16, {f: 740, type: 'triangle', vol: 0.08}); tone(t + 0.2, 0.16, {f: 740, type: 'triangle', vol: 0.08}); } }
+  if (P.smT <= 0){ P.smT = crit ? 0.03 : 0.08 - 0.04*(55 - P.hull)/55; const y = P.pos.y + 0.6*HB; chips(P.pos.x + rnd(-0.4, 0.4), y, P.pos.z + rnd(-0.4, 0.4), SMOKE, crit ? 3 : 2, 1.4); if (P.hull < 40) chips(P.pos.x + rnd(-0.3, 0.3), y - 0.1, P.pos.z + rnd(-0.3, 0.3), DEBRIS, 1, 1.2); if (crit){ chips(P.pos.x, y - 0.2, P.pos.z, ORANGE, 2, 2.2); if (Math.random() < 0.3) fx('fire', P.pos.x + rnd(-0.3, 0.3), y - 0.3, P.pos.z + rnd(-0.3, 0.3), 0.6); } }
+  if (crit){ P.cauT = (P.cauT || 0) - dt; if (P.cauT <= 0 && AU.ctx && SETTINGS.sound){ P.cauT = 1.1; const t = AU.ctx.currentTime; tone(t, 0.16, {f: 740, type: 'triangle', vol: 0.16}); tone(t + 0.2, 0.16, {f: 740, type: 'triangle', vol: 0.16}); } }
 }
 function hmFxClear(){ HM.lk = null; }
 // V105: enemy aircraft show their damage too: smoke from half health, fire as well under a quarter
@@ -10199,6 +10212,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V108', ['Helicopters: the damage sounds (engine strain, rattles, the caution tone) are twice as loud', 'More damage you can see: sparks and pieces fly off with every hit, thicker smoke and fire as it gets worse, the screen edges darken and pulse, the glass cracks in first person, and the HUD flickers and the airframe shakes when it is critical']],
   ['V107', ['Wave 30 is a second bass round: the same song and boss drops as wave 26', 'Ruined city block: the horde and its bosses are 2.5× bigger (and that much easier to hit), same speed', 'The extra gates from the wave-15 shop are ×2 now instead of ×4']],
   ['V106', ['New map: Ruined city block. Hold the crossroads of a quarantined street while the horde pours out of the walled outpost; dozers push the concrete barriers out when the street widens',
            'Gunship mode: buildings and everything else on the map are solid. Fly into a wall and you stop (and take damage); come down on a roof and you can land on it. Bullets and missiles stop on them too, so you can hide behind cover',

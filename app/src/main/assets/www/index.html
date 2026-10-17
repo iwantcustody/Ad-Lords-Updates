@@ -264,6 +264,11 @@ body.tn #title .menuBtns{top:calc(44px + 20% + env(safe-area-inset-top,0px))}
 .hqDetail .btnSel:hover{background:rgba(255,255,255,.12)}
 .hqLoad{position:absolute;right:20%;top:46%;font:700 13px var(--body);letter-spacing:2px;text-transform:uppercase;color:#9fb0b8}
 .hqFriends{position:absolute;right:calc(clamp(14px,4vw,60px) + env(safe-area-inset-right,0px));top:calc(98px + env(safe-area-inset-top,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));width:min(520px,50vw);overflow-y:auto;z-index:2}
+.hqMode{position:absolute;left:calc(clamp(14px,4vw,60px) + env(safe-area-inset-left,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));width:min(330px,34vw);padding:12px 16px 12px 18px;background:linear-gradient(100deg,rgba(18,23,28,.92),rgba(18,23,28,.7));border:1px solid rgba(255,255,255,.12);border-left:4px solid #ffd166;z-index:2;pointer-events:none}
+.hqMode small{display:block;font:700 11px var(--body);letter-spacing:2px;text-transform:uppercase;color:#9fb0b8}
+.hqMode b{display:block;font:600 28px/1.1 "Oswald",Impact,sans-serif;letter-spacing:1.5px;text-transform:uppercase;color:#fff;margin:2px 0 4px}
+.hqMode span{display:block;font:600 12px/1.4 var(--body);color:#cfd8dc}
+.hqMode i{display:inline-block;margin-top:8px;font:500 12px "Oswald",Impact,sans-serif;letter-spacing:1.5px;text-transform:uppercase;color:#ffd166;font-style:normal}
 .frSec{font:500 14px "Oswald",Impact,sans-serif;letter-spacing:2px;text-transform:uppercase;color:#cfd8dc;margin:14px 0 6px}
 .frRow{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:6px;background:rgba(18,23,28,.88);border:1px solid rgba(255,255,255,.1)}
 .frRow i{width:10px;height:10px;border-radius:50%;background:#56636b;flex:0 0 auto}
@@ -279,6 +284,9 @@ body.tn #title .menuBtns{top:calc(44px + 20% + env(safe-area-inset-top,0px))}
 .mpFriends{margin:6px 0;text-align:left}.mpFriends .frRow{background:rgba(16,36,58,.08);border-color:rgba(16,36,58,.15)}.mpFriends .frRow b{color:var(--ink)}.mpFriends .frRow span{color:var(--muted)}.mpFriends .frRow button{color:var(--ink);background:#fff;border-color:rgba(16,36,58,.3)}.mpFriends .frSec{color:var(--muted)}
 @media (max-width:760px), (max-aspect-ratio:1/1){
   .hqFriends{left:calc(14px + env(safe-area-inset-left,0px));right:calc(14px + env(safe-area-inset-right,0px));width:auto;top:calc(250px + env(safe-area-inset-top,0px))}
+  #hq.fr .hqFriends{top:calc(316px + 30vh + env(safe-area-inset-top,0px))}
+  .hqMode{left:calc(14px + env(safe-area-inset-left,0px));right:calc(14px + env(safe-area-inset-right,0px));width:auto;bottom:auto;top:calc(250px + 30vh + env(safe-area-inset-top,0px));padding:8px 12px}
+  .hqMode b{font-size:20px;display:inline-block;margin:0 8px 0 0}.hqMode span{display:none}.hqMode i{margin:0}
   #hq.fr .hqInfo{width:calc(100vw - 28px)}
   .hqDetail{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
   #hqDesc{font-size:13px}
@@ -537,7 +545,12 @@ body.pc .titleFs{display:none}
 /* V98: radio station wheel (hold Q, or press / drag from the 📻 button) */
 #radioBtn{position:fixed;z-index:20;top:calc(6px + env(safe-area-inset-top,0px));left:calc(50% + min(26vw,170px));width:32px;height:32px;padding:0;border-radius:50%;border:1px solid rgba(240,238,196,.55);background:rgba(10,16,22,.55);font-size:16px;line-height:30px;cursor:pointer;touch-action:none}
 #radioBtn.on{border-color:#ffd34d;box-shadow:0 0 6px rgba(255,211,77,.6)}
-#radioBtn[hidden]{display:none}
+#radioBtn[hidden],#radioDevBtn[hidden]{display:none}
+#radioDevBtn{position:fixed;z-index:20;top:calc(6px + env(safe-area-inset-top,0px));left:calc(50% + min(26vw,170px) + 38px);width:32px;height:32px;padding:0;border-radius:50%;border:1px solid rgba(120,220,255,.6);background:rgba(10,16,22,.55);font-size:15px;line-height:30px;cursor:pointer;touch-action:none}
+#radioDevBtn.on{border-color:#5fd8ff;box-shadow:0 0 6px rgba(95,216,255,.65)}
+#radioWheel .rwBank{position:absolute;top:calc(50% + min(42vmin,180px) + 6px);font:700 11px Consolas,"DejaVu Sans Mono",ui-monospace,monospace;letter-spacing:1px;color:#f0eec4;opacity:.75;text-shadow:0 1px 2px #000}
+#radioWheel.dev #rwSvg .seg path{stroke:rgba(95,216,255,.5)}#radioWheel.dev #rwSvg .seg.cur path{stroke:#5fd8ff}#radioWheel.dev #rwSvg .seg.on path{fill:rgba(170,235,255,.92)}
+#radioWheel.dev .rwMid,#radioWheel.dev .rwBank{color:#bfefff}
 #radioWheel{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;pointer-events:none;background:radial-gradient(circle,rgba(0,0,0,.45),rgba(0,0,0,0) 62%);touch-action:none}
 #radioWheel[hidden]{display:none}
 #radioWheel.sticky{pointer-events:auto}
@@ -596,8 +609,8 @@ body.pc .titleFs{display:none}
   </div>
   <div id="flash"></div>
   <canvas id="bfHud" aria-hidden="true"></canvas>
-  <button id="radioBtn" type="button" aria-label="Radio" hidden>📻</button>
-  <div id="radioWheel" hidden><svg id="rwSvg" viewBox="-160 -160 320 320" aria-hidden="true"></svg><div class="rwMid"><b id="rwName">RADIO</b><span id="rwSub"></span></div></div>
+  <button id="radioBtn" type="button" aria-label="Radio" hidden>📻</button><button id="radioDevBtn" type="button" aria-label="Dev radio" hidden>🎛</button>
+  <div id="radioWheel" hidden><svg id="rwSvg" viewBox="-160 -160 320 320" aria-hidden="true"></svg><div class="rwMid"><b id="rwName">RADIO</b><span id="rwSub"></span></div><div class="rwBank" id="rwBank"></div></div>
   <canvas id="radar" width="300" height="300" aria-hidden="true"></canvas>
   <canvas id="seatHud" width="160" height="160" aria-hidden="true"></canvas>
   <div id="lookStick" aria-hidden="true"><i></i><span>AIM</span></div>
@@ -861,6 +874,7 @@ body.pc .titleFs{display:none}
     <div class="hqInfo"><h1 id="hqTitle">Loadouts</h1><div id="hqTags"></div><p id="hqDesc"></p></div>
     <div class="hqDetail" id="hqDetail" hidden></div>
     <div class="hqFriends" id="hqFriends" hidden></div>
+    <div class="hqMode" id="hqMode" hidden></div>
     <div class="hqLoad" id="hqLoad" hidden>Loading model…</div>
     <div class="hqTiles" id="hqTiles"></div>
   </div>
@@ -1149,7 +1163,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V101';
+const GAME_VERSION = 'V102';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -3151,12 +3165,12 @@ function addGunner(){
   if (loadedParts.playerAnim && SETTINGS.mocap !== false){
     const A = loadedParts.playerAnim, inst = skClone(A.src); inst.scale.multiplyScalar(A.k); inst.position.copy(A.off);
     body = new THREE.Group(); body.add(inst); body.rotation.y = Math.PI;
-    inst.traverse(o => { if (o.isMesh){ o.castShadow = true; o.frustumCulled = false; const mm = o.material; o.material = new THREE.MeshToonMaterial({map: mm.map, gradientMap: gradSoft, side: THREE.DoubleSide, skinning: !!o.isSkinnedMesh, color: mm.map ? new THREE.Color(0.8, 0.8, 0.82) : mm.color.clone()}); } });
+    inst.traverse(o => { if (o.isMesh){ o.castShadow = true; o.frustumCulled = false; const mm = o.material; o.material = new THREE.MeshToonMaterial({map: (A.cull && mm.emissiveMap) || mm.map, gradientMap: gradSoft, side: A.cull ? mm.side : THREE.DoubleSide, skinning: !!o.isSkinnedMesh, color: mm.map ? new THREE.Color(0.8, 0.8, 0.82) : mm.color.clone()}); } });
     const mixer = new THREE.AnimationMixer(inst), idle = mixer.clipAction(A.clips.idle), shot = mixer.clipAction(A.clips.fire);
     idle.play(); shot.play(); shot.setEffectiveWeight(0); idle.time = Math.random()*A.clips.idle.duration;
     anim = {mixer, idle, shot, w: 0, hand: A.hand ? inst.getObjectByName(A.hand) : null};
   }
-  else if (loadedParts.player){ body = fitModel(loadedParts.player, MODEL_H*BODY, 'y'); body.rotation.y = Math.PI; body.traverse(o => { if (o.isMesh){ o.castShadow = true; const mm = o.material; o.material = new THREE.MeshToonMaterial({map: mm.map, gradientMap: gradSoft, side: THREE.DoubleSide, color: mm.map ? new THREE.Color(0.8, 0.8, 0.82) : mm.color.clone()}); } }); }
+  else if (loadedParts.player){ body = fitModel(loadedParts.player, MODEL_H*BODY, 'y'); body.rotation.y = Math.PI; const cull = !!(CHARS[lookId()] || {}).cull; body.traverse(o => { if (o.isMesh){ o.castShadow = true; const mm = o.material; o.material = new THREE.MeshToonMaterial({map: (cull && mm.emissiveMap) || mm.map, gradientMap: gradSoft, side: cull ? mm.side : THREE.DoubleSide, color: mm.map ? new THREE.Color(0.8, 0.8, 0.82) : mm.color.clone()}); } }); }
   else { body = new THREE.Mesh(gunnerGeoHi, CHAR); body.rotation.y = Math.PI; body.scale.setScalar(BODY); body.castShadow = true; }
   g.add(body);
   const flash = new THREE.Sprite(new THREE.SpriteMaterial({map: flashTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true}));
@@ -3202,17 +3216,26 @@ function rotW(b, axis, ang){
 }
 function analyzeRig(root, sm){
   root.updateMatrixWorld(true);
+  root.traverse(o => { if (o.isSkinnedMesh && o.skeleton.bones.length > sm.skeleton.bones.length) sm = o; });
   const bones = sm.skeleton.bones, isB = o => o && o.isBone, wp = new THREE.Vector3();
   for (const b of bones){ b.getWorldPosition(wp); b.userData.p = wp.clone(); b.userData.q0 = b.quaternion.clone(); }
-  const hips = bones.find(b => !isB(b.parent));
+  // V102: sized to the figure (a 1.2 m cat and a 1.6 m anime girl as well as the 1.75 m crowd), feet wherever the file put them,
+  // A-pose arms too, and hair / tail / ear / skirt bones never mistaken for limbs
+  let base = 1e9, top = -1e9; for (const b of bones){ base = Math.min(base, b.userData.p.y); top = Math.max(top, b.userData.p.y); }
+  for (const b of bones) b.userData.p.y -= base; top -= base;
+  const S = clamp(top/1.75, 0.45, 1.6), soft = b => /hair|ahoge|tail|skirt|ear(?!m)|tuft|ribbon|bust|breast|cloth|coat|jacket|sleeve|dogtag|belt/i.test(b.name);
+  const subN = b => { let n = 0; b.traverse(o => { if (o.isBone) n++; }); return n; };
+  let hips = bones.find(b => !isB(b.parent));
+  for (let g = 0; g < 6 && hips.userData.p.y < top*0.3; g++){ const c = hips.children.filter(isB); if (!c.length) break; hips = c.sort((a, d) => subN(d) - subN(a))[0]; }     // a root joint on the floor: step up to the pelvis
   const H = hips.userData.p.y;
   const chainEnd = b => { let e = b; while (e.children.some(isB)) e = e.children.filter(isB).sort((a, c) => a.userData.p.y - c.userData.p.y)[0]; return e; };
-  const legs = bones.filter(b => Math.abs(b.userData.p.x) > 0.05 && b.userData.p.y < H + 0.05 && b.userData.p.y > H - 0.2 && chainEnd(b).userData.p.y < 0.2 && !(isB(b.parent) && Math.abs(b.parent.userData.p.x) > 0.05 && b.parent.userData.p.y < H + 0.05));
+  const legs = bones.filter(b => !soft(b) && Math.abs(b.userData.p.x) > 0.05*S && b.userData.p.y < H + 0.05*S && b.userData.p.y > H - 0.2*S && chainEnd(b).userData.p.y < 0.2*S && !(isB(b.parent) && !soft(b.parent) && Math.abs(b.parent.userData.p.x) > 0.05*S && b.parent.userData.p.y < H + 0.05*S));
   const farX = b => { let m = 0; b.traverse(o => { if (o.isBone) m = Math.max(m, Math.abs(o.userData.p.x)); }); return m; };
-  const arms = bones.filter(b => b.userData.p.y > H + 0.2 && b.userData.p.y < H + 0.7 && Math.abs(b.userData.p.x) > 0.04 && farX(b) > 0.45 && isB(b.parent) && !(Math.abs(b.parent.userData.p.x) > 0.04 && farX(b.parent) > 0.45));
+  const armX = S*(top > 1.3 ? 0.22 : 0.4);
+  const arms = bones.filter(b => !soft(b) && b.userData.p.y > H + 0.2*S && b.userData.p.y < H + 0.75*S && Math.abs(b.userData.p.x) > 0.04*S && farX(b) > armX && isB(b.parent) && !(!soft(b.parent) && Math.abs(b.parent.userData.p.x) > 0.04*S && farX(b.parent) > armX));
   const L = s => legs.filter(b => Math.sign(b.userData.p.x) === s)[0], A = s => arms.filter(b => Math.sign(b.userData.p.x) === s)[0];
   const down = b => b && b.children.filter(isB).sort((a, c) => a.userData.p.y - c.userData.p.y)[0];
-  const rig = {hips, lt: L(1), rt: L(-1), la: A(1), ra: A(-1)};
+  const rig = {hips, sm, lt: L(1), rt: L(-1), la: A(1), ra: A(-1)};
   rig.ls = down(rig.lt); rig.rs = down(rig.rt);
   const used = new Set([hips]);
   const addSub = b => b && b.traverse(o => { if (o.isBone) used.add(o); });
@@ -3224,7 +3247,7 @@ function analyzeRig(root, sm){
   const subMaxY = b => { let m = -9; b.traverse(o => { if (o.isBone) m = Math.max(m, o.userData.p.y); }); return m; };
   let hb = rig.neck; rig.head = null;
   for (let guard = 0; guard < 8; guard++){
-    const c = hb.children.filter(o => isB(o) && !used.has(o) && Math.abs(o.userData.p.x) < 0.05 && o.userData.p.y >= hb.userData.p.y - 0.01);
+    const c = hb.children.filter(o => isB(o) && !used.has(o) && !soft(o) && Math.abs(o.userData.p.x) < 0.05 && o.userData.p.y >= hb.userData.p.y - 0.01);
     if (!c.length) break;
     hb = c.sort((a, b) => subMaxY(b) - subMaxY(a))[0]; used.add(hb); rig.head = hb;
     if (hb.userData.p.y > rig.neck.userData.p.y + 0.25) break;
@@ -3455,7 +3478,7 @@ const UAL_GAIT = {walk: 'Walk_Loop', run: 'Jog_Fwd_Loop', shuffle: 'Walk_Formal_
 const mocapOn = () => SETTINGS.mocap !== false && !!UAL.data;
 function buildRole(role, gltf, target = CROWD, bossInto = BOSS){
   let sm = null; gltf.scene.traverse(o => { if (o.isSkinnedMesh && !sm) sm = o; });
-  const rig = analyzeRig(gltf.scene, sm); rig.root = gltf.scene; rig.allBones = sm.skeleton.bones;
+  const rig = analyzeRig(gltf.scene, sm); rig.root = gltf.scene; rig.allBones = rig.sm.skeleton.bones;
   const tex = sm.material.map; if (tex){ tex.encoding = THREE.LinearEncoding; tex.anisotropy = 8; tex.needsUpdate = true; }
   const at = sm.material.alphaTest || 0;      // cut-out hair and torn cloth keep their holes
   const mat = new THREE.MeshToonMaterial({map: tex, gradientMap: gradSoft, side: THREE.DoubleSide, color: new THREE.Color(0.74, 0.74, 0.76), alphaTest: at});
@@ -7377,6 +7400,10 @@ const CHARS = {
   cape:    {name: 'Captain Drew',  rar: 'SSR', model: 'assets/drew_cape.json',   card: 'assets/card_drew_cape.webp',   perk: {dmg: 0.10, rate: 0.08}, line: 'Points dramatically. Squad shoots harder.'},
   leo:     {name: 'Master Leo',    rar: 'SSR', model: 'assets/drew_robe.json',   card: 'assets/card_drew_robe.webp',   perk: {knock: 0.35, dmg: 0.06}, line: 'Shoves the horde with his mind.'},
   // Mixamo-rigged, with his own rifle animations (aim / fire / reload)
+  // V102: rigged characters from the player's packs; the squad borrows the animation library's pistol clips. The squad menu shows
+  // Shibahu at full detail (with her outline shell); the field uses the version without it
+  shibahu: {name: 'Shibahu', rar: 'SSR', model: 'assets/c_shibahu.glb', modelHQ: 'assets/c_shibahu_hq.glb', cull: true, face: 1, perk: {dmg: 0.08, rate: 0.08}, line: 'Headphones on, jacket half off, never misses the beat.'},
+  boykisser: {name: 'Boykisser', rar: 'SR', model: 'assets/c_boykisser.glb', cull: true, face: 1, perk: {coins: 0.12}, line: 'You like shooting the horde, don’t you? :3'},
   white:   {name: 'Character White', rar: 'SR', model: 'assets/c_white.json', anims: {idle: 'aim', fire: 'fire', reload: 'reload'}, hand: 'mixamorigRightHand', perk: {rate: 0.05, dmg: 0.05}, line: 'All in white. Shoulders the rifle and doesn’t blink.'},
 };
 const PERK_TXT = {dmg: v => '+' + Math.round(v*100) + '% damage', rate: v => '+' + Math.round(v*100) + '% fire rate', coins: v => '+' + Math.round(v*100) + '% coins',
@@ -7414,12 +7441,13 @@ function charStatic(scene, pose){
     mx.stopAllAction(); return g;
   }
   try {
-    const rig = analyzeRig(scene, sm); rig.root = scene; rig.allBones = sm.skeleton.bones;
+    const rig = analyzeRig(scene, sm); rig.root = scene; rig.allBones = rig.sm.skeleton.bones;
     poseRig(rig, 'walk', 0.15);
-    const {op, on} = bakeFrame(rig, sm, new THREE.Matrix4());
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(op, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(on, 3)); geo.setAttribute('uv', sm.geometry.attributes.uv); geo.setIndex(sm.geometry.index);
-    const g = new THREE.Group(); g.add(new THREE.Mesh(geo, sm.material)); return g;
+    const g = new THREE.Group(), all = []; scene.traverse(o => { if (o.isSkinnedMesh) all.push(o); });     // V102: characters made of many skinned parts
+    for (const o of all){ const {op, on} = bakeFrame(rig, o, new THREE.Matrix4()), geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(op, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(on, 3)); if (o.geometry.attributes.uv) geo.setAttribute('uv', o.geometry.attributes.uv); geo.setIndex(o.geometry.index);
+      for (const gr of o.geometry.groups) geo.addGroup(gr.start, gr.count, gr.materialIndex); g.add(new THREE.Mesh(geo, o.material)); }
+    return g;
   } catch(e){ console.warn('pose failed', e); return scene; }
 }
 function loadCharModel(id){
@@ -7443,20 +7471,21 @@ function loadCharAnim(id){
     if (c.anims){ const f = n => g.animations.find(a => a.name === n); clips = {idle: f(c.anims.idle), fire: f(c.anims.fire)}; hand = c.hand; }
     else {
       if (!UAL.data) return null;
-      const rig = analyzeRig(g.scene, sm); rig.root = g.scene; rig.allBones = sm.skeleton.bones; ualMap(rig);
+      const rig = analyzeRig(g.scene, sm); rig.root = g.scene; rig.allBones = rig.sm.skeleton.bones; ualMap(rig);
       clips = {idle: ualClip(rig, 'Pistol_Idle_Loop', 'idle'), fire: ualClip(rig, 'Pistol_Shoot', 'fire')}; hand = rig.ual.R && rig.ual.R.hand && rig.ual.R.hand.name;
     }
     if (!clips.idle || !clips.fire) return null;
     // size it like the static squad: MODEL_H*BODY tall, feet on the ground, centred
     const st = CHAR_MODEL[id] || charStatic(g.scene, c.anims ? {clip: clips.idle} : null), box = new THREE.Box3().setFromObject(st), ct = box.getCenter(new THREE.Vector3());
     const k = MODEL_H*BODY/Math.max(1e-6, box.max.y - box.min.y);
-    return (CHAR_ANIM[id] = {src: g.scene, clips, hand, k, off: new THREE.Vector3(-ct.x*k, -box.min.y*k, -ct.z*k)});
+    return (CHAR_ANIM[id] = {src: g.scene, clips, hand, k, cull: !!c.cull, off: new THREE.Vector3(-ct.x*k, -box.min.y*k, -ct.z*k)});
   }).catch(e => { console.warn('animated squad unavailable', e); return null; });
 }
 function equipChar(id){
   if (!PROFILE.owned[id]) return;
   PROFILE.equipped = id; saveProfile(); applyPerk();
   const lk = lookId();
+  if (NET.on && !NET.started && NET.players.length){ const me = NET.players.find(p => p.slot === NET.me); if (me && me.ch !== lk) mpSet('ch', lk); }
   loadCharModel(lk).then(m => loadCharAnim(lk).then(a => [m, a])).then(([m, a]) => {
     if (lookId() !== lk) return;
     loadedParts.player = m || null; loadedParts.playerAnim = a || null;
@@ -8222,6 +8251,7 @@ function mpOpen(){ $('mp').hidden = false; $('mpName').value = mpName(); mpRende
 function mpRender(){
   if (!$('mp')) return;
   if (typeof frLobbyRender === 'function') frLobbyRender();
+  if (typeof HQ !== 'undefined' && HQ.on && HQ.page === 'friends') hqShowLobby();
   const inRoom = NET.on && (NET.host || NET.players.length > 0);
   $('mpStart').hidden = inRoom; $('mpLobby').hidden = !inRoom;
   if (!inRoom) return;
@@ -8917,7 +8947,7 @@ function hqHead(title, tags, desc, crumb){
 function hqRender(){
   const P = HQ.page, box = $('hqTiles'); box.innerHTML = '';
   const add = o => box.appendChild(hqTile(o));
-  $('hqFriends').hidden = P !== 'friends'; $('hq').classList.toggle('fr', P === 'friends'); $('hqCv').style.visibility = P === 'friends' ? 'hidden' : 'visible'; $('hqLoad').hidden = true;
+  $('hqFriends').hidden = P !== 'friends'; $('hq').classList.toggle('fr', P === 'friends'); $('hqCv').style.visibility = 'visible'; $('hqLoad').hidden = true; $('hqMode').hidden = P !== 'friends'; HQ.lobby = P === 'friends';
   $('hqBack').hidden = !HQ_BACK[P]; hqDetail(null);
   if (P === 'root'){
     hqHead('Loadouts', [], 'Get your squad ready: who leads it, what it wears, and how each of your vehicles is kitted out. The leader’s perk counts for the whole squad.', '');
@@ -8973,7 +9003,7 @@ function hqRender(){
     hqShowVeh(t);
   } else if (P === 'friends'){
     hqHead('Friends', [frOnlineCount() + ' online', 'Your code ' + SOC.me], 'Invite friends straight into your room instead of reading out a code. They show up online while their game is open.', '');
-    frRender();
+    frRender(); hqShowLobby();
   }
   tnSync();
 }
@@ -9013,15 +9043,19 @@ function hqShow(key, make, yaw){
 function hqPlace(o, key){
   const holder = new THREE.Group(); holder.add(o); o.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(o), sz = box.getSize(new THREE.Vector3()), ct = box.getCenter(new THREE.Vector3());
-  const ch = key.startsWith('c:') || key.startsWith('sq:'), k = ch ? 1.9/Math.max(1e-3, sz.y) : 4.6/Math.max(1e-3, sz.x, sz.z);
+  const ch = key.startsWith('c:') || key.startsWith('sq:') || key.startsWith('lb:'), k = ch ? 1.9/Math.max(1e-3, sz.y) : 4.6/Math.max(1e-3, sz.x, sz.z);
   o.position.set(-ct.x, -box.min.y, -ct.z); holder.scale.setScalar(k);
   o.traverse(m => { if (m.isMesh) m.frustumCulled = false; });
   HQ.root.add(holder); HQ.h = sz.y*k; HQ.w = Math.max(sz.x, sz.z, ch ? sz.x : 0)*k;
 }
 function hqCharModel(id){
   if (id === 'guard' || !CHARS[id].model) return Promise.resolve((() => { const g = new THREE.Group(), m = new THREE.Mesh(gunnerGeoHi, CHAR); m.rotation.y = Math.PI; g.add(m); return g; })());
-  return loadCharModel(id).then(m => m ? m.clone(true) : null);
+  if (CHARS[id].modelHQ && SKIN_LOAD.fresh){ if (!CHAR_HQ[id]) CHAR_HQ[id] = SKIN_LOAD.fresh(CHARS[id].modelHQ).then(g => charStatic(g.scene)).catch(() => null);
+    return CHAR_HQ[id].then(m => m ? m.clone(true) : loadCharModel(id).then(m2 => m2 ? m2.clone(true) : null)).then(hqFace(id)); }
+  return loadCharModel(id).then(m => m ? m.clone(true) : null).then(hqFace(id));
 }
+const CHAR_HQ = {};
+const hqFace = id => m => { if (!m || !CHARS[id].face) return m; const w = new THREE.Group(); m.rotation.y += Math.PI; w.add(m); return w; };
 function hqShowChar(id){ hqShow('c:' + id, () => hqCharModel(id), Math.PI + 0.45); }
 function hqShowSquad(){
   const id = lookId();
@@ -9029,6 +9063,72 @@ function hqShowSquad(){
     const g = new THREE.Group(), fit = o => { const b = new THREE.Box3().setFromObject(o), s = 1.9/Math.max(1e-3, b.max.y - b.min.y), w = new THREE.Group(); w.add(o); w.scale.setScalar(s); o.position.y = -b.min.y; return w; };
     const xs = [-0.85, 0, 0.85]; xs.forEach((x, i) => { const c = fit(i ? a.clone(true) : a); c.position.set(x, 0, i === 1 ? 0.3 : -0.2); c.rotation.y = (i - 1)*-0.18; g.add(c); });
     return g; }), Math.PI + 0.25);
+}
+// Friends tab: a Fortnite-style lobby line-up. You stand in the middle; the people in your room fill the other three pads.
+function lobbySlots(){
+  const inRoom = NET.on && !NET.started && NET.players.length;
+  const me = inRoom ? NET.players.find(p => p.slot === NET.me) : null;
+  const others = inRoom ? NET.players.filter(p => p !== me).slice(0, 3) : [];
+  const ok = c => CHARS[c] ? c : 'guard';
+  return [{ch: lookId(), name: (me && me.name) || mpName(), you: true, col: MP_COLS[(me ? me.slot : 0) % 4]}].concat(
+    [0, 1, 2].map(i => others[i] ? {ch: ok(others[i].ch), name: String(others[i].name || 'Player'), col: MP_COLS[others[i].slot % 4], host: others[i].slot === 0} : null));
+}
+const LOBBY_POS = [[0, 0.35, 0], [-1.1, -0.1, 0.22], [1.1, -0.1, -0.22], [-2.15, -0.45, 0.34]];
+function lobbyTag(text, col, sub){
+  const c = document.createElement('canvas'); c.width = 512; c.height = 128; const x = c.getContext('2d');
+  x.font = '600 58px Oswald, Impact, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.lineWidth = 8; x.strokeStyle = 'rgba(0,0,0,.75)'; x.strokeText(text.toUpperCase(), 256, 54); x.fillStyle = '#fff'; x.fillText(text.toUpperCase(), 256, 54);
+  if (sub){ x.font = '700 30px sans-serif'; x.fillStyle = col; x.fillText(sub.toUpperCase(), 256, 106); }
+  else { x.fillStyle = col; x.fillRect(196, 96, 120, 7); }
+  const t = new THREE.CanvasTexture(c), sp = new THREE.Sprite(new THREE.SpriteMaterial({map: t, transparent: true, depthWrite: false, toneMapped: false}));
+  sp.scale.set(1.1, 0.275, 1); return sp;
+}
+function lobbyPad(col, empty){
+  const g = new THREE.Group(), cc = new THREE.Color(col);
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.5, 0.06, 40), new THREE.MeshBasicMaterial({color: empty ? 0x1b2730 : 0x111a20}));
+  disc.position.y = -0.03; g.add(disc);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.47, 0.022, 8, 48), new THREE.MeshBasicMaterial({color: empty ? 0x5d6f7a : cc}));
+  ring.rotation.x = Math.PI/2; ring.position.y = 0.005; g.add(ring);
+  if (!empty){ const glow = new THREE.Mesh(new THREE.CircleGeometry(0.62, 40), new THREE.MeshBasicMaterial({color: cc, transparent: true, opacity: 0.18, depthWrite: false}));
+    glow.rotation.x = -Math.PI/2; glow.position.y = 0.004; g.add(glow); }
+  return g;
+}
+function lobbyEmpty(){
+  const c = document.createElement('canvas'); c.width = 256; c.height = 512; const x = c.getContext('2d');
+  const gr = x.createLinearGradient(0, 0, 0, 512); gr.addColorStop(0, 'rgba(160,190,205,0)'); gr.addColorStop(1, 'rgba(160,190,205,.22)');
+  x.fillStyle = gr; x.fillRect(48, 40, 160, 472);
+  x.strokeStyle = 'rgba(220,235,240,.55)'; x.lineWidth = 3; x.setLineDash([12, 10]); x.strokeRect(50, 42, 156, 468);
+  x.setLineDash([]); x.fillStyle = 'rgba(255,255,255,.85)'; x.fillRect(116, 196, 24, 96); x.fillRect(80, 232, 96, 24);
+  x.font = '600 30px Oswald, Impact, sans-serif'; x.textAlign = 'center'; x.fillText('OPEN', 128, 340);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, toneMapped: false}));
+  sp.scale.set(0.8, 1.6, 1); sp.position.y = 0.82; return sp;
+}
+function hqShowLobby(){
+  if (!HQ.R && !hqInit3d()) return;
+  const S = lobbySlots(), key = 'lb:' + S.map(s => s ? s.ch + '/' + s.name : '-').join('|');
+  if (HQ.key !== key){
+    hqShow(key, () => Promise.all(S.map(s => s ? hqCharModel(s.ch).catch(() => null) : null)).then(ms => {
+      const g = new THREE.Group();
+      S.forEach((s, i) => {
+        const [x, z, ry] = LOBBY_POS[i], slot = new THREE.Group(); slot.position.set(x, 0, z); g.add(slot);
+        slot.add(lobbyPad(s ? s.col : '#5d6f7a', !s));
+        if (!s){ slot.add(lobbyEmpty()); return; }
+        const m = ms[i];
+        if (m){ const b = new THREE.Box3().setFromObject(m), k = 1.9/Math.max(1e-3, b.max.y - b.min.y), w = new THREE.Group(); w.add(m); w.scale.setScalar(k);
+          m.position.y -= b.min.y; w.rotation.y = Math.PI + ry; slot.add(w); }
+        const tag = lobbyTag(s.name, s.col, s.you ? 'You' : s.host ? 'Host' : ''); tag.position.y = 2.18; slot.add(tag);
+      });
+      return g; }), 0);
+  }
+  HQ.auto = false;
+  hqModeCard();
+}
+function hqModeCard(){
+  const el = $('hqMode'); if (!el) return;
+  const inRoom = NET.on && !NET.started && NET.players.length, M = netMode();
+  const name = inRoom ? M.name : MODE === 'heli' ? 'Gunship' : 'Wave Defense';
+  const n = inRoom ? NET.players.length : 1, max = inRoom ? M.max : 4;
+  el.innerHTML = `<small>${inRoom ? 'Room ' + hqEsc(NET.code) + (NET.host ? ' · you host' : '') : 'Solo'}</small><b>${hqEsc(name)}</b><span>${inRoom ? hqEsc(M.desc) : 'Open a room from Multiplayer and invite friends to fill the pads.'}</span><i>Squad ${n}/${max}</i>`;
 }
 function hqVehModel(t){
   if (LAZY.has(t) && !lazyReady[t]) return null;
@@ -9051,9 +9151,10 @@ function hqLoop(){
   const pr = HQ.R.getPixelRatio(); if (cvs.width !== Math.round(W*pr) || cvs.height !== Math.round(H*pr)) HQ.R.setSize(W, H, false);
   const C = HQ.C, asp = W/H, wide = asp > 1.15, th = Math.tan(C.fov*Math.PI/360);
   C.aspect = asp;
-  const d = Math.max(HQ.h*(wide ? 1.35 : 1.15)/(2*th), HQ.w*(wide ? 1.7 : 1.15)/(2*th*asp)) + HQ.w*0.3;
+  const d = (Math.max(HQ.h*(wide ? 1.35 : 1.15)/(2*th), HQ.w*(wide ? 1.7 : 1.15)/(2*th*asp)) + HQ.w*0.3) * (HQ.lobby && wide ? 1.3 : 1);
   C.position.set(0, HQ.h*0.55 + d*0.16, d); C.lookAt(0, HQ.h*(wide ? 0.42 : 0.3), 0);
-  if (wide) C.setViewOffset(W, H, -W*0.17, H*0.02, W, H); else C.setViewOffset(W, H, 0, -H*0.06, W, H);
+  if (HQ.lobby) C.setViewOffset(W, H, wide ? W*0.2 : 0, wide ? -H*0.1 : H*0.5 - 0.15*H - 262, W, H);
+  else if (wide) C.setViewOffset(W, H, -W*0.17, H*0.02, W, H); else C.setViewOffset(W, H, 0, -H*0.06, W, H);
   C.updateProjectionMatrix();
   if (HQ.auto) HQ.yaw += 0.0016;
   HQ.root.rotation.y = HQ.yaw;
@@ -9186,7 +9287,7 @@ function frRender(){
   if (rec.length){ h += '<div class="frSec">Recent players</div>'; for (const r of rec) h += `<div class="frRow"><i></i><b>${hqEsc(r.n)}</b><span>${r.c}</span><button type="button" data-a="addr" data-c="${r.c}">Add</button></div>`; }
   el.innerHTML = h;
   if (keep !== null){ const i = $('frIn'); i.value = keep; i.focus(); }
-  if (HQ.page === 'friends') $('hqTags').innerHTML = `<span>${frOnlineCount()} online</span><span>Your code ${SOC.me}</span>`;
+  if (HQ.page === 'friends'){ $('hqTags').innerHTML = `<span>${frOnlineCount()} online</span><span>Your code ${SOC.me}</span>`; if (HQ.on) hqShowLobby(); }
 }
 function frLobbyRender(){
   const el = $('mpFriends'); if (!el) return;
@@ -9231,6 +9332,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V102', ['Friends tab is a lobby now: you stand in the middle with three pads for your squad. Everyone in your room shows up in the skin they picked, and empty pads wait for invites. The card under them shows the room’s game mode', 'New squad leaders: Shibahu (SSR) and Boykisser (SR). The squad menu shows the full-detail models', 'Radio: tuning static between stations, every tune-in drops you partway into a song, and a station plays its whole playlist shuffled before anything repeats']],
   ['V101', ['Wave 26 is a boss fight set to “Messing With Sound Stage”: the lane widens on the first drop, three bosses on the bass drop at 2:00, a shop opens in each breakdown and closes when the beat drops (4:29 and 7:31), and more bosses land on each drop', 'Little Bird: the extra tracers now follow the same line as the real rounds, so they line up with the crosshair when you dive', 'Airfield: the desert hills are lower, lumpier ridges and dunes, so they look right from up high', 'Radio in the headset is a little quieter so the cockpit sits on top of it', 'Settings > Code']],
   ['V100', ['Sound no longer breaks up late in big rounds: besides the radio, your own aircraft and the menus, only five weapons sound at once, whatever you control first, then your own crew, then the nearest. Blasts and impacts get three slots (nearest first), and only the two nearest other helicopters keep their rotor sound', 'Radio in first person (cockpit, gunner seats, door guns) sounds like it’s coming through your headset']],
   ['V99', ['Radio keeps playing when you pause, open the shop, a card or Settings: muffled and a little quieter, back to full when you return to the fight', 'Leaving the app (home button, app switcher, screen off) now pauses the run and stops all sound and processing, so it no longer runs in the background and drains the battery (Android: the app update this needs is offered when you open the game)']],
@@ -9358,15 +9460,25 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
 // Five station slots plus OFF. Every recording is on station 1 for now; the other four wait for their own tracks.
 // V101: the home-made recordings are WetGangRadio, a station that only appears once the dev code is entered (Settings > Code);
 // everyone else sees the open station slots. 'Messing With Sound Stage' left the radio: it's the wave 26 boss track now
-const WGR = {name: 'WetGangRadio', tag: 'home-made samples', tracks: [['5gum', '5 Gum'], ['senor_dark', 'Señor Dark'], ['dog_i_am_now', 'Dog I Am Now'], ['loopdy_loop', 'Loopdy Loop'],
+// V102: the dev code no longer adds a station to the normal wheel; it unlocks a separate DEV wheel (🎛 button, or Tab while a wheel is open)
+// with three stations of its own. The normal wheel keeps five open slots for everyone.
+const WGR = {id: 'wgr', name: 'WetGangRadio', tag: 'home-made samples', tracks: [['5gum', '5 Gum'], ['senor_dark', 'Señor Dark'], ['dog_i_am_now', 'Dog I Am Now'], ['loopdy_loop', 'Loopdy Loop'],
     ['playing_the_cello', 'Playing the Cello'], ['kid_at_lunch_table', 'Kid at Lunch Table']]};
+// one 96-minute broadcast: every tune-in drops you somewhere new in it, like a live station
+const CLASSY = {id: 'classy', name: 'Y.102 Classy Wet', tag: 'smooth all night', live: true, tracks: [['classy_wet', 'Classy Wet live']]};
+const ROCKS = {id: 'rocks', name: 'Wet Rocks FM', tag: 'rocks, wet', tracks: [['plutonium_cold', 'Plutonium Cold'], ['hydrogen_bomb_infant', 'Hydrogen Bomb Infant'], ['tiny_pebbles', 'Tiny Pebbles'],
+    ['heartburn_by_the_calories', 'Heartburn by the Calories'], ['missle_67', 'Missle 67'], ['traveler', 'Traveler'], ['inferno_circle', 'Inferno Circle'], ['dont_be_afraid', 'Don’t Be Afraid'], ['lucky_child', 'Lucky Child']]};
+const RADIO_MAIN = [1, 2, 3, 4, 5].map(n => ({id: 'st' + n, name: 'STATION ' + n, tracks: []})), RADIO_DEV = [WGR, CLASSY, ROCKS];
 const devOn = () => !!SETTINGS.wgr;
-let RADIO_ST = [], RW_N = 0;
-function radioStations(){ RADIO_ST = (devOn() ? [WGR] : []).concat([1, 2, 3, 4].map(n => ({name: 'STATION ' + n, tracks: []}))); RW_N = RADIO_ST.length + 1; }
-radioStations();
+const radioById = id => RADIO_MAIN.concat(RADIO_DEV).find(s => s.id === id) || null;
+let RADIO_ST = RADIO_MAIN, RW_N = RADIO_MAIN.length + 1;
+function radioBank(b){ if (b === 'dev' && !devOn()) b = 'main'; RADIO.bank = b; RADIO_ST = b === 'dev' ? RADIO_DEV : RADIO_MAIN; RW_N = RADIO_ST.length + 1;
+  const w = $('radioWheel'); if (w) w.classList.toggle('dev', b === 'dev'); if (RADIO.segs) radioBuild(); }
 if (!SETTINGS.v101radio){ SETTINGS.v101radio = true; if (!devOn()) SETTINGS.radio = -1; }
+if (typeof SETTINGS.radio === 'number') SETTINGS.radio = SETTINGS.radio === 0 && devOn() ? 'wgr' : '';     // V102: stations are saved by id now
+if (SETTINGS.radio && (!radioById(SETTINGS.radio) || (RADIO_DEV.some(x => x.id === SETTINGS.radio) && !devOn()))) SETTINGS.radio = '';
 // wheel slots clockwise from the top: OFF, then the five stations
-const RADIO = {open: false, src: '', x: 0, y: 0, sel: -1, sticky: false, pid: null, ox: 0, oy: 0, moved: false, st: SETTINGS.radio ?? -1, au: null, q: {}, tuned: {}, segs: []};
+const RADIO = {open: false, src: '', x: 0, y: 0, sel: -1, sticky: false, pid: null, ox: 0, oy: 0, moved: false, cur: SETTINGS.radio || '', bank: 'main', au: null, q: {}, last: {}, segs: null};
 const RW_R0 = 58, RW_R1 = 152, RW_DEAD = 26;
 const radioSeat = () => (MODE === 'heli' && HM.on) || DF.on || DG.on || (GS_.on && GS_.phase === 'gun');
 // V99: the radio runs through a low-pass and a gain in the game's audio, so menus can muffle it instead of stopping it
@@ -9410,15 +9522,17 @@ function radioBuild(){
     const mx = (RW_R0 + RW_R1)/2*Math.cos(am), my = (RW_R0 + RW_R1)/2*Math.sin(am);
     const st = k ? RADIO_ST[k - 1] : null;
     t.setAttribute('x', mx.toFixed(1)); t.setAttribute('y', (my - 6).toFixed(1)); t.textContent = k ? st.name : 'OFF';
-    t2.setAttribute('x', mx.toFixed(1)); t2.setAttribute('y', (my + 9).toFixed(1)); t2.setAttribute('class', 's'); t2.textContent = !k ? 'radio off' : st.tracks.length ? st.tracks.length + ' tracks' : 'no signal';
+    t2.setAttribute('x', mx.toFixed(1)); t2.setAttribute('y', (my + 9).toFixed(1)); t2.setAttribute('class', 's'); t2.textContent = !k ? 'radio off' : st.live ? 'live mix' : st.tracks.length ? st.tracks.length + ' tracks' : 'no signal';
     g.setAttribute('class', 'seg' + (k && !st.tracks.length ? ' empty' : '')); g.append(p, t, t2); svg.append(g); RADIO.segs.push(g);
   }
 }
 function radioRender(){
-  RADIO.segs.forEach((g, k) => { g.classList.toggle('on', k === RADIO.sel); g.classList.toggle('cur', k === RADIO.st + 1); });
-  const k = RADIO.sel >= 0 ? RADIO.sel : RADIO.st + 1, st = k ? RADIO_ST[k - 1] : null, cur = RADIO.st >= 0 && k === RADIO.st + 1;
-  $('rwName').textContent = st ? st.name : 'RADIO OFF';
-  $('rwSub').textContent = !st ? (RADIO.sel < 0 ? 'aim at a station, let go' : '') : !st.tracks.length ? 'no signal yet' : cur && RADIO.now ? '♪ ' + RADIO.now : st.tag || '';
+  const ci = RADIO_ST.findIndex(x => x.id === RADIO.cur) + 1;      // 0 when what's playing is on the other wheel (or off)
+  RADIO.segs.forEach((g, k) => { g.classList.toggle('on', k === RADIO.sel); g.classList.toggle('cur', k ? k === ci : !RADIO.cur); });
+  const k = RADIO.sel >= 0 ? RADIO.sel : ci, st = k ? RADIO_ST[k - 1] : null, cur = !!st && st.id === RADIO.cur;
+  $('rwName').textContent = st ? st.name : RADIO.sel < 0 && RADIO.cur ? radioById(RADIO.cur).name : 'RADIO OFF';
+  $('rwBank').textContent = devOn() ? (RADIO.bank === 'dev' ? 'DEV WHEEL · Tab / 🎛 for main' : 'Tab / 🎛 for DEV wheel') : '';
+  $('rwSub').textContent = !st ? (RADIO.sel < 0 ? (RADIO.cur ? '♪ ' + (RADIO.now || '') : 'aim at a station, let go') : '') : !st.tracks.length ? 'no signal yet' : cur && RADIO.now ? '♪ ' + RADIO.now : st.tag || '';
 }
 function radioAim(x, y){
   const L = Math.hypot(x, y), m = RW_R1*0.9; if (L > m){ x *= m/L; y *= m/L; }
@@ -9426,8 +9540,9 @@ function radioAim(x, y){
   const sel = L < RW_DEAD ? -1 : ((Math.round((Math.atan2(y, x)*180/Math.PI + 90)/(360/RW_N)) % RW_N) + RW_N) % RW_N;
   if (sel !== RADIO.sel){ RADIO.sel = sel; if (sel >= 0) sfx('click', 0.25); radioRender(); }
 }
-function radioOpen(src){
+function radioOpen(src, bank){
   if (RADIO.open) return;
+  radioBank(bank || (RADIO_DEV.some(x => x.id === RADIO.cur) ? 'dev' : 'main'));
   RADIO.open = true; RADIO.src = src; RADIO.x = RADIO.y = 0; RADIO.sel = -1; RADIO.sticky = false; RADIO.moved = false;
   $('radioWheel').classList.remove('sticky'); $('radioWheel').hidden = false; radioRender(); sfx('click', 0.4);
 }
@@ -9435,49 +9550,90 @@ function radioClose(){ RADIO.open = false; RADIO.pid = null; RADIO.sticky = fals
 function radioPick(){
   const k = RADIO.sel; radioClose();
   if (k < 0) return;
-  if (k === 0){ if (RADIO.st >= 0){ radioTune(-1); toast('📻 Radio off', '#f0eec4'); } return; }
+  if (k === 0){ if (RADIO.cur){ radioTune(''); toast('📻 Radio off', '#f0eec4'); } return; }
   const st = RADIO_ST[k - 1];
   if (!st.tracks.length){ toast('📻 ' + st.name + ': no signal yet', '#f0eec4'); return; }
-  if (k - 1 !== RADIO.st) radioTune(k - 1);
+  if (st.id !== RADIO.cur) radioTune(st.id);
 }
-function radioTune(i){
-  RADIO.st = i; SETTINGS.radio = i; saveSettings(); $('radioBtn').classList.toggle('on', i >= 0);
-  if (i < 0){ if (RADIO.au){ RADIO.au.pause(); RADIO.au.removeAttribute('src'); RADIO.au.load(); } RADIO.now = ''; return; }
-  radioNext(true);
+// V102: tuning static between stations (made here in Web Audio, on the UI bus so it isn't muffled or headset-filtered)
+function radioStatic(dur = 0.55, off = false){
+  if (!AU.ctx || !SETTINGS.sound || AU.ctx.state !== 'running') return;
+  const c = AU.ctx, t = c.currentTime, out = AU.sfx || c.destination, lv = Math.max(0.25, SETTINGS.radioVol ?? 0.6);
+  const n = Math.ceil(c.sampleRate*dur), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0, cr = 0; i < n; i++){ if (Math.random() < 0.0016) cr = 1; cr *= 0.985; d[i] = (Math.random()*2 - 1)*(0.55 + 0.45*Math.sin(i/c.sampleRate*Math.PI*23)**2) + (Math.random() < 0.5 ? cr : -cr)*0.9; }
+  const src = c.createBufferSource(), bp = c.createBiquadFilter(), g = c.createGain(); src.buffer = buf;
+  bp.type = 'bandpass'; bp.Q.value = 1.6; bp.frequency.setValueAtTime(off ? 2600 : 900, t); bp.frequency.exponentialRampToValueAtTime(off ? 500 : 3200, t + dur*0.6); bp.frequency.exponentialRampToValueAtTime(off ? 300 : 1500, t + dur);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.22*lv, t + 0.025); g.gain.setValueAtTime(0.22*lv, t + dur*0.7); g.gain.linearRampToValueAtTime(0, t + dur);
+  src.connect(bp); bp.connect(g); g.connect(out); src.start(t); src.stop(t + dur + 0.02);
+  // the detune whistle as the dial passes a carrier, and the click of the set
+  tone(t + dur*0.2, dur*0.45, {f: off ? 1700 : 1100 + Math.random()*900, f2: off ? 600 : 2400 + Math.random()*800, type: 'sine', vol: 0.035*lv, out});
+  tone(t, 0.02, {f: 2200, type: 'square', vol: 0.05*lv, out});
+}
+function radioTune(id){
+  const was = RADIO.cur; RADIO.cur = id; SETTINGS.radio = id; saveSettings(); $('radioBtn').classList.toggle('on', !!id);
+  $('radioDevBtn').classList.toggle('on', RADIO_DEV.some(x => x.id === id));
+  if (!id){ radioStatic(0.32, true); RADIO.tok = (RADIO.tok || 0) + 1; RADIO.tuneT_busy = false; if (RADIO.au){ RADIO.au.pause(); RADIO.au.removeAttribute('src'); RADIO.au.load(); } RADIO.now = ''; return; }
+  if (was !== id) radioStatic(0.6);
+  if (RADIO.au && !RADIO.au.paused) RADIO.au.pause();
+  clearTimeout(RADIO.tuneT); RADIO.tuneT_busy = true; RADIO.tuneT = setTimeout(() => { RADIO.tuneT_busy = false; if (RADIO.cur === id) radioNext(true); }, was !== id ? 380 : 0);
+}
+// a shuffled run through the station: nothing repeats until the whole playlist has played, and a new shuffle never opens with the song that just ended
+function radioQueue(st){
+  let q = RADIO.q[st.id];
+  if (!q || q.i >= q.list.length){
+    const list = st.tracks.map((_, j) => j); for (let j = list.length - 1; j > 0; j--){ const r = (Math.random()*(j + 1))|0; [list[j], list[r]] = [list[r], list[j]]; }
+    if (list.length > 1 && list[0] === RADIO.last[st.id]){ const r = 1 + ((Math.random()*(list.length - 1))|0); [list[0], list[r]] = [list[r], list[0]]; }
+    q = RADIO.q[st.id] = {list, i: 0};
+  }
+  const j = q.list[q.i++]; RADIO.last[st.id] = j; return st.tracks[j];
+}
+// the app serves its files without byte ranges, so a plain <audio src> can't jump into a song; a blob URL of the whole file can
+const RADIO_BLOB = new Map();
+function radioBlob(url){
+  if (RADIO_BLOB.has(url)) return RADIO_BLOB.get(url);
+  const p = fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.blob(); }).then(b => URL.createObjectURL(b)).catch(() => { RADIO_BLOB.delete(url); return url; });
+  RADIO_BLOB.set(url, p);
+  if (RADIO_BLOB.size > 3){ const [k, v] = RADIO_BLOB.entries().next().value; RADIO_BLOB.delete(k); v.then(u => { if (u.startsWith('blob:') && RADIO.au && RADIO.au.src !== u) URL.revokeObjectURL(u); }); }
+  return p;
 }
 function radioNext(tuneIn){
-  const st = RADIO_ST[RADIO.st]; if (!st || !st.tracks.length) return;
-  if (!RADIO.au){ RADIO.au = new Audio(); RADIO.au.preload = 'auto'; RADIO.au.addEventListener('ended', () => radioNext(false)); RADIO.au.addEventListener('error', () => setTimeout(() => radioNext(false), 800)); }
-  // a shuffled run through the station; a new shuffle once it's all been played
-  let q = RADIO.q[RADIO.st]; if (!q || q.i >= q.list.length){ const list = st.tracks.map((_, j) => j); for (let j = list.length - 1; j > 0; j--){ const r = (Math.random()*(j + 1))|0; [list[j], list[r]] = [list[r], list[j]]; } q = RADIO.q[RADIO.st] = {list, i: 0}; }
-  const tr = st.tracks[q.list[q.i++]], au = RADIO.au;
-  RADIO.now = tr[1]; au.src = 'assets/radio/' + tr[0] + '.mp3'; radioVolume();
-  // like GTA, the first time you tune in you land partway through a song, as if the station had been playing all along
-  if (tuneIn && !RADIO.tuned[RADIO.st]){ RADIO.tuned[RADIO.st] = true; au.addEventListener('loadedmetadata', () => { if (isFinite(au.duration) && au.duration > 20) au.currentTime = au.duration*rnd(0.08, 0.55); }, {once: true}); }
-  if (state === 'play' || state === 'dying' || radioMuffled()) au.play().catch(() => {});
-  if (tuneIn || state === 'play') toast('📻 ' + st.name + ' · ' + tr[1], '#f0eec4');
-  radioRender();
+  const st = radioById(RADIO.cur); if (!st || !st.tracks.length) return;
+  if (!RADIO.au){ RADIO.au = new Audio(); RADIO.au.preload = 'auto'; RADIO.au.addEventListener('ended', () => radioNext(false)); RADIO.au.addEventListener('error', () => { if (RADIO.au.getAttribute('src')) setTimeout(() => radioNext(false), 800); }); }
+  const tr = radioQueue(st), au = RADIO.au, tok = RADIO.tok = (RADIO.tok || 0) + 1, id = RADIO.cur;
+  RADIO.now = tr[1]; RADIO.tuneT_busy = true; radioRender();
+  if (tuneIn || state === 'play') toast('📻 ' + st.name + (st.live ? '' : ' · ' + tr[1]), '#f0eec4');
+  radioBlob('assets/radio/' + tr[0] + '.mp3').then(u => {
+    if (tok !== RADIO.tok || RADIO.cur !== id) return;
+    RADIO.tuneT_busy = false; au.src = u; radioVolume();
+    // like GTA, tuning in lands you partway through a song, as if the station had been playing all along (anywhere at all in the long live mix)
+    if (tuneIn || st.live) au.addEventListener('loadedmetadata', () => { if (isFinite(au.duration) && au.duration > 20) au.currentTime = st.live ? rnd(0, Math.max(0, au.duration - 90)) : au.duration*rnd(0.06, 0.5); }, {once: true});
+    if (!document.hidden && !APPBG.on && !EV.music && (state === 'play' || state === 'dying' || radioMuffled())) au.play().catch(() => {});
+  });
 }
 radioBuild();
 // V101: dev code. Only a hash is stored here, so reading the page doesn't give it away
 const cyrb53 = (str, seed = 0) => { let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed; for (let i = 0, ch; i < str.length; i++){ ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (4294967296*(2097151 & h2) + (h1 >>> 0)).toString(36); };
 function codeEnter(){
   const v = ($('sCode').value || '').trim().toUpperCase(); $('sCode').value = ''; if (!v) return;
-  if (cyrb53(v, 26) === 'zsypv07iff'){ const was = devOn(); SETTINGS.wgr = true; saveSettings(); radioStations(); radioBuild(); if (!was && RADIO.st >= 0) RADIO.st += 1; sfx('reward'); toast('📻 WetGangRadio unlocked', '#f0eec4'); }
+  if (cyrb53(v, 26) === 'zsypv07iff'){ SETTINGS.wgr = true; saveSettings(); sfx('reward'); toast('🎛 DEV radio wheel unlocked', '#f0eec4'); }
   else { sfx('deny'); toast('Unknown code', '#ffd2cc'); }
 }
 $('sCodeBtn').onclick = codeEnter; $('sCode').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') codeEnter(); });
 // the 📻 button: drag out of it toward a station and let go, or tap it and then tap a station
-{ const b = $('radioBtn'), w = $('radioWheel');
+{ const w = $('radioWheel');
+  for (const [b, bank] of [[$('radioBtn'), 'main'], [$('radioDevBtn'), 'dev']]){
   b.addEventListener('pointerdown', e => {
     e.preventDefault(); e.stopPropagation(); audioInit();
-    if (RADIO.open){ radioClose(); return; }
-    radioOpen('touch'); RADIO.pid = e.pointerId; RADIO.ox = e.clientX; RADIO.oy = e.clientY; try { b.setPointerCapture(e.pointerId); } catch(_){}
+    if (RADIO.open){ if (RADIO.bank !== bank){ radioBank(bank); radioRender(); sfx('click', 0.4); } else radioClose(); return; }
+    radioOpen('touch', bank); RADIO.pid = e.pointerId; RADIO.ox = e.clientX; RADIO.oy = e.clientY; try { b.setPointerCapture(e.pointerId); } catch(_){}
   });
   b.addEventListener('pointermove', e => { if (!RADIO.open || RADIO.sticky || RADIO.pid !== e.pointerId) return; e.stopPropagation(); const dx = e.clientX - RADIO.ox, dy = e.clientY - RADIO.oy; if (Math.hypot(dx, dy) > RW_DEAD) RADIO.moved = true; radioAim(dx*1.2, dy*1.2); });
   const up = e => { if (!RADIO.open || RADIO.sticky || RADIO.pid !== e.pointerId) return; e.stopPropagation(); RADIO.pid = null;
     if (RADIO.moved) radioPick(); else { RADIO.sticky = true; w.classList.add('sticky'); radioAim(0, 0); } };
   b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
+  }
+  // Tab swaps between the normal and the DEV wheel while one is open
+  addEventListener('keydown', e => { if (RADIO.open && devOn() && e.code === 'Tab'){ e.preventDefault(); e.stopImmediatePropagation(); radioBank(RADIO.bank === 'dev' ? 'main' : 'dev'); RADIO.sel = -1; radioRender(); sfx('click', 0.4); } }, true);
   // tap mode: the wheel follows the cursor / finger from the screen centre; a tap on a station picks it, a tap in the middle closes it
   const rel = e => { const r = $('rwSvg').getBoundingClientRect(), k = 320/r.width; return [(e.clientX - r.left - r.width/2)*k, (e.clientY - r.top - r.height/2)*k]; };
   w.addEventListener('pointermove', e => { if (RADIO.sticky){ const [x, y] = rel(e); radioAim(x, y); } });
@@ -9485,15 +9641,16 @@ $('sCodeBtn').onclick = codeEnter; $('sCode').addEventListener('keydown', e => {
 }
 // plays only while you're in a run; the button shows during play
 setInterval(() => {
-  const live = state === 'play' || state === 'dying', btn = $('radioBtn');
+  const live = state === 'play' || state === 'dying', btn = $('radioBtn'), db = $('radioDevBtn');
   if (btn.hidden === live) btn.hidden = !live;
+  if (db.hidden === (live && devOn())) db.hidden = !(live && devOn());
   if (RADIO.open && !live) radioClose();
   const on = live || radioMuffled();       // V99: keeps playing (muffled) through pause, the shop, cards and Settings
   if (RADIO.au) radioMix(false);
-  if (RADIO.st >= 0 && on && !document.hidden && !APPBG.on && !EV.music){ if (!RADIO.au || !RADIO.au.src) radioNext(true); else if (RADIO.au.paused) RADIO.au.play().catch(() => {}); }
+  if (RADIO.cur && !RADIO.tuneT_busy && on && !document.hidden && !APPBG.on && !EV.music){ if (!RADIO.au || !RADIO.au.src) radioNext(true); else if (RADIO.au.paused) RADIO.au.play().catch(() => {}); }
   else if (RADIO.au && !RADIO.au.paused) RADIO.au.pause();
 }, 300);
-$('radioBtn').classList.toggle('on', RADIO.st >= 0);
+$('radioBtn').classList.toggle('on', !!RADIO.cur); $('radioDevBtn').classList.toggle('on', RADIO_DEV.some(x => x.id === RADIO.cur));
 // ================= V101: wave 26, the boss song =================
 // 'Messing With Sound Stage' (9:41) drives the whole wave. Song time (from the audio itself, so the game stays on the beat):
 //   0:00 the wave starts on the narrow lane, a light trickle      0:41 first mini drop: the lane widens, more of them

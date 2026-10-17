@@ -575,7 +575,7 @@ button.ccard{cursor:pointer}
 #hm .lock{position:absolute;width:46px;height:46px;border:2px solid #ff6b5b;border-radius:4px;transform:translate(-50%,-50%);display:none}
 #hm .lock.acq{border-color:#ffd23a;border-style:dashed;animation:blink .5s steps(2) infinite}#hm .lock.ok{border-color:#ff3b30;border-width:3px;box-shadow:0 0 10px rgba(255,59,48,.7)}
 #hm .warn.paint{color:#ffd23a;animation:blink .8s steps(2) infinite}
-#hmTags .hmh.aa{color:#ffb35a}
+#hmTags .hmh.foe{color:#ff3b30!important;font-weight:800;letter-spacing:1px;text-shadow:0 0 3px #000,0 1px 2px #000;background:none!important;border:0!important}
 #hm .warn{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-family:var(--display);font-size:22px;color:#ff6b5b;letter-spacing:2px;display:none;text-shadow:0 0 8px rgba(0,0,0,.6);animation:blink .4s steps(2) infinite}
 @keyframes blink{50%{opacity:.25}}
 #hm .hint{position:absolute;left:12px;right:12px;top:40%;text-align:center;font-size:13px;font-weight:800;opacity:0;transition:opacity .6s;text-shadow:0 1px 3px #000}
@@ -767,7 +767,7 @@ body.pc .titleFs{display:none}
         <h3 class="subh">World</h3>
         <div class="set">
           <label for="sLoc">Location</label><select id="sLoc"><option value="pier">Seaside pier</option><option value="airfield">Desert airfield</option></select>
-          <label for="sSkin">Enemy look</label><select id="sSkin"><option value="classic">Classic</option><option value="dust">Desert dust</option><option value="ghost">Ghost</option><option value="toxic">Toxic</option><option value="zombie">Zombies</option><option value="drew">Drew</option></select>
+          <label for="sSkin">Enemy look</label><select id="sSkin"><option value="zombie">Zombies</option></select>
           <label for="sDap">DAP model</label><select id="sDap"><option value="pods">UH-60M with pods</option><option value="light">Light (faster)</option><option value="detailed">Detailed</option></select>
           <label for="sAutoLand">Landscape when you take a seat</label><input class="sw" type="checkbox" id="sAutoLand">
           <label for="sAiSquad">AI runs your squad while you’re in a vehicle</label><input class="sw" type="checkbox" id="sAiSquad">
@@ -1042,7 +1042,7 @@ body.pc .titleFs{display:none}
     <div class="card">
       <div class="tag">How to play</div>
       <h1>Ad Lords</h1>
-      <p>The Sharklings are coming up the pier, wave after wave.</p>
+      <p id="hordeLine">The zombies are coming up the pier, wave after wave.</p>
       <div class="how">
         <i>Drag</i><span>anywhere to move your gunners</span>
         <i>Barrels</i><span>come in pairs. Pick which one to break for guns, gunners, vehicles or a Pistol + upgrade</span>
@@ -1063,7 +1063,7 @@ body.pc .titleFs{display:none}
       <div id="introArt"><span class="newbadge">NEW ENEMY</span><img id="introImg" alt=""></div>
       <div id="introText">
         <span class="role" id="introRole">NORMAL</span>
-        <h3 id="introName">Sharkling</h3>
+        <h3 id="introName">Walker</h3>
         <div class="line" id="introLine"></div>
         <div class="stats" id="introStats"></div>
         <div class="tip" id="introTip"></div>
@@ -1092,7 +1092,7 @@ body.pc .titleFs{display:none}
   <div class="overlay" id="over" hidden>
     <div class="card">
       <div class="tag">Barricade down</div>
-      <h2>The Sharklings got through</h2>
+      <h2>The zombies got through</h2>
       <div class="nums">
         <div><b id="oWave">1</b><span>WAVE</span></div>
         <div><b id="oKills">0</b><span>KILLS</span></div>
@@ -1131,14 +1131,17 @@ if (!window.THREE || !THREE.GLTFLoader){ $('loadtxt').textContent = 'Could not l
 // ======================================================================
 const ASSETS = {
   player: null,    // drop your gunner model here, e.g. 'assets/player.json'
-  enemies: {normal: 'assets/normal.json', fast: 'assets/fast.json', swarm: 'assets/swarm.json', tank: 'assets/tank.json', charger: 'assets/charger.json', captain: 'assets/captain.json'},
-  cards:   {normal: 'assets/card_normal.webp', fast: 'assets/card_fast.webp', swarm: 'assets/card_swarm.webp', tank: 'assets/card_tank.webp', charger: 'assets/card_charger.webp', captain: 'assets/card_captain.webp'},
+  // V105: the horde is zombies by default; the Drew horde is a dev-code extra
+  enemies: {normal: 'assets/zombie_girl.json', fast: 'assets/zombie_girl.json', swarm: 'assets/zombie_girl.json', tank: 'assets/zombie_zom1.json', charger: 'assets/zombie_zom1.json', captain: 'assets/zombie_zom1.json'},
+  enemyLib: 'assets/zual.json', enemyGaits: {walk: 'Z_Walk', run: 'Z_Walk', shuffle: 'Z_Shamble'},
+  cards:   {normal: 'assets/card_zombie_normal.webp', fast: 'assets/card_zombie_fast.webp', swarm: 'assets/card_zombie_swarm.webp', tank: 'assets/card_zombie_tank.webp', charger: 'assets/card_zombie_charger.webp', captain: 'assets/card_zombie_captain.webp'},
   vehicles: {
     // UH-60 with separate parts (fuselage, doors, main_rotor, rear_rotor…). body/rotor/tailRotor override it piece by piece;
     // a body without its own rotor gets the Apache blades, rescaled.
     // Sikorsky UH-60M with the external-tank stub wings (hull space: metres, nose -z, mast at the UH-60's); the gunner-window panes are
     // left out of the model so the M134s stick out of them
-    blackhawk: {model: 'assets/uh60.json', body: 'assets/uh60s_body.json', rotor: 'assets/uh60s_rotor.json', tailRotor: 'assets/uh60s_tail.json', tailAt: [0.288, 1.84, 8.79], gunAt: [1.44, 0.04, -2.78]},
+    // V105: the called-in transport is an SH-60B Seahawk (the player's model), converted into the same hull space
+    blackhawk: {model: 'assets/uh60.json', body: 'assets/sh60_body.glb', rotor: 'assets/sh60_rotor.glb', tailRotor: 'assets/sh60_tail.glb', tailAt: [-0.188, 2.62, 11.56], gunAt: [1.3, 0.1, -2.5]},
     // MH-60L DAP: “MH-60L DAP (War Thunder)” by KojfDiscord, CC BY 4.0 — body, rotor and tail rotor already in hull space
     dap:       {model: 'assets/uh60.json', body: 'assets/dapwt_body.json', rotor: 'assets/dapwt_rotor.json', tailRotor: 'assets/dapwt_tail.json'},
     // “Minigun M-134” by Nik Vega, CC BY 4.0 — split by its rig into receiver and spinning barrel cluster (metres, barrels along -z)
@@ -1190,14 +1193,14 @@ const rnd = (a,b) => a + Math.random()*(b-a);
 const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
 const fmt = n => Math.max(0,Math.round(n)).toLocaleString('en-US');
 
-// six variants of the same girl; role decides behavior
+// six kinds in the horde; role decides behavior (names and lines here are the zombies'; a horde skin can rename them)
 const ROLES = {
-  normal:  {name: 'Sharkling', tag: 'NORMAL', line: 'Just here to say hi. And bite.', tip: 'Steady fire handles her.', hp: 2.4, speed: 1.9, scale: 1.0, dmg: 1, coin: 1, gait: 'walk', r: 0.34, weight: 10},
-  fast:    {name: 'Sprinter', tag: 'FAST', line: 'Low HP, top speed.', tip: 'Spread fire works best: SMG, Bailiff or the ×3 gate.', hp: 1.6, speed: 3.8, scale: 0.95, dmg: 1, coin: 1, gait: 'run', r: 0.32, weight: 6},
-  swarm:   {name: 'Minnows', tag: 'SWARM', line: 'Tiny, and never alone.', tip: 'Grenades and shotguns clear a whole pack.', hp: 0.9, speed: 2.4, scale: 0.66, dmg: 0.5, coin: 0.35, gait: 'walk', r: 0.24, weight: 4, pack: 6},
-  tank:    {name: 'Sleepyhead', tag: 'TANK', line: 'Too tired to care about bullets.', tip: 'Sniper, RPG or a vehicle. Don’t waste pistol rounds.', hp: 26, speed: 1.05, scale: 1.4, dmg: 6, coin: 6, gait: 'shuffle', r: 0.5, weight: 2},
-  charger: {name: 'Biter', tag: 'CHARGER', line: 'Strolls in, then lunges at the barricade.', tip: 'Kill her before she gets close. She speeds up near the front.', hp: 6, speed: 1.9, scale: 1.05, dmg: 4, coin: 2, gait: 'walk', r: 0.36, weight: 4, lunge: 6.5},
-  captain: {name: 'Captain', tag: 'CAPTAIN', line: 'Everyone near her moves faster.', tip: 'Snipe her first. Her crew slows down once she’s gone.', hp: 12, speed: 1.7, scale: 1.1, dmg: 3, coin: 5, gait: 'walk', r: 0.38, weight: 1.6, aura: 3.2},
+  normal:  {name: 'Walker', tag: 'NORMAL', line: 'Slow, hungry and never alone.', tip: 'Steady fire handles them.', hp: 2.4, speed: 1.9, scale: 1.0, dmg: 1, coin: 1, gait: 'walk', r: 0.34, weight: 10},
+  fast:    {name: 'Runner', tag: 'FAST', line: 'Fast, hungry, and not slowing down.', tip: 'Spread fire works best: SMG, Bailiff or the ×3 gate.', hp: 1.6, speed: 3.8, scale: 0.95, dmg: 1, coin: 1, gait: 'run', r: 0.32, weight: 6},
+  swarm:   {name: 'Pack', tag: 'SWARM', line: 'They come in packs.', tip: 'Grenades and shotguns clear a whole pack.', hp: 0.9, speed: 2.4, scale: 0.66, dmg: 0.5, coin: 0.35, gait: 'walk', r: 0.24, weight: 4, pack: 6},
+  tank:    {name: 'Bloater', tag: 'TANK', line: 'Swollen, slow and very hard to put down.', tip: 'Sniper, RPG or a vehicle. Don’t waste pistol rounds.', hp: 26, speed: 1.05, scale: 1.4, dmg: 6, coin: 6, gait: 'shuffle', r: 0.5, weight: 2},
+  charger: {name: 'Lunger', tag: 'CHARGER', line: 'Shambles in, then lunges at the barricade.', tip: 'Kill it before it gets close. It speeds up near the front.', hp: 6, speed: 1.9, scale: 1.05, dmg: 4, coin: 2, gait: 'walk', r: 0.36, weight: 4, lunge: 6.5},
+  captain: {name: 'Alpha', tag: 'CAPTAIN', line: 'The rest follow it. And move faster for it.', tip: 'Snipe it first. The pack slows down once it’s gone.', hp: 12, speed: 1.7, scale: 1.1, dmg: 3, coin: 5, gait: 'walk', r: 0.38, weight: 1.6, aura: 3.2},
 };
 const ROLE_ORDER = ['normal', 'fast', 'swarm', 'tank', 'charger', 'captain'];
 const RI = Object.fromEntries(ROLE_ORDER.map((k, i) => [k, i]));
@@ -1241,7 +1244,7 @@ const VEHICLES = {
   technical: {name: 'Technical', desc: 'Pickup with a DShK 12.7mm heavy machine gun in the bed. Rounds go through four of the horde.', dur: 30, price: 140, weight: 4},
   abrams:    {name: 'M1 Abrams', desc: 'Main gun blasts crowds; a .50 cal on the turret aims on its own and punches through lines.', dur: 30, price: 240, weight: 3},
   bradley:   {name: 'M2 Bradley', desc: '25mm Bushmaster in short explosive bursts, and a TOW missile for the biggest thing on the pier.', dur: 32, price: 300, weight: 2.4},
-  blackhawk: {name: 'Black Hawk', desc: 'Hovers off the pier with two M134 door miniguns.', dur: 28, price: 280, weight: 3},
+  blackhawk: {name: 'SH-60 Seahawk', desc: 'Hovers off the pier with two M134 door miniguns.', dur: 28, price: 280, weight: 3},
   dap:       {name: 'DAP Black Hawk', desc: 'Armed Black Hawk: circles the thickest part of the horde with door miniguns, wing guns and rocket pods. Take a door gun yourself.', dur: 48, price: 560, weight: 1.2},
   bulldozer: {name: 'Bulldozer', desc: 'Drives up the pier and flattens everything.', dur: 0, price: 110, weight: 5},
   apache:    {name: 'Apache', desc: 'Circles the pier and works the horde with its 30mm, rockets and Hellfires. Fly it yourself any time from the Fly button.', dur: 38, price: 650, weight: 1.5},
@@ -1257,7 +1260,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V104';
+const GAME_VERSION = 'V105';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -2498,6 +2501,16 @@ function airJets(L){
     for (const [x, z, yaw] of [[18, -5, 2.4], [26, -17, 2.4]]){ const j = vehToon(gl.scene.clone(true), 1.05); j.scale.setScalar(JET_K); j.position.set(x, 0.02, z); j.rotation.y = yaw; grp.add(j); }
     L.group.add(grp); L.jets = grp; grp.visible = L.airport.visible; }).catch(e => console.warn('parked jets', e));
 }
+// V105: military posts out in the desert around the airfield; in gunship mode the AA sites set up on their parking pads
+const MILBASE = {url: 'assets/milpost.glb', at: [[-36, -125, 0], [66, -36, Math.PI/2], [0, -216, 0]], pad: [-5.1, -11.5], M: null, loading: false};
+function milBases(L){
+  if (L.bases || MILBASE.loading || !SKIN_LOAD.load) return; MILBASE.loading = true;
+  SKIN_LOAD.load(MILBASE.url).then(g => {
+    MILBASE.M = g.scene; L.bases = [];
+    for (const [x, z, ry] of MILBASE.at){ const o = vehToon(g.scene.clone(true), 1.05, 0xb8a67e); o.position.set(x, 0, z); o.rotation.y = ry; o.traverse(m => { if (m.isMesh){ m.castShadow = true; m.receiveShadow = true; } }); L.group.add(o);
+      const c = Math.cos(ry), sn = Math.sin(ry), px = MILBASE.pad[0], pz = MILBASE.pad[1]; L.bases.push({x: x + px*c + pz*sn, z: z - px*sn + pz*c, ry}); }
+  }).catch(e => { console.warn('military post', e); MILBASE.loading = false; });
+}
 function applyLocation(name){
   if (!LOC.sets[name]){ if (name === 'airfield') LOC.sets.airfield = buildAirfield(); else name = 'pier'; }
   const animating = PIER.t >= 0;
@@ -2507,7 +2520,7 @@ function applyLocation(name){
   if (mapChanged && state === 'title') refreshTitle();
   for (const k in LOC.sets) LOC.sets[k].group.visible = k === name;
   const L = LOC.sets[name];
-  if (name === 'airfield') airportPc(L);
+  if (name === 'airfield'){ airportPc(L); milBases(L); }
   PIER.stages = L.stages; PIER.mode = L.mode;
   for (const k in LOC.sets) if (k !== name) for (const st of LOC.sets[k].stages) for (const tg of st.tugs || []) tg.visible = false;
   pierSet(PIER.stage);
@@ -2517,16 +2530,13 @@ function applyLocation(name){
 }
 // enemy skins: a tint (and a few new names) over the same characters
 const ENEMY_SKINS = {
-  classic: {tint: [1, 1, 1]},
-  dust: {tint: [1.08, 0.93, 0.74], names: {normal: 'Sandling', fast: 'Roadrunner', swarm: 'Tumbleweeds', tank: 'Sunbaked', charger: 'Rattler', captain: 'Foreman'}},
-  ghost: {tint: [0.78, 0.94, 1.3], names: {normal: 'Haunt', fast: 'Flicker', swarm: 'Wisps', tank: 'Dread', charger: 'Wailer', captain: 'Lantern'}},
-  toxic: {tint: [0.8, 1.22, 0.72], names: {normal: 'Gloop', fast: 'Zipper', swarm: 'Spores', tank: 'Sludge', charger: 'Spitter', captain: 'Mother'}},
+  zombie: {tint: [1, 1, 1], horde: 'The zombies', boss: {name: 'The Big One', line: 'Woke up hungry. Brings the whole street.', tip: 'Save your RPG and vehicles for it. If it reaches the barricade it takes half its health.'}},
 };
 const ROLE_NAMES0 = Object.fromEntries(Object.entries(ROLES).map(([k, R]) => [k, R.name]));
 const ROLE_TEXT0 = Object.fromEntries(Object.entries(ROLES).map(([k, R]) => [k, {line: R.line, tip: R.tip}]));
 const CARDS0 = {...ASSETS.cards};
 // skins that bring their own characters: each listed role swaps to that model; the rest keep the originals
-ENEMY_SKINS.drew = {tint: [1, 1, 1],
+ENEMY_SKINS.drew = {tint: [1, 1, 1], dev: true, horde: 'The Drews',
   models: {normal: 'assets/drew_scout.json', fast: 'assets/drew_baby.json', swarm: 'assets/drew_pigeon.json', tank: 'assets/drew_bear.json', captain: 'assets/drew_cape.json', charger: 'assets/drew_robe.json'},
   cards: {normal: 'assets/card_drew_scout.webp', fast: 'assets/card_drew_baby.webp', swarm: 'assets/card_drew_pigeon.webp', tank: 'assets/card_drew_bear.webp', captain: 'assets/card_drew_cape.webp', charger: 'assets/card_drew_robe.webp'},
   names: {normal: 'Scout Drew', fast: 'Baby Drew', swarm: 'Pigeon Drews', tank: 'Bear Drew', captain: 'Captain Drew', charger: 'Master Leo'},
@@ -2539,20 +2549,6 @@ ENEMY_SKINS.drew = {tint: [1, 1, 1],
     captain: {line: 'Everyone near him moves faster.', tip: 'Snipe him first. His crew slows down once he’s gone.'},
   },
   boss: {name: 'Big Bear Drew', line: 'Woke up from hibernation. Brings friends.', tip: 'Save your RPG and vehicles for him. If he reaches the barricade it takes half its health.'}};
-// V93: zombies. Three of the player's zombie models, animated with the player's Mixamo zombie walks (assets/zual.json, the same
-// format as the animation library, so the same retargeting puts the shambling walk on each model)
-ENEMY_SKINS.zombie = {tint: [1, 1, 1], lib: 'assets/zual.json', gaits: {walk: 'Z_Walk', run: 'Z_Walk', shuffle: 'Z_Shamble'},
-  models: {normal: 'assets/zombie_girl.json', fast: 'assets/zombie_girl.json', swarm: 'assets/zombie_girl.json', tank: 'assets/zombie_zom1.json', charger: 'assets/zombie_zom1.json', captain: 'assets/zombie_zom1.json'},
-  cards: {normal: 'assets/card_zombie_normal.webp', fast: 'assets/card_zombie_fast.webp', swarm: 'assets/card_zombie_swarm.webp', tank: 'assets/card_zombie_tank.webp', charger: 'assets/card_zombie_charger.webp', captain: 'assets/card_zombie_captain.webp'},
-  names: {normal: 'Walker', fast: 'Runner', swarm: 'Pack', tank: 'Bloater', charger: 'Lunger', captain: 'Alpha'},
-  text: {
-    normal: {line: 'Slow, hungry and never alone.', tip: 'Steady fire handles her.'},
-    fast: {line: 'Fast, hungry, and not slowing down.', tip: 'Spread fire works best: SMG, Bailiff or the ×3 gate.'},
-    swarm: {line: 'They come in packs.', tip: 'Grenades and shotguns clear a whole pack.'},
-    tank: {line: 'Swollen, slow and very hard to put down.', tip: 'Sniper, RPG or a vehicle. Don’t waste pistol rounds.'},
-    charger: {line: 'Shambles in, then lunges at the barricade.', tip: 'Kill him before he gets close. He speeds up near the front.'},
-    captain: {line: 'The rest follow him. And move faster for it.', tip: 'Snipe him first. The pack slows down once he’s gone.'}},
-  boss: {name: 'The Big One', line: 'Woke up hungry. Brings the whole street.', tip: 'Save your RPG and vehicles for it. If it reaches the barricade it takes half its health.'}};
 const BASE_CROWD = {}, BASE_BOSS = {}, SKIN_LOAD = {load: null, sets: {}, busy: {}};
 // bake with another animation library (and gait clips) in place of the default one, then put everything back
 function withLib(lib, gaits, fn){
@@ -2560,7 +2556,10 @@ function withLib(lib, gaits, fn){
   UAL.data = lib; ualPrep(); Object.assign(UAL_GAIT, gaits || {});
   try { return fn(); } finally { UAL.data = sv.data; UAL.B = sv.B; UAL.idx = sv.idx; UAL.base = sv.base; UAL.rest = sv.rest; UAL.align.copy(sv.align); for (const k in UAL_GAIT) delete UAL_GAIT[k]; Object.assign(UAL_GAIT, g0); }
 }
-let skinCur = 'classic';
+let skinCur = 'zombie';
+const drewOn = () => !!SETTINGS.drews;     // V105: the Drews (horde and squad) only with their dev code
+const skinOk = n => ENEMY_SKINS[n] && (!ENEMY_SKINS[n].dev || drewOn());
+const hordeName = () => (ENEMY_SKINS[skinCur] || ENEMY_SKINS.zombie).horde || 'The horde';
 function loadSkinModels(name){
   const S_ = ENEMY_SKINS[name];
   if (SKIN_LOAD.sets[name] || SKIN_LOAD.busy[name] || !SKIN_LOAD.load) return;
@@ -2585,7 +2584,7 @@ function swapCrowd(set){
 }
 const SKIN_TINT = [1, 1, 1];
 function applyEnemySkin(name){
-  if (!ENEMY_SKINS[name]) name = 'classic';
+  if (!skinOk(name)) name = 'zombie';
   const S_ = ENEMY_SKINS[name]; skinCur = name;
   if (S_.models && !SKIN_LOAD.sets[name]){ loadSkinModels(name); if (!SKIN_LOAD.sets[name]) return; }
   if (Object.keys(BASE_CROWD).length) swapCrowd(S_.models ? SKIN_LOAD.sets[name] : null);
@@ -3176,7 +3175,7 @@ const capWoodM = toon(0xb07a46), bandM = toon(0x5d6670);
 let barrelId = 1;
 const barrels = [];
 function spawnBarrel(x, reward){
-  const hp = Math.round(14*Math.pow(1.25, wave - 1));
+  const hp = Math.min(3000, Math.round(14*Math.pow(1.25, wave - 1)));     // V105: grows the same way, capped at 3,000
   const m = new THREE.Group();
   const roll = new THREE.Group(); roll.rotation.z = Math.PI/2; m.add(roll);
   const spin = new THREE.Group(); roll.add(spin);
@@ -3328,7 +3327,7 @@ const gunnerX = k => gunnerSlot(k)[0], gunnerZ = k => gunnerSlot(k)[1];
 const gunnerHand = k => gunnerX(k) < -0.15 ? -1 : 1;
 
 // ======================================================================
-// CROWD: load each Sharkling, find her bones, bake walk / run / shuffle
+// CROWD: load each horde model, find its bones, bake walk / run / shuffle
 // cycles (with hair, tail and skirt sway) into frames, draw them instanced.
 // ======================================================================
 const X_ = new THREE.Vector3(1,0,0), Y_ = new THREE.Vector3(0,1,0), Z_ = new THREE.Vector3(0,0,1);
@@ -3800,7 +3799,7 @@ const onField = k => k === 'ac130' ? (GS_.on && GS_.kind === 'ac130' ? 1 : 0) : 
 const vehPrice = k => Math.round(VEHICLES[k].price*Math.pow(1.2, shopLv['vb_' + k] || 0));
 let _strOn = null;
 const STREAKS = ['technical', 'abrams', 'bradley', 'blackhawk', 'dap', 'little', 'apache', 'jet', 'ac130', 'bulldozer', 'freeze', 'repair'];
-const STREAK_LABEL = {technical: 'Technical', abrams: 'Abrams', bradley: 'Bradley', jet: 'F/A-18', ac130: 'AC-130', blackhawk: 'Black Hawk', dap: 'DAP', little: 'Little Bird', apache: 'Apache', bulldozer: 'Dozer', freeze: 'Freeze', repair: 'Repair'};
+const STREAK_LABEL = {technical: 'Technical', abrams: 'Abrams', bradley: 'Bradley', jet: 'F/A-18', ac130: 'AC-130', blackhawk: 'Seahawk', dap: 'DAP', little: 'Little Bird', apache: 'Apache', bulldozer: 'Dozer', freeze: 'Freeze', repair: 'Repair'};
 const HELI_SVG = '<path d="M2 6h28M16 6v3"/><path d="M5 13c2-3 6-4 13-4h5c3 0 5 2 5 4s-2 3-5 3H11l-6 1z" fill="currentColor"/><path d="M5 13l-3-3"/>';
 const STREAK_SVG = {
   ac130: '<path d="M14 2h4v19h-4zM2 10l14-2 14 2v3l-14-1-14 1zM10 20h12v2H10z" fill="currentColor"/><path d="M7 9v-2M25 9v-2M11 8.5v-2M21 8.5v-2"/>',
@@ -5302,9 +5301,9 @@ function showNextCard(){
   $('introImg').src = ASSETS.cards[isBoss ? 'tank' : r];
   $('introRole').textContent = isBoss ? 'BOSS' : R.tag;
   const SB = (ENEMY_SKINS[skinCur] || {}).boss;
-  $('introName').textContent = isBoss ? (SB ? SB.name : 'Big Sleepyhead') : R.name;
-  $('introLine').textContent = isBoss ? (SB ? SB.line : 'Woke up grumpy. Summons her friends as she walks.') : R.line;
-  $('introTip').textContent = isBoss ? (SB ? SB.tip : 'Save your RPG and vehicles for her. If she reaches the barricade it takes half its health.') : R.tip;
+  $('introName').textContent = isBoss ? (SB ? SB.name : 'The Big One') : R.name;
+  $('introLine').textContent = isBoss ? (SB ? SB.line : 'Woke up hungry. Brings the whole street.') : R.line;
+  $('introTip').textContent = isBoss ? (SB ? SB.tip : 'Save your RPG and vehicles for it. If it reaches the barricade it takes half its health.') : R.tip;
   const stats = isBoss ? ['HUGE HP', 'SLOW', 'SUMMONS'] : [
     R.hp >= 10 ? 'TOUGH' : R.hp < 2 ? 'FRAGILE' : 'AVERAGE HP',
     R.speed > 3 ? 'VERY FAST' : R.speed < 1.4 ? 'SLOW' : 'NORMAL SPEED',
@@ -5327,7 +5326,7 @@ const SHOP = [
   {sec: 'Upgrades', id: 'dmg', name: 'Sharper rounds', desc: '+15% damage for every gun and vehicle', cost: l => Math.round(50*Math.pow(1.6, l)), max: 15, buy(){ dmgMul *= 1.15; }},
   {sec: 'Upgrades', id: 'rate', name: 'Quick trigger', desc: '+10% fire rate', cost: l => Math.round(50*Math.pow(1.6, l)), max: 10, buy(){ rateMul *= 1.1; }},
   {sec: 'Upgrades', id: 'knock', name: 'Stopping power', desc: 'Hits shove enemies back further and stagger them. Shotguns shove hardest; bosses can’t be moved', cost: l => KNOCK_COST[l], max: 10, buy(){}},
-  {sec: 'Upgrades', id: 'pierce', name: 'AP rounds', desc: '+1 penetration: every bullet passes through one more girl', cost: l => Math.round(120*Math.pow(2.0, l)), max: 4, buy(){}},
+  {sec: 'Upgrades', id: 'pierce', name: 'AP rounds', desc: '+1 penetration: every bullet passes through one more of the horde', cost: l => Math.round(120*Math.pow(2.0, l)), max: 4, buy(){}},
   {sec: 'Upgrades', id: 'gunner', name: 'Hire a gunner', desc: '+1 gunner, up to 5', cost: l => Math.round(80*Math.pow(1.8, l)), max: 4, ok: () => gunners.length < 5, buy(){ addGunner(); }},
   {sec: 'Upgrades', id: 'repair', name: 'Repair barricade', desc: '+35 barricade health', cost: () => 30 + wave*4, ok: () => wall < 100, buy(){ wall = Math.min(100, wall + 35); }},
   {sec: 'Upgrades', id: 'gate4', name: '×4 gate', desc: 'A narrow gate that turns every round through it into four. Stays for this run; it can be smashed and rebuilds.', cost: () => 15000, max: 2, hide: () => wave < 15, buy(){ shopLv.gate4 = (shopLv.gate4 || 0); setTimeout(gate4Sync, 0); toast('×4 gate built', '#e6d4ff'); }},
@@ -6342,7 +6341,7 @@ function gameOver(){
     state = 'over';
     const sc = Math.round(HM.score), nb = sc > heliBest; if (nb) heliBest = sc;
     $('over').querySelector('.tag').textContent = HM.hull <= 0 ? 'Apache down' : 'Pier lost';
-    $('over').querySelector('h2').textContent = HM.hull <= 0 ? 'They shot you down' : 'The Sharklings took the pier';
+    $('over').querySelector('h2').textContent = HM.hull <= 0 ? 'They shot you down' : hordeName() + ' took the pier';
     $('oWave').textContent = wave; $('oKills').textContent = fmt(kills); $('oTime').textContent = fmt(sc); $('oTimeL').textContent = 'SCORE';
     $('oBest').textContent = nb ? 'New best score!' : 'Best score: ' + fmt(heliBest);
     $('retryBtn').hidden = false; $('retryBtn').textContent = 'Fly again'; $('againBtn').textContent = 'Fly again';
@@ -6351,7 +6350,7 @@ function gameOver(){
     $('over').hidden = false; $('hud').hidden = true; $('bottom').hidden = true;
     return;
   }
-  $('over').querySelector('.tag').textContent = 'Barricade down'; $('over').querySelector('h2').textContent = 'The Sharklings got through'; $('oTimeL').textContent = 'TIME'; $('againBtn').textContent = 'New run';
+  $('over').querySelector('.tag').textContent = 'Barricade down'; $('over').querySelector('h2').textContent = hordeName() + ' got through'; $('oTimeL').textContent = 'TIME'; $('againBtn').textContent = 'New run';
   state = 'over'; wall = 0;
   const isBest = wave > best; if (isBest){ best = wave; try { localStorage.setItem('adlords-pier-best', String(best)); } catch(e) {} }
   const m = Math.floor(time/60), s = Math.floor(time%60);
@@ -6760,7 +6759,7 @@ function hmSwapView(){ if (HM.seat !== 'pilot') return; HM.view = HM.view === 'c
 function hmSpawnEnemy(){
   const e = {hp: 45*(1 + 0.25*(wave - 2)), max: 0, ang: rnd(0, 6.28), r: rnd(18, 30), h: rnd(9, 17), fireT: rnd(1, 3), burst: 0, missT: rnd(6, 10), hit: 0, pos: new THREE.Vector3(), g: null};
   e.max = e.hp;
-  const b = buildApache(); tintify(b.g, 1.9, 0.75, 0.7); b.g.scale.setScalar(HM_SCALE*0.9*HB);
+  const b = buildApache(); b.g.scale.setScalar(HM_SCALE*0.9*HB);     // V105: no red tint; a red name tag marks it instead
   e.g = b.g; e.rotor = b.rotor; e.tail = b.tail; scene.add(e.g);
   e.pos.set(rnd(-40, 40), 25, FAR - 30);
   HM.enemies.push(e); toast('Enemy Apache!', '#ff9a90'); sfx('warn');
@@ -6769,11 +6768,10 @@ function hmSpawnEnemy(){
 let _ebhMat = null;
 function hmSpawnBH(){
   const b = buildUH60(false); b.hull.scale.setScalar(0.42*HB); scene.add(b.g);
-  b.hull.traverse(o => { if (o.isMesh && o.material && !o.material.transparent && o.material.color){ o.material = o.material.clone(); o.material.color.multiply(new THREE.Color(1.3, 0.82, 0.78)); } });   // hostile tint; the rotor blur stays see-through
   const e = {kind: 'bh', hp: 70*(1 + 0.25*(wave - 2)), max: 0, ang: rnd(0, 6.28), r: rnd(15, 24), h: rnd(8, 15), hit: 0, pos: new THREE.Vector3(), g: b.g, rotor: b.rotor, tail: b.tail, guns: b.guns, uid: ++vehUid, dir: Math.random() < 0.5 ? 1 : -1};
   e.max = e.hp; for (const gn of e.guns){ gn.flashBase = 0.4; gn.bT = rnd(0.5, 2.5); }
   e.pos.set(rnd(-40, 40), 22, FAR - 30);
-  HM.enemies.push(e); toast('Enemy Black Hawk!', '#ff9a90'); sfx('warn');
+  HM.enemies.push(e); toast('Enemy Seahawk!', '#ff9a90'); sfx('warn');
 }
 function ebhTick(e, dt){
   const P = HM;
@@ -6953,15 +6951,29 @@ function hmWaveClear(){
   toast('Wave ' + wave + ' cleared  +' + bonus, '#c8ffd0'); sfx('reward');
   HM.breakT = 3.5;
 }
+// V105: hits are tested against a capsule along the airframe (nose to tail), not a ball at its middle, so there are no dead spots
+const _ehA2 = new THREE.Vector3(), _ehB2 = new THREE.Vector3(), _ehP = new THREE.Vector3();
+function ehDist(e, p){
+  if (!e.g){ return e.pos.distanceTo(p); }
+  if (!e.cap){ e.g.updateMatrixWorld(true); const box = new THREE.Box3(), inv = new THREE.Matrix4().copy(e.g.matrixWorld).invert(); const under = (o, r) => { for (let q = o; q; q = q.parent) if (q === r) return true; return false; };
+    e.g.traverse(o => { if (o.isMesh && o.geometry && !(o.material && o.material.transparent) && !(e.rotor && under(o, e.rotor)) && !(e.tail && under(o, e.tail))){ o.geometry.computeBoundingBox(); box.union(o.geometry.boundingBox.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld))); } });
+    const sz = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3()), ax = sz.x > sz.z ? 'x' : 'z';
+    e.cap = {ax, c, hl: Math.max(sz.x, sz.z)*0.42, rad: Math.max(0.5, Math.min(sz.y, Math.min(sz.x, sz.z))*0.45)}; }
+  const C = e.cap; e.g.updateMatrixWorld();
+  _ehA2.copy(C.c); _ehA2[C.ax] -= C.hl; _ehA2.applyMatrix4(e.g.matrixWorld); _ehB2.copy(C.c); _ehB2[C.ax] += C.hl; _ehB2.applyMatrix4(e.g.matrixWorld);
+  const ab = _ehB2.sub(_ehA2), t = clamp(_ehP.copy(p).sub(_ehA2).dot(ab)/Math.max(1e-6, ab.lengthSq()), 0, 1);
+  const s = e.g.matrixWorld.getMaxScaleOnAxis();
+  return _ehP.copy(_ehA2).addScaledVector(ab, t).distanceTo(p) - C.rad*s;
+}
 function hmHitHelis(p, r, dmg){
   let hit = false;
   for (const e of HM.enemies){
     if (e.hp <= 0) continue;
     // another player: they take the damage on their side (and tell everyone if it brought them down)
     if (e.remote){ if (e.pos.distanceTo(p) < r + 2.4*HB){ hit = true; e.hit = 0.1; chips(p.x, p.y, p.z, SPARK, 3, 3); fx('white', p.x, p.y, p.z, rnd(0.7, 1.1)); sfxAt('imMetal', p.x, p.y, p.z, 1, 14); hitMark(false); netUp({t: 'dmg', to: e.slot, d: dmg, by: NET.me}); } continue; }
-    if (e.pos.distanceTo(p) < r + (e.kind === 'lb' ? 1.7 : 2.4)*HB){ e.hp -= dmg*vehDmgK(); e.hit = 0.1; hit = true; chips(p.x, p.y, p.z, SPARK, 3, 3); fx('white', p.x, p.y, p.z, rnd(0.7, 1.1)); sfxAt('imMetal', p.x, p.y, p.z, 1, 14);
+    if (ehDist(e, p) < r + 0.25){ e.hp -= dmg*vehDmgK(); e.hit = 0.1; hit = true; chips(p.x, p.y, p.z, SPARK, 6, 4.5); fx('white', p.x, p.y, p.z, rnd(0.7, 1.1)); sfxAt('imMetal', p.x, p.y, p.z, 1, 14);
       hitMark(e.hp <= 0);
-      if (e.hp <= 0){ HM.score += 250; kills++; coins += 20; explode(e.pos.x, e.pos.z, 0.1, 0, true); chips(e.pos.x, e.pos.y, e.pos.z, ORANGE, 40, 7); chips(e.pos.x, e.pos.y, e.pos.z, SMOKE, 30, 5); sfx('bigboom'); e.fall = 0; toast((e.kind === 'bh' ? 'Black Hawk' : e.kind === 'lb' ? 'Little Bird' : 'Apache') + ' down  +250', '#ffe28a'); }
+      if (e.hp <= 0){ HM.score += 250; kills++; coins += 20; explode(e.pos.x, e.pos.z, 0.1, 0, true); chips(e.pos.x, e.pos.y, e.pos.z, ORANGE, 40, 7); chips(e.pos.x, e.pos.y, e.pos.z, SMOKE, 30, 5); sfx('bigboom'); e.fall = 0; toast((e.kind === 'bh' ? 'Seahawk' : e.kind === 'lb' ? 'Little Bird' : 'Apache') + ' down  +250', '#ffe28a'); }
     }
   }
   return hit;
@@ -6972,7 +6984,6 @@ const vehDmgK = () => MODE === 'heli' && HM.type === 'little' ? 1.5 : 1;
 // enemy Little Bird: half an Apache's armour, quick, twin miniguns that hurt but spray
 function hmSpawnLB(){
   const b = buildLittle(); b.hull.scale.setScalar((b.model ? 0.4 : 0.42)*HB); scene.add(b.g);
-  b.hull.traverse(o => { if (o.isMesh && o.material && !o.material.transparent && o.material.color){ o.material = o.material.clone(); o.material.color.multiply(new THREE.Color(1.3, 0.82, 0.78)); } });
   const e = {kind: 'lb', hp: 24*(1 + 0.25*(wave - 2)), max: 0, ang: rnd(0, 6.28), r: rnd(12, 22), h: rnd(7, 14), fireT: rnd(1, 2), burst: 0, hit: 0, pos: new THREE.Vector3(), g: b.g, rotor: b.rotor, tail: b.tail, guns: b.guns, uid: ++vehUid};
   e.max = e.hp; e.pos.set(rnd(-40, 40), 20, FAR - 30);
   HM.enemies.push(e); toast('Enemy Little Bird!', '#ff9a90'); sfx('warn');
@@ -7040,7 +7051,9 @@ function aaModel(k){
 function aaSpawn(){
   const k = AA.kinds[(Math.random()*AA.kinds.length)|0];
   let x = 0, z = 0;
-  for (let tries = 0; tries < 20; tries++){ x = (Math.random() < 0.5 ? -1 : 1)*rnd(14, 62); z = rnd(FAR - 70, FAR - 22); if (AA.list.every(a => Math.hypot(a.x - x, a.z - z) > 16)) break; }
+  const pads = LOC.cur === 'airfield' && LOC.sets.airfield && LOC.sets.airfield.bases, free = pads ? pads.filter(b => AA.list.every(a => a.hp <= 0 || Math.hypot(a.x - b.x, a.z - b.z) > 4)) : [];
+  if (free.length){ const b = free[(Math.random()*free.length)|0]; x = b.x + rnd(-1.5, 1.5); z = b.z + rnd(-1.5, 1.5); }
+  else for (let tries = 0; tries < 20; tries++){ x = (Math.random() < 0.5 ? -1 : 1)*rnd(14, 62); z = rnd(FAR - 70, FAR - 22); if (AA.list.every(a => Math.hypot(a.x - x, a.z - z) > 16)) break; }
   const g = new THREE.Group(); g.position.set(x, LOC.cur === 'airfield' ? 0 : -0.3, z); g.rotation.y = Math.atan2(x, z - 10) + rnd(-0.4, 0.4); scene.add(g);
   const a = {k, name: k.name, g, x, z, hp: k.hp*(1 + 0.15*Math.max(0, wave - 2)), max: 0, lk: 0, missCd: rnd(4, 8), fireT: rnd(1, 3), burst: 0, dead: 0, model: false};
   a.max = a.hp; AA.list.push(a); aaAttach(a);
@@ -7048,7 +7061,7 @@ function aaSpawn(){
 }
 function aaAttach(a){
   if (a.model) return; const M = aaModel(a.k); if (!M) return;
-  const o = vehToon(M.clone(true), 1.1, 0x9a8f6a); o.scale.setScalar(HB); o.traverse(m => { if (m.isMesh) m.castShadow = true; }); a.g.add(o); a.model = true;
+  const o = vehToon(M.clone(true), 1.1, 0x9a8f6a); o.scale.setScalar(1);     // V105: real size o.traverse(m => { if (m.isMesh) m.castShadow = true; }); a.g.add(o); a.model = true;
 }
 function aaHurt(a, d){
   if (a.hp <= 0) return; a.hp -= d*vehDmgK(); hitMark(a.hp <= 0); chips(a.x, 2, a.z, SPARK, 3, 3);
@@ -7056,7 +7069,7 @@ function aaHurt(a, d){
     a.g.traverse(m => { if (m.isMesh && m.material && m.material.color){ m.material = m.material.clone(); m.material.color.multiplyScalar(0.25); } }); a.g.rotation.z = rnd(-0.12, 0.12); }
 }
 function aaBlast(x, z, r, dmg){ if (r < 2.2) return;     // V104: guns (miniguns, the 30 mm) don't hurt them; rockets and missiles do
-  for (const a of AA.list){ if (a.hp > 0 && Math.hypot(a.x - x, a.z - z) < r + 3.2*HB*0.6) aaHurt(a, dmg); } }
+  for (const a of AA.list){ if (a.hp > 0 && Math.hypot(a.x - x, a.z - z) < r + 2.6) aaHurt(a, dmg); } }
 function aaClear(){ for (const a of AA.list) scene.remove(a.g); AA.list.length = 0; }
 function aaTick(dt){
   const P = HM;
@@ -7112,6 +7125,13 @@ function hmDamageFx(P, dt){
   if (crit){ P.cauT = (P.cauT || 0) - dt; if (P.cauT <= 0 && AU.ctx && SETTINGS.sound){ P.cauT = 1.1; const t = AU.ctx.currentTime; tone(t, 0.16, {f: 740, type: 'triangle', vol: 0.08}); tone(t + 0.2, 0.16, {f: 740, type: 'triangle', vol: 0.08}); } }
 }
 function hmFxClear(){ HM.lk = null; }
+// V105: enemy aircraft show their damage too: smoke from half health, fire as well under a quarter
+function ehSmoke(e, dt){
+  const f = e.hp/e.max; if (f >= 0.5) return;
+  e.smT = (e.smT || 0) - dt; if (e.smT > 0) return;
+  e.smT = f < 0.25 ? 0.05 : 0.12; chips(e.pos.x + rnd(-0.5, 0.5), e.pos.y + 0.8, e.pos.z + rnd(-0.5, 0.5), SMOKE, f < 0.25 ? 2 : 1, 1.3);
+  if (f < 0.25) chips(e.pos.x, e.pos.y + 0.6, e.pos.z, ORANGE, 1, 1.8);
+}
 // ---- classic (Battlefield-style) flight: the rotor's thrust tilts with the airframe ----
 // mouse rolls and pitches, W/S pitch, A/D yaw, Shift/Ctrl collective; banking pulls the nose round
 // tuned from BF6 footage (assist off): no self-levelling, and neutral throttle lifts slightly when level
@@ -7302,7 +7322,7 @@ function hmUpdate(dt){
         { const rr = Math.min(from.distanceTo(aim)*0.012, 2.2)*Math.sqrt(Math.random()), ra = Math.random()*6.2832, ax = aim.x + Math.cos(ra)*rr, az = aim.z + Math.sin(ra)*rr;
           SHOT_FAR = 1; SHOT_OWN = 1; shoot(from.x, from.y, from.z, ax, az, 170, gau ? 2.9 : 1.6, gau ? 2 : 1, 5, 2.4, 0, P.tc & 2 ? 3 : 2, aim.y); SHOT_FAR = 0; SHOT_OWN = 0; }     // V98: straight through the reticle's own point; the round meets the ground just past it, on the same line of sight
         if ((P.tc & 3) === 0 && P.enemies.length){ const d = (heliSim() ? hmNoseDir(_gd) : _gd.copy(aim).sub(from)).normalize();
-          for (const e of P.enemies){ if (e.hp <= 0) continue; const rel = _gq.copy(e.pos).sub(from), along = rel.dot(d); if (along > 0 && along < 90 && rel.addScaledVector(d, -along).length() < 2.2){ hmHitHelis(e.pos, 0, 2.4); break; } } }
+          for (const e of P.enemies){ if (e.hp <= 0) continue; const along = _gq.copy(e.pos).sub(from).dot(d); if (along > 0 && along < 90){ _gq.copy(from).addScaledVector(d, along); if (ehDist(e, _gq) < 0.6){ hmHitHelis(_gq.clone(), 0.6, 2.4); break; } } } }
 
       }
       if (little){ const bk = 'lb_' + hmPersp() + '_mg'; gunVoice('hmw', 'fire', 0, 1, {bank: bk}); if (!HS.buf[bk + '_fire']) gunVoice('hmw2', 'fire', 0.25, 0.9); }
@@ -7331,7 +7351,7 @@ function hmUpdate(dt){
       while (P.gunT <= 0){
         P.gunT += M134_STEP/rateMul; gunFire(g, 170, 2.4, 1, 0.01, 0.8);
         // the same line of fire against enemy helicopters (hitscan)
-        for (const e of P.enemies){ if (e.hp <= 0) continue; const rel = e.pos.clone().sub(_gq), along = rel.dot(_gd); if (along > 0 && along < 90 && rel.addScaledVector(_gd, -along).length() < 2.2){ hmHitHelis(e.pos, 0, 1.4); hitMark(e.hp <= 0); fx('white', e.pos.x + rnd(-1, 1), e.pos.y + rnd(-0.5, 0.5), e.pos.z + rnd(-1, 1), rnd(0.8, 1.3)); break; } }
+        for (const e of P.enemies){ if (e.hp <= 0) continue; const along = e.pos.clone().sub(_gq).dot(_gd); if (along > 0 && along < 90){ const q = _gq.clone().addScaledVector(_gd, along); if (ehDist(e, q) < 0.6){ hmHitHelis(q, 0.6, 1.4); break; } } }
       }
       gunVoice('hmdoor', 'fire', 0.3, 1);
     } else if (P.gunT < 0) P.gunT = 0;
@@ -7404,9 +7424,9 @@ function hmUpdate(dt){
     want.x = clamp(want.x, -55, 55); want.z = clamp(want.z, FAR - 45, 30);
     // V104: it has to climb (or pull its nose up) to get you if you're above it
     if (e.kind !== 'bh' && P.pos.y > e.pos.y + 2 && e.pos.distanceTo(P.pos) < 75) want.y = Math.min(P.pos.y + 1.5, 60);
-    if (e.kind === 'bh'){ e.pos.lerp(want, Math.min(1, dt*0.5)); ebhTick(e, dt); continue; }
+    if (e.kind === 'bh'){ e.pos.lerp(want, Math.min(1, dt*0.5)); ebhTick(e, dt); ehSmoke(e, dt); continue; }
     ehFly(e, want, dt);
-    ehGuns(e, dt);
+    ehGuns(e, dt); ehSmoke(e, dt);
   }
   // ---- enemy fire ----
   P.warnT = Math.max(0, P.warnT - dt);
@@ -7627,8 +7647,8 @@ function hmCamera(dt){
   } else lockEl.style.display = 'none';
   // enemy heli health tags
   let tags = '';
-  for (const e of P.enemies){ if (e.hp <= 0) continue; const v = e.pos.clone(); v.y += 2.5*HB; v.project(camera); if (v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1) tags += `<span class="hmh" style="left:${(v.x + 1)/2*100}%;top:${(1 - v.y)/2*100}%">${e.kind === 'bh' ? 'BLACK HAWK' : e.kind === 'lb' ? 'LITTLE BIRD' : 'APACHE'} ${Math.ceil(e.hp/e.max*100)}%</span>`; }
-  for (const a of AA.list){ if (a.hp <= 0) continue; const v = _hmL.set(a.x, 6, a.z); v.project(camera); if (v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1) tags += `<span class="hmh aa" style="left:${(v.x + 1)/2*100}%;top:${(1 - v.y)/2*100}%">AA ${a.name} ${Math.ceil(a.hp/a.max*100)}%</span>`; }
+  for (const e of P.enemies){ if (e.hp <= 0) continue; const v = e.pos.clone(); v.y += 2.5*HB; v.project(camera); if (v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1) tags += `<span class="hmh foe" style="left:${(v.x + 1)/2*100}%;top:${(1 - v.y)/2*100}%">${e.kind === 'bh' ? 'SEAHAWK' : e.kind === 'lb' ? 'LITTLE BIRD' : 'APACHE'}</span>`; }
+  for (const a of AA.list){ if (a.hp <= 0) continue; const v = _hmL.set(a.x, 4.5, a.z); v.project(camera); if (v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1) tags += `<span class="hmh foe" style="left:${(v.x + 1)/2*100}%;top:${(1 - v.y)/2*100}%">${a.name}</span>`; }
   $('hmTags').innerHTML = tags;
   hmThreatUi(P, dt);
   // numbers
@@ -7961,13 +7981,13 @@ const RARITY = {
 };
 const CHARS = {
   guard:   {name: 'Harbor Guard',  rar: 'R',   starter: true, perk: {}, line: 'The original. No frills, no excuses.'},
-  scout:   {name: 'Scout Drew',    rar: 'R',   model: 'assets/drew_scout.json',  card: 'assets/card_drew_scout.webp',  perk: {coins: 0.10}, line: 'Earned a badge for finding loose change.'},
-  baby:    {name: 'Baby Drew',     rar: 'R',   model: 'assets/drew_baby.json',   card: 'assets/card_drew_baby.webp',   perk: {rate: 0.06},  line: 'Short attention span. Very fast trigger finger.'},
+  scout:   {dev: 'drew', name: 'Scout Drew',    rar: 'R',   model: 'assets/drew_scout.json',  card: 'assets/card_drew_scout.webp',  perk: {coins: 0.10}, line: 'Earned a badge for finding loose change.'},
+  baby:    {dev: 'drew', name: 'Baby Drew',     rar: 'R',   model: 'assets/drew_baby.json',   card: 'assets/card_drew_baby.webp',   perk: {rate: 0.06},  line: 'Short attention span. Very fast trigger finger.'},
   soldier: {name: 'Operator Mark', rar: 'SR',  model: 'assets/c_soldier.json',   perk: {dmg: 0.08}, line: 'Full kit, full send.'},
-  pigeon:  {name: 'Pigeon Drew',   rar: 'SR',  model: 'assets/drew_pigeon.json', card: 'assets/card_drew_pigeon.webp', perk: {ammo: 0.15}, line: 'Picks up everything off the ground.'},
-  bear:    {name: 'Bear Drew',     rar: 'SR',  model: 'assets/drew_bear.json',   card: 'assets/card_drew_bear.webp',   perk: {wall: 0.15}, line: 'Gives the barricade a big hug.'},
-  cape:    {name: 'Captain Drew',  rar: 'SSR', model: 'assets/drew_cape.json',   card: 'assets/card_drew_cape.webp',   perk: {dmg: 0.10, rate: 0.08}, line: 'Points dramatically. Squad shoots harder.'},
-  leo:     {name: 'Master Leo',    rar: 'SSR', model: 'assets/drew_robe.json',   card: 'assets/card_drew_robe.webp',   perk: {knock: 0.35, dmg: 0.06}, line: 'Shoves the horde with his mind.'},
+  pigeon:  {dev: 'drew', name: 'Pigeon Drew',   rar: 'SR',  model: 'assets/drew_pigeon.json', card: 'assets/card_drew_pigeon.webp', perk: {ammo: 0.15}, line: 'Picks up everything off the ground.'},
+  bear:    {dev: 'drew', name: 'Bear Drew',     rar: 'SR',  model: 'assets/drew_bear.json',   card: 'assets/card_drew_bear.webp',   perk: {wall: 0.15}, line: 'Gives the barricade a big hug.'},
+  cape:    {dev: 'drew', name: 'Captain Drew',  rar: 'SSR', model: 'assets/drew_cape.json',   card: 'assets/card_drew_cape.webp',   perk: {dmg: 0.10, rate: 0.08}, line: 'Points dramatically. Squad shoots harder.'},
+  leo:     {dev: 'drew', name: 'Master Leo',    rar: 'SSR', model: 'assets/drew_robe.json',   card: 'assets/card_drew_robe.webp',   perk: {knock: 0.35, dmg: 0.06}, line: 'Shoves the horde with his mind.'},
   // Mixamo-rigged, with his own rifle animations (aim / fire / reload)
   // V102: rigged characters from the player's packs; the squad borrows the animation library's pistol clips. The squad menu shows
   // Shibahu at full detail (with her outline shell); the field uses the version without it
@@ -8096,11 +8116,15 @@ function rollOne(){
   PROFILE.pity++; PROFILE.pulls++;
   let rar;
   if (PROFILE.pity >= GACHA.pity) rar = 'SSR';
-  else { const r = Math.random(); rar = r < RARITY.SSR.rate ? 'SSR' : r < RARITY.SSR.rate + RARITY.SR.rate ? 'SR' : 'R'; }
+  else { const r = Math.random(); rar = r < rarRate('SSR') ? 'SSR' : r < rarRate('SSR') + rarRate('SR') ? 'SR' : 'R'; }
   if (rar === 'SSR') PROFILE.pity = 0;
   return rar;
 }
-function pickOf(rar){ const pool = Object.keys(CHARS).filter(k => CHARS[k].rar === rar && !CHARS[k].starter); return pool[(Math.random()*pool.length)|0]; }
+// V105: the Drews are dev-only: hidden from recruiting and the squad lists without their code
+// a rarity with nobody in it right now (the Rares are all Drews) hands its share to the others
+function rarRate(rar){ const has = r => charIds().some(k => CHARS[k].rar === r && !CHARS[k].starter); if (!has(rar)) return 0; let t = 0; for (const r of ['SSR', 'SR', 'R']) if (has(r)) t += RARITY[r].rate; return RARITY[rar].rate/t; }
+function charIds(){ return Object.keys(CHARS).filter(k => !CHARS[k].dev || drewOn()); }
+function pickOf(rar){ const pool = charIds().filter(k => CHARS[k].rar === rar && !CHARS[k].starter); return pool[(Math.random()*pool.length)|0]; }
 function pull(n){
   const cost = n === 10 ? GACHA.ten : GACHA.single*n;
   if (PROFILE.gems < cost){ sfx('deny'); toast('Not enough 💎', '#ffd2cc'); return null; }
@@ -8132,7 +8156,7 @@ function charCardEl(id, opts = {}){
 }
 function openSquad(){
   const box = $('squadGrid'); box.innerHTML = '';
-  for (const id of Object.keys(CHARS)){
+  for (const id of charIds()){
     const el = charCardEl(id, {button: true});
     el.onclick = () => { if (!PROFILE.owned[id]){ sfx('deny'); return; } sfx('click'); equipChar(id); openSquad(); };
     box.appendChild(el);
@@ -8171,7 +8195,7 @@ function baRender(){
   $('baSel').disabled = pts < BA_POINTS; $('baSel').textContent = 'Select Member';
   $('pull1').querySelector('.c').textContent = '💎 ' + GACHA.single; $('pull10').querySelector('.c').textContent = '💎 ' + GACHA.ten;
   $('pull1').disabled = PROFILE.gems < GACHA.single; $('pull10').disabled = PROFILE.gems < GACHA.ten;
-  $('recruitRates').textContent = `Legend ${Math.round(RARITY.SSR.rate*100)}% · Super Rare ${Math.round(RARITY.SR.rate*100)}% · Rare ${Math.round(RARITY.R.rate*100)}% · a Legend is guaranteed within ${GACHA.pity} recruits (${GACHA.pity - PROFILE.pity} to go)`;
+  $('recruitRates').textContent = `Legend ${Math.round(rarRate('SSR')*100)}% · Super Rare ${Math.round(rarRate('SR')*100)}% · Rare ${Math.round(rarRate('R')*100)}% · a Legend is guaranteed within ${GACHA.pity} recruits (${GACHA.pity - PROFILE.pity} to go)`;
   refreshGems();
 }
 function openRecruit(){ $('baShow').hidden = true; $('baModal').hidden = true; RC.regWho = null; baRender(); $('recruit').hidden = false; }
@@ -8219,14 +8243,14 @@ $('baAgain').onclick = () => { $('baShow').hidden = true; baRender(); baConfirm(
 $('baRate').onclick = () => {
   sfx('click'); const B = baBan();
   let h = '<table><tr><th>Member</th><th>Rarity</th><th>Chance</th></tr>';
-  for (const rar of ['SSR', 'SR', 'R']){ const pool = Object.keys(CHARS).filter(k => CHARS[k].rar === rar && !CHARS[k].starter);
-    for (const k of pool){ let p = RARITY[rar].rate/pool.length; if (B.feat && CHARS[B.feat].rar === rar) p = k === B.feat ? RARITY[rar].rate*(0.5 + 0.5/pool.length) : RARITY[rar].rate*0.5/pool.length;
+  for (const rar of ['SSR', 'SR', 'R']){ const pool = charIds().filter(k => CHARS[k].rar === rar && !CHARS[k].starter);
+    for (const k of pool){ const rr = rarRate(rar); let p = rr/pool.length; if (B.feat && CHARS[B.feat].rar === rar) p = k === B.feat ? rr*(0.5 + 0.5/pool.length) : rr*0.5/pool.length;
       h += `<tr><td>${k === B.feat ? '<b>' + CHARS[k].name + '</b> (pick-up)' : CHARS[k].name}</td><td>${'★'.repeat(RARITY[rar].stars)}</td><td>${(p*100).toFixed(2)}%</td></tr>`; } }
   baModal('Rate Info', h + '</table><p>A ten-recruit always brings at least one Super Rare or better. A Legend is guaranteed within ' + GACHA.pity + ' recruits.</p>', [['OK', null, true]]);
 };
 $('baSel').onclick = () => {
   const B = baBan(), pts = (PROFILE.bpts || {})[B.id] || 0; if (pts < BA_POINTS) return;
-  const opts = B.feat ? [B.feat] : Object.keys(CHARS).filter(k => CHARS[k].rar === 'SSR');
+  const opts = B.feat ? [B.feat] : charIds().filter(k => CHARS[k].rar === 'SSR');
   baModal('Select Member', `Spend ${BA_POINTS} points to recruit:<br><br>` + opts.map(k => `<button type="button" class="baPick" data-k="${k}" style="margin:4px;padding:8px 16px;border-radius:8px;border:2px solid #2f4f7a;background:#fff;font:800 15px var(--body);cursor:pointer">${CHARS[k].name}</button>`).join(''), [['Cancel']]);
   for (const b of document.querySelectorAll('.baPick')) b.onclick = () => { const k = b.dataset.k, had = PROFILE.owned[k] || 0; PROFILE.bpts[B.id] -= BA_POINTS; if (!had) PROFILE.owned[k] = 1; else if (had < GACHA.maxLv) PROFILE.owned[k] = had + 1; else PROFILE.gems += 3; saveProfile(); $('baModal').hidden = true; sfx('reward'); toast(CHARS[k].name + ' joined your squad', '#ffe6a0'); baRender(); };
 };
@@ -8590,7 +8614,7 @@ function netStart(){
   if (!NET.host || NET.started) return;
   const M = netMode();
   if (M.cmd && !NET.players.some(p => p.side === 'cmd')){ netStatus('Wave Commander needs at least one commander', true); return; }
-  const msg = {t: 'start', mode: NET.mode, cdk: NET.cdk ?? 1, players: NET.players, loc: LOC.cur || SETTINGS.location || 'pier', skin: skinCur || SETTINGS.enemySkin || 'classic'};
+  const msg = {t: 'start', mode: NET.mode, cdk: NET.cdk ?? 1, players: NET.players, loc: LOC.cur || SETTINGS.location || 'pier', skin: skinCur || SETTINGS.enemySkin || 'zombie'};
   netAll(msg); netBegin(msg);
 }
 function netBegin(m){
@@ -8735,7 +8759,7 @@ function netMirrorHeli(kind, uid){
   if (kind === 'bh' && !lazyReady.blackhawk) return null;
   let e;
   if (kind === 'bh'){ const b = buildUH60(false); b.hull.scale.setScalar(0.42*HB); scene.add(b.g); e = {kind: 'bh', g: b.g, rotor: b.rotor, tail: b.tail, guns: b.guns}; }
-  else { const b = buildApache(); tintify(b.g, 1.9, 0.75, 0.7); b.g.scale.setScalar(HM_SCALE*0.9*HB); scene.add(b.g); e = {kind: 'ap', g: b.g, rotor: b.rotor, tail: b.tail}; }
+  else { const b = buildApache(); b.g.scale.setScalar(HM_SCALE*0.9*HB); scene.add(b.g); e = {kind: 'ap', g: b.g, rotor: b.rotor, tail: b.tail}; }
   Object.assign(e, {mirror: true, uid, hp: 1, max: 1, pos: new THREE.Vector3(), hit: 0, fall: 0});
   HM.enemies.push(e); return e;
 }
@@ -8998,7 +9022,7 @@ addEventListener('pagehide', () => { if (state === 'play') pauseGame(); });
 // ---- settings ----
 function bindSettings(){
   const S_ = SETTINGS;
-  $('sSound').checked = S_.sound; $('sMaster').value = S_.master; $('sSfx').value = S_.sfx; $('sAmb').value = S_.amb; $('sRadio').value = S_.radioVol; $('sShadows').checked = S_.shadows; $('sMocap').checked = S_.mocap !== false; $('sHq').checked = S_.hq; $('sLite').checked = !!S_.liteCrowd; $('sMouse').checked = !!S_.mouseMove; $('sPc').value = S_.pcMode || 'auto'; $('sHf').value = S_.heliFlight || 'auto'; $('sHs').value = S_.heliSens || 1; $('sHi').checked = !!S_.heliInvert; renderBinds(); renderHotbarSet(); refreshPadInfo(); $('sLoc').value = S_.location || 'pier'; $('sSkin').value = S_.enemySkin || 'classic';
+  $('sSound').checked = S_.sound; $('sMaster').value = S_.master; $('sSfx').value = S_.sfx; $('sAmb').value = S_.amb; $('sRadio').value = S_.radioVol; $('sShadows').checked = S_.shadows; $('sMocap').checked = S_.mocap !== false; $('sHq').checked = S_.hq; $('sLite').checked = !!S_.liteCrowd; $('sMouse').checked = !!S_.mouseMove; $('sPc').value = S_.pcMode || 'auto'; $('sHf').value = S_.heliFlight || 'auto'; $('sHs').value = S_.heliSens || 1; $('sHi').checked = !!S_.heliInvert; renderBinds(); renderHotbarSet(); refreshPadInfo(); $('sLoc').value = S_.location || 'pier'; $('sSkin').value = S_.enemySkin || 'zombie';
   $('muteBtn').textContent = S_.sound ? '🔊' : '🔇'; $('muteBtn').setAttribute('aria-label', S_.sound ? 'Mute sound' : 'Turn sound on');
 }
 function applyGraphics(){
@@ -9554,7 +9578,7 @@ const VEH_INFO = {
   abrams:    {cls: 'Main Battle Tank', seats: 2, tags: ['Anti-Vehicle', 'Hard Target'], ico: 'tank', seat: {driver: ['main', 'up'], gunner: ['coax']}, desc: 'Built for the biggest targets, but it flattens crowds too. The commander’s gun aims itself.'},
   bradley:   {cls: 'Infantry Fighting Vehicle', seats: 3, tags: ['Anti-Soldier', 'Anti-Vehicle'], ico: 'tank', seat: {gunner: ['main', 'sec', 'up']}, desc: 'Parks up the pier and works the horde over with 25mm bursts. Its TOW goes for the boss.'},
   jet:       {cls: 'Strike Fighter', seats: 2, tags: ['Air Strike', 'Crowd Control'], ico: 'jet', seat: {driver: ['gun', 'sec']}, desc: 'Two passes and gone: a 20mm gun run walked through the thickest crowd, then bombs on the same spot (or the boss).'},
-  blackhawk: {cls: 'Transport Helicopter', seats: 4, tags: ['Transport', 'Door Guns'], ico: 'heli', seat: {driver: ['up'], gunner: ['door']}, desc: 'Hovers off the pier while two side-mounted guns cover the lanes. Fly it yourself, or take a door gun.'},
+  blackhawk: {cls: 'Transport Helicopter', seats: 4, tags: ['Transport', 'Door Guns'], ico: 'heli', seat: {driver: ['up'], gunner: ['door']}, desc: 'An SH-60 Seahawk that hovers off the pier while its two door gunners cover the lanes. Take a door gun yourself.'},
   dap:       {cls: 'Armed Black Hawk', seats: 4, tags: ['Anti-Soldier', 'Anti-Vehicle'], ico: 'heli', seat: {driver: ['pri', 'sec', 'cm', 'up'], gunner: ['door']}, desc: 'Wing guns, rocket pods and two door miniguns. The pilot works the pods; the crew works the guns.'},
   apache:    {cls: 'Attack Helicopter', seats: 2, tags: ['Anti-Vehicle', 'Anti-Soldier'], ico: 'heli', seat: {driver: ['pri', 'sec', 'cm', 'up'], gunner: ['cannon']}, desc: 'Highly effective against everything on the ground, especially when both crew positions are manned.'},
   ac130:     {cls: 'Fixed-Wing Gunship', seats: 3, tags: ['Air Support', 'Crowd Control', 'Anti-Vehicle'], ico: 'jet', seat: {}, desc: 'Orbits high over the pier for a short time. You work its 105mm howitzer, 40mm Bofors and 25mm Gatling through a thermal sight.'},
@@ -9607,7 +9631,7 @@ function hqRender(){
   } else if (P === 'squad'){
     const id = HQ.ch || PROFILE.equipped, c = CHARS[id], own = !!PROFILE.owned[id], lv = PROFILE.owned[id] || 1;
     hqHead('Squad', [RAR_NAME[c.rar] || c.rar, own ? 'Lv ' + lv : 'Not recruited', 'Leader: ' + CHARS[PROFILE.equipped].name], 'Your leader gives the whole squad their perk. Recruit more in the Recruit tab; duplicates level them up.', 'Loadouts');
-    for (const k of Object.keys(CHARS)) add({label: CHARS[k].name, img: '', imgP: cardFor(k), sub: PROFILE.owned[k] ? (k === PROFILE.equipped ? 'Leader' : 'Lv ' + PROFILE.owned[k]) : 'Locked', on: k === id, off: !PROFILE.owned[k], ok: k === PROFILE.equipped, click: () => hqGo('squad', {ch: k})});
+    for (const k of charIds()) add({label: CHARS[k].name, img: '', imgP: cardFor(k), sub: PROFILE.owned[k] ? (k === PROFILE.equipped ? 'Leader' : 'Lv ' + PROFILE.owned[k]) : 'Locked', on: k === id, off: !PROFILE.owned[k], ok: k === PROFILE.equipped, click: () => hqGo('squad', {ch: k})});
     hqDetail({name: c.name, sub: (RAR_NAME[c.rar] || c.rar) + ' · ' + perkText(id, lv), desc: c.line, equipped: id === PROFILE.equipped ? 'Leader' : '', action: id === PROFILE.equipped ? '' : own ? 'Make leader' : 'Recruit to unlock',
       act: () => { if (own){ equipChar(id); hqRender(); } else openRecruit(); }});
     hqShowChar(id);
@@ -9616,16 +9640,16 @@ function hqRender(){
     const sel = HQ.lk || 'c:' + lookId();
     hqHead('Appearance', ['Squad outfit', 'Horde look'], 'What your squad wears (any recruit you own, separate from who leads), and how the horde looks in your games. In multiplayer the host’s horde look is used.', 'Loadouts');
     let first = true;
-    for (const k of Object.keys(CHARS)){ if (!PROFILE.owned[k]) continue; add({grp: first ? 'Outfit' : '', label: CHARS[k].name, img: '', imgP: cardFor(k), on: sel === 'c:' + k, ok: lookId() === k, click: () => hqGo('look', {lk: 'c:' + k})}); first = false; }
+    for (const k of charIds()){ if (!PROFILE.owned[k]) continue; add({grp: first ? 'Outfit' : '', label: CHARS[k].name, img: '', imgP: cardFor(k), on: sel === 'c:' + k, ok: lookId() === k, click: () => hqGo('look', {lk: 'c:' + k})}); first = false; }
     first = true;
-    for (const [k, name] of skins){ add({grp: first ? 'Horde' : '', label: name, ico: 'skull', on: sel === 's:' + k, ok: (SETTINGS.enemySkin || 'classic') === k, click: () => hqGo('look', {lk: 's:' + k})}); first = false; }
+    for (const [k, name] of skins){ add({grp: first ? 'Horde' : '', label: name, ico: 'skull', on: sel === 's:' + k, ok: (SETTINGS.enemySkin || 'zombie') === k, click: () => hqGo('look', {lk: 's:' + k})}); first = false; }
     if (sel.startsWith('c:')){
       const id = sel.slice(2), c = CHARS[id];
       hqDetail({name: c.name, sub: 'Squad outfit', desc: c.line, equipped: lookId() === id ? 'Equipped' : '', action: lookId() === id ? '' : 'Wear this',
         act: () => { PROFILE.look = id === PROFILE.equipped ? '' : id; saveProfile(); equipChar(PROFILE.equipped); hqRender(); }});
       hqShowChar(id);
     } else {
-      const k = sel.slice(2), on = (SETTINGS.enemySkin || 'classic') === k;
+      const k = sel.slice(2), on = (SETTINGS.enemySkin || 'zombie') === k;
       hqDetail({name: (skins.find(s => s[0] === k) || [k, k])[1], sub: 'Horde look', desc: 'Changes how the horde looks (and what the enemy types are called) in your games.', equipped: on ? 'Equipped' : '', action: on ? '' : 'Use this',
         act: () => { SETTINGS.enemySkin = k; applyEnemySkin(k); saveSettings(); try { $('sSkin').value = k; } catch(_){} hqRender(); }});
       hqShowSquad();
@@ -9667,10 +9691,11 @@ function hqInit3d(){
   const rim = new THREE.DirectionalLight(0x9fc4ff, 0.8); rim.position.set(4, 3, -5); HQ.S.add(rim);
   const fc = document.createElement('canvas'); fc.width = fc.height = 256; const g = fc.getContext('2d'), gr = g.createRadialGradient(128, 128, 8, 128, 128, 128);
   gr.addColorStop(0, 'rgba(150,170,185,.5)'); gr.addColorStop(0.55, 'rgba(70,84,95,.25)'); gr.addColorStop(1, 'rgba(20,26,31,0)'); g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), new THREE.MeshBasicMaterial({map: new THREE.CanvasTexture(fc), transparent: true, depthWrite: false})); floor.rotation.x = -Math.PI/2; HQ.S.add(floor);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), new THREE.MeshBasicMaterial({map: new THREE.CanvasTexture(fc), transparent: true, depthWrite: false})); floor.rotation.x = -Math.PI/2; HQ.S.add(floor); HQ.floor = floor;
+  hqHangarLoad();
   HQ.root = new THREE.Group(); HQ.S.add(HQ.root);
   const cvs = $('hqCv');
-  cvs.addEventListener('pointerdown', e => { if (HQ.lobby) return; HQ.drag = {x: e.clientX, y0: HQ.yaw}; HQ.auto = false; try { cvs.setPointerCapture(e.pointerId); } catch(_){} });
+  cvs.addEventListener('pointerdown', e => { if (HQ.lobby || HQ.key.startsWith('v:')) return; HQ.drag = {x: e.clientX, y0: HQ.yaw}; HQ.auto = false; try { cvs.setPointerCapture(e.pointerId); } catch(_){} });
   cvs.addEventListener('pointermove', e => { if (HQ.drag) HQ.yaw = HQ.drag.y0 + (e.clientX - HQ.drag.x)*0.01; });
   const up = () => { HQ.drag = null; }; cvs.addEventListener('pointerup', up); cvs.addEventListener('pointercancel', up);
   return true;
@@ -9692,9 +9717,10 @@ function hqPlace(o, key){
   const holder = new THREE.Group(); holder.add(o); o.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(o), sz = box.getSize(new THREE.Vector3()), ct = box.getCenter(new THREE.Vector3());
   const ch = key.startsWith('c:') || key.startsWith('sq:') || key.startsWith('lb:'), k = ch ? 1.9/Math.max(1e-3, sz.y) : 4.6/Math.max(1e-3, sz.x, sz.z);
-  o.position.set(-ct.x, -box.min.y, -ct.z); holder.scale.setScalar(k);
+  o.position.x -= ct.x; o.position.y -= box.min.y; o.position.z -= ct.z; holder.scale.setScalar(k);     // V105: relative, so a model that came with its own offset lands on the floor too
   o.traverse(m => { if (m.isMesh) m.frustumCulled = false; });
   HQ.root.add(holder); HQ.h = sz.y*k; HQ.w = Math.max(sz.x, sz.z, ch ? sz.x : 0)*k;
+  hqHangarFit();
 }
 function hqCharModel(id){
   if (id === 'guard' || !CHARS[id].model) return Promise.resolve((() => { const g = new THREE.Group(), m = new THREE.Mesh(gunnerGeoHi, CHAR); m.rotation.y = Math.PI; g.add(m); return g; })());
@@ -9768,7 +9794,7 @@ function hqShowLobby(){
       });
       return g; }), 0);
   }
-  HQ.auto = false; HQ.yaw = 0; HQ.drag = null;      // V104: the line-up stays facing you, like Fortnite's
+  HQ.auto = false; HQ.yaw = 0; HQ.drag = null; hqHangarFit();      // V104: the line-up stays facing you, like Fortnite's
   hqModeCard();
 }
 function hqModeCard(){
@@ -9792,7 +9818,30 @@ function hqVehModel(t){
   if (t === 'apache'){ const b = buildApache(); b.g.scale.setScalar(GS_SCALE); b.g.rotation.y = -Math.PI/2; const w = new THREE.Group(); w.add(b.g); return w; }
   return plowModel();
 }
-function hqShowVeh(t){ hqShow('v:' + t, () => hqVehModel(t), 2.05); }
+function hqShowVeh(t){ hqShow('v:' + t, () => hqVehModel(t), HQ_VYAW[t] ?? 2.05); HQ.auto = false; }
+// V105: the loadout screens stand in a hangar (Battlefield-style: the vehicle parked at a set angle, nothing turns).
+// The hangar is in metres; it's scaled so each vehicle sits at its real size in it.
+const HQ_VLEN = {apache: 17.7, blackhawk: 19.8, dap: 19.8, little: 9.9, jet: 18.3, abrams: 9.8, bradley: 6.5, technical: 5.4, bulldozer: 7, ac130: 29.8};
+const HQ_VYAW = {};
+function hqHangarLoad(){
+  if (HQ.hangar || !SKIN_LOAD.fresh) return; HQ.hangar = 'loading';
+  SKIN_LOAD.fresh('assets/hq_hangar.glb').then(g => {
+    const h = g.scene; h.traverse(o => { if (o.isMesh){ const m = o.material, map = m.map; o.material = new THREE.MeshLambertMaterial({map, color: new THREE.Color(0.62, 0.64, 0.68), side: THREE.DoubleSide, alphaTest: m.alphaTest || 0}); o.frustumCulled = true; } });
+    HQ.hangar = h; HQ.S.add(h); HQ.S.fog = new THREE.Fog(0x161d24, 30, 140); hqHangarFit();
+  }).catch(e => { console.warn('hangar', e); HQ.hangar = null; });
+}
+function hqHangarFit(){
+  const h = HQ.hangar; if (!h || h === 'loading') return;
+  const k = HQ.key || '', on = !HQ.lobby && !!k;
+  h.visible = on; if (HQ.floor) HQ.floor.visible = true;     // the soft contact shadow stays under it in the hangar too
+  if (!on) return;
+  const sc = k.startsWith('v:') ? 4.6/(HQ_VLEN[k.slice(2)] || 12) : 1.12;      // characters: 1.9 units = 1.7 m
+  // turned round so the long end of the hall is behind the camera (room to frame the long aircraft) and the far half fills the background
+  h.scale.setScalar(sc); h.rotation.y = Math.PI; h.position.set(0, -0.01, 20*sc);
+  // stand the vehicle on the hall's own floor: find it straight below the middle
+  h.updateMatrixWorld(true); const rc = new THREE.Raycaster(new THREE.Vector3(0, 30*sc, 0), new THREE.Vector3(0, -1, 0)); const hit = rc.intersectObject(h, true).find(i => i.point.y < 3*sc);
+  if (hit) h.position.y -= hit.point.y + 0.01;
+}
 function hqLoop(){
   if (!HQ.on) return; requestAnimationFrame(hqLoop);
   if (!HQ.R || $('hqCv').style.visibility === 'hidden') return;
@@ -9802,6 +9851,8 @@ function hqLoop(){
   C.aspect = asp;
   const d = (Math.max(HQ.h*(wide ? 1.35 : 1.15)/(2*th), HQ.w*(wide ? 1.7 : 1.15)/(2*th*asp)) + HQ.w*0.3) * (HQ.lobby && wide ? 1.3 : 1);
   C.position.set(0, HQ.h*0.55 + d*0.16, d); C.lookAt(0, HQ.h*(wide ? 0.42 : 0.3), 0);
+  // V105: in the hangar, nothing standing between the camera and the vehicle (pillars, the bay wall) gets in the shot
+  { const hn = HQ.hangar && HQ.hangar.visible ? Math.max(0.05, d - Math.max(HQ.w, HQ.h)*1.4) : 0.05; if (Math.abs(C.near - hn) > 0.01){ C.near = hn; } }
   if (HQ.lobby) C.setViewOffset(W, H, wide ? W*0.2 : 0, wide ? -H*0.1 : H*0.5 - 0.15*H - 262, W, H);
   else if (wide) C.setViewOffset(W, H, -W*0.17, H*0.02, W, H); else C.setViewOffset(W, H, 0, -H*0.06, W, H);
   C.updateProjectionMatrix();
@@ -9981,6 +10032,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V105', ["Loadouts stand in a hangar now: every vehicle parked at a set angle at its real size, Battlefield-style", "The called-in transport helicopter is an SH-60 Seahawk", "The horde is zombies; the old Sharklings are gone", "Desert map: three military posts out in the sand; in gunship mode the AA sites set up on their pads", "AA sites are real-size; enemy aircraft no longer tinted red: they carry red name tags, smoke and burn as they get hurt, and throw sparks when hit", "Hits on helicopters land along the whole airframe (no more dead spots)", "Radio: every song at the same loudness; the long mix starts somewhere random and loops", "Barrel health tops out at 3,000"]],
   ['V104', ["Gunship mode: the horde keeps wave-1 health and bosses are much lighter; the job is enemy aircraft and AA sites", "AA sites (ADATS and Type 625) set up on the beach: they lock on slowly and fire missiles, the Type 625 also shoots; guns don't hurt them, rockets and missiles do, and the wave isn't clear until they're gone", "Enemy Little Birds: fragile, fast, hard-hitting and inaccurate. Enemy helicopters fly like you do (they pitch, roll and climb), and the enemy Apache's gun can't fire above its nose", "Lock-on takes time both ways: LOCKING in yellow with slow beeps, MISSILE in red with fast beeps; your own lock box goes yellow, then red when the Hellfire will guide", "Hit markers on helicopters and AA, see-through Apache blades, the Little Bird is fragile but hits vehicles 50% harder", "Low health: smoke, then fire and a caution tone, a much louder damaged airframe, and health comes back slowly after a while untouched", "Wave mode: fly any DAP, Little Bird or Apache you've called (pick from a list); the Apache circles and guns until you take it; the Black Hawk is crewed by its gunners", "Call-in limits: five of a kind out at once (one AC-130), carry ten (five of the heavy aircraft); extras from barrels pay out in coins; each one bought costs 20% more", "Call-in bar: Freeze and Repair on top, the rest sorted by how many you have", "From wave 15: up to two ×4 gates in the shop (● 15,000)", "Your aircraft knock barrels down fast; dozers can go anywhere across the widened lane; the Apache cockpit works in wave mode; shadows follow high helicopters and the runways stop flickering", "Recruitment page rebuilt: banners, pick-up rates, points toward a pick-up member, rate info", "New squad leaders: Kiki (Legend) and Noir (Super Rare)", "No more accidental text selection"]],
   ['V103', ['AC-130 Gunship in the shop (● 20,000): it circles high over the pier for a short time and you work its guns yourself, the 105mm howitzer, 40mm Bofors and 25mm Gatling, on a thermal sight (white-hot, black-hot or night vision)', 'The M1 Abrams is a real tank model now, turret and all', 'New squad leader: Blender Chan (SR)']],
   ['V102', ['Friends tab is a lobby now: you stand in the middle with three pads for your squad. Everyone in your room shows up in the skin they picked, and empty pads wait for invites. The card under them shows the room’s game mode', 'New squad leaders: Shibahu (SSR) and Boykisser (SR). The squad menu shows the full-detail models', 'Radio: tuning static between stations, every tune-in drops you partway into a song, and a station plays its whole playlist shuffled before anything repeats']],
@@ -10081,8 +10133,10 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
     jobs.push(load(url).then(g => { (loadedParts[veh] = loadedParts[veh] || {})[part] = g.scene; tick('Loading vehicles…'); }).catch(() => tick('Using built-in ' + veh)));
   }
   if (ASSETS.player) jobs.push(load(ASSETS.player).then(g => { loadedParts.player = g.scene; }).catch(() => {}));
+  const libP = ASSETS.enemyLib ? fetch(ASSETS.enemyLib).then(r => r.json()).catch(() => null) : Promise.resolve(null);
   for (const role of ROLE_ORDER){
-    jobs.push(load(ASSETS.enemies[role]).then(g => ualP.then(() => g)).then(g => { buildRole(role, g); tick('Teaching the ' + ROLES[role].name + ' to walk…'); }));
+    // the same model can serve several roles; baking poses its bones, so each role gets its own copy
+    jobs.push(SKIN_LOAD.fresh(ASSETS.enemies[role]).then(g => Promise.all([ualP, libP]).then(([, lib]) => [g, lib])).then(([g, lib]) => { if (lib) withLib(lib, ASSETS.enemyGaits, () => buildRole(role, g)); else buildRole(role, g); tick('Waking the ' + ROLES[role].name + 's…'); }));
   }
   try { await Promise.all(jobs); }
   catch(e){ $('loadtxt').textContent = 'Could not load the characters. Check your connection and reload.'; console.error(e); return; }
@@ -10091,7 +10145,7 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
   addGunner(); resetArsenal();
   wave = 0;
   (document.fonts && document.fonts.load ? document.fonts.load('40px "Lilita One"') : Promise.resolve()).catch(() => {}).then(redrawLabels);
-  $('loading').hidden = true; MODE = 'def'; applyPC(); loadWeaponModels(); mslLoad(); if (lookId() !== 'guard') equipChar(PROFILE.equipped); applyLocation(SETTINGS.location || 'pier'); applyEnemySkin(SETTINGS.enemySkin || 'classic'); bindSettings(); applyGraphics(); openTitle(); cloudInit();
+  $('loading').hidden = true; MODE = 'def'; applyPC(); loadWeaponModels(); mslLoad(); if (lookId() !== 'guard') equipChar(PROFILE.equipped); applyLocation(SETTINGS.location || 'pier'); applyEnemySkin(SETTINGS.enemySkin || 'zombie'); skinOptions(); bindSettings(); applyGraphics(); openTitle(); cloudInit();
   // heavy vehicles stream in after the menu is up; they only drop once ready
   let gunDone; const gunP = new Promise(r => { gunDone = r; });
   for (const veh of LAZY){
@@ -10255,7 +10309,7 @@ function radioNext(tuneIn){
   if (tuneIn || state === 'play') toast('📻 ' + st.name + (st.live ? '' : ' · ' + tr[1]), '#f0eec4');
   radioBlob('assets/radio/' + tr[0] + '.mp3').then(u => {
     if (tok !== RADIO.tok || RADIO.cur !== id) return;
-    RADIO.tuneT_busy = false; au.src = u; radioVolume();
+    RADIO.tuneT_busy = false; au.src = u; au.loop = !!st.live; radioVolume();     // V105: the long mix loops back to its start instead of re-rolling
     // like GTA, tuning in lands you partway through a song, as if the station had been playing all along (anywhere at all in the long live mix)
     if (tuneIn || st.live) au.addEventListener('loadedmetadata', () => { if (isFinite(au.duration) && au.duration > 20) au.currentTime = st.live ? rnd(0, Math.max(0, au.duration - 90)) : au.duration*rnd(0.06, 0.5); }, {once: true});
     if (!document.hidden && !APPBG.on && !EV.music && (state === 'play' || state === 'dying' || radioMuffled())) au.play().catch(() => {});
@@ -10264,9 +10318,15 @@ function radioNext(tuneIn){
 radioBuild();
 // V101: dev code. Only a hash is stored here, so reading the page doesn't give it away
 const cyrb53 = (str, seed = 0) => { let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed; for (let i = 0, ch; i < str.length; i++){ ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (4294967296*(2097151 & h2) + (h1 >>> 0)).toString(36); };
+function skinOptions(){
+  const sel = $('sSkin'); if (!sel) return; const want = [['zombie', 'Zombies']].concat(drewOn() ? [['drew', 'Drews']] : []);
+  sel.innerHTML = want.map(([k, n]) => `<option value="${k}">${n}</option>`).join(''); sel.value = skinOk(skinCur) ? skinCur : 'zombie';
+  if (!drewOn() && CHARS[PROFILE.equipped] && CHARS[PROFILE.equipped].dev){ PROFILE.equipped = 'guard'; PROFILE.look = ''; saveProfile(); }
+}
 function codeEnter(){
   const v = ($('sCode').value || '').trim().toUpperCase(); $('sCode').value = ''; if (!v) return;
   if (cyrb53(v, 26) === 'zsypv07iff'){ SETTINGS.wgr = true; saveSettings(); sfx('reward'); toast('🎛 DEV radio wheel unlocked', '#f0eec4'); }
+  else if (cyrb53(v, 26) === 'md8k2vws9d'){ SETTINGS.drews = true; saveSettings(); skinOptions(); sfx('reward'); toast('The Drews are in: horde look and squad', '#f0eec4'); }
   else { sfx('deny'); toast('Unknown code', '#ffd2cc'); }
 }
 $('sCodeBtn').onclick = codeEnter; $('sCode').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') codeEnter(); });

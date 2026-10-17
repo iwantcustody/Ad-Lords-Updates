@@ -1127,7 +1127,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V94';
+const GAME_VERSION = 'V95';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -4128,7 +4128,7 @@ function dfStart(want){
     : 'Left thumb: fly · ▲▼ altitude' + (F.pri ? ' · FIRE = ' + F.pri.toLowerCase() : '') + au;
   $('dfName').textContent = F.name; $('dfRkL').textContent = F.pri || 'ROCKETS'; $('dfHfL').textContent = F.sec || 'HELLFIRE';
   $('dfRk').hidden = !F.pri; $('dfHf').hidden = !F.sec;
-  $('df').classList.toggle('sim', !!DF.P); $('dfView').hidden = !DF.P || v.type !== 'dap'; DF.view = 'chase';
+  $('df').classList.toggle('sim', !!DF.P); $('dfView').hidden = !DF.P || (v.type !== 'dap' && v.type !== 'little'); DF.view = 'chase';
   $('df').hidden = false; $('hud').hidden = true; $('bottom').hidden = true; $('dfHint').style.opacity = 1; flash(); hsSeat();
   if (DF.P && PC.on) heliCapture(); else autoLand();
 }
@@ -4202,7 +4202,10 @@ function dfFlyWeapons(v, dt, lv){
   if (v.type === 'blackhawk'){ for (const gun of v.guns) vGun(v, gun, dt, true, 1.2*lv, 'dfb' + gun.side, lv); return; }
   if (v.type === 'little'){
     // fixed forward miniguns along the nose; F / HELLFIRE button fires a rocket volley where the nose points
-    for (const gun of v.guns){ gun.pitch.rotation.x += (-0.03 - gun.pitch.rotation.x)*Math.min(1, dt*6); gun.g.rotation.y = 0; }
+    // V95: both guns converge on the HUD marker (the boresight point), so close in they no longer fire high
+    { const bp = dfBoresight(v);
+      for (const gun of v.guns){ gun.g.rotation.y = 0; gun.g.updateMatrixWorld(true); const L = gun.g.worldToLocal(_dfAim.copy(bp));
+        gun.g.rotation.y = clamp(Math.atan2(-L.x, -L.z), -0.3, 0.3); gun.pitch.rotation.x = clamp(Math.atan2(L.y, Math.hypot(L.x, L.z)), -0.9, 0.2); gun.g.updateMatrixWorld(true); } }
     const firing = m.fire && !m.sec;
     if (m.fire && m.sec){ m.fire = false; dfVolley(v); }
     const gau = LO('little').pri === 'gau19';
@@ -4229,6 +4232,7 @@ function dfFlyWeapons(v, dt, lv){
     apGunnerAI(v, dt);
   }
 }
+const _dfAim = new THREE.Vector3();
 function dfVolley(v){ if (DF.rkT > 0 || v.volley) return; v.volley = 7; v.vt = 0; v.vIdx = 0; v.vSnd = false; DF.rkT = 6; }
 // the Apache's front seat when no player is in it: short bursts at whatever is closest to the barricade
 function apGunnerAI(v, dt){
@@ -4286,9 +4290,9 @@ function dfCamera(){
   if (DF.P){
     const P = DF.P, dt = Math.min(0.05, DF.dt || 1/60), far = camera.aspect < 1 ? 1.35 : 1, ck = DF.view === 'cockpit' && v.hull; P.ck = !!ck;
     if (ck){
-      // right seat of the DAP, pilots hidden; freelook turns your head
-      dapCrew(v, false); v.g.updateMatrixWorld(true);
-      camera.position.copy(_hmV.fromArray(DAP_EYE).applyMatrix4(v.hull.matrixWorld));
+      // right seat of the DAP, pilots hidden; freelook turns your head (V95: the Little Bird uses its own right seat)
+      if (v.type === 'dap') dapCrew(v, false); v.g.updateMatrixWorld(true);
+      camera.position.copy(_hmV.fromArray(v.type === 'little' ? ASSETS.vehicles.little.eye : DAP_EYE).applyMatrix4(v.hull.matrixWorld));
       v.g.getWorldQuaternion(camera.quaternion);
       _apE.set(-0.12 + (P.lookPitch || 0), -(P.lookYaw || 0), 0, 'YXZ'); camera.quaternion.multiply(_apQ.setFromEuler(_apE));
       camera.fov = ckFov(); if (camera.near !== 0.02) camera.near = 0.02;
@@ -9004,6 +9008,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V95', ['Little Bird in wave mode: the cockpit view works (view button / V), with the real cockpit around you', 'Little Bird in wave mode: both miniguns now converge on the HUD marker, so close-in fire no longer goes high']],
   ['V94', ['New call-ins: M2 Bradley (25mm bursts + a TOW for the boss) and an F/A-18 strike (a 20mm gun run, then bombs)', 'The Technical is now a pickup with a DShK 12.7mm in the bed (the old built-in truck is gone)', 'Airfield (PC High/Ultra): two Super Hornets parked off the strip', 'Wave Commander: commanders keep earning while the defenders shop', 'Wave Commander: the host picks the unit spawn delay in the lobby (off, short, normal, long, very long)', 'Call-ins that aren\'t on your hotbar take an empty slot (or one you have none of) when you get them']],
   ['V93', ['New horde look: Zombies (Loadouts > Appearance, or Settings). Soldiers, runners, packs, bloaters, lungers and an alpha, all shambling with your Mixamo zombie walks']],
   ['V92', ['Rocket reticle: it still drifts with your momentum, but only about a third as far, and snaps back as soon as you stop or change direction']],

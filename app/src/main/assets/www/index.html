@@ -423,7 +423,7 @@ body.tn #title .menuBtns{top:calc(44px + 20% + env(safe-area-inset-top,0px))}
 #title .menuRow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 #hmDot{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#e8fbff;box-shadow:0 0 0 1px rgba(0,0,0,.5);display:none;pointer-events:none;z-index:4}
 
-#title .mapPick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:2px}
+#title .mapPick{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:2px}
 #title .mapTile{font:inherit;cursor:pointer;color:#fff;text-align:center;padding:10px 6px 9px;border-radius:14px;border:2px solid rgba(255,255,255,.35);background:rgba(8,24,40,.45);transition:background .15s,border-color .15s,transform .1s}
 #title .mapTile b{display:block;font-family:var(--display);font-weight:400;font-size:17px;letter-spacing:.5px}
 #title .mapTile small{display:block;font-family:var(--body);font-weight:800;font-size:11px;opacity:.8;margin-top:2px}
@@ -574,6 +574,7 @@ button.ccard{cursor:pointer}
 #hm svg.ret{position:absolute;width:120px;height:120px;transform:translate(-50%,-50%);overflow:visible;left:50%;top:50%}
 #hm .lock{position:absolute;width:46px;height:46px;border:2px solid #ff6b5b;border-radius:4px;transform:translate(-50%,-50%);display:none}
 #hm .lock.acq{border-color:#ffd23a;border-style:dashed;animation:blink .5s steps(2) infinite}#hm .lock.ok{border-color:#ff3b30;border-width:3px;box-shadow:0 0 10px rgba(255,59,48,.7)}
+#hmRadar{position:absolute;left:50%;top:calc(22% + 30px);transform:translateX(-50%);font:800 12px var(--body);letter-spacing:2px;color:#7dff9a;text-shadow:0 0 6px rgba(0,0,0,.7)}#hmRadar[hidden]{display:none}
 #hm .warn.paint{color:#ffd23a;animation:blink .8s steps(2) infinite}
 #hmTags .hmh.foe{color:#ff3b30!important;font-weight:800;letter-spacing:1px;text-shadow:0 0 3px #000,0 1px 2px #000;background:none!important;border:0!important}
 #hm .warn{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-family:var(--display);font-size:22px;color:#ff6b5b;letter-spacing:2px;display:none;text-shadow:0 0 8px rgba(0,0,0,.6);animation:blink .4s steps(2) infinite}
@@ -625,12 +626,12 @@ body.pc .titleFs{display:none}
 /* V98: radio station wheel (hold Q, or press / drag from the 📻 button) */
 #radioBtn{position:fixed;z-index:20;top:calc(6px + env(safe-area-inset-top,0px));left:calc(50% + min(26vw,170px));width:32px;height:32px;padding:0;border-radius:50%;border:1px solid rgba(240,238,196,.55);background:rgba(10,16,22,.55);font-size:16px;line-height:30px;cursor:pointer;touch-action:none}
 #radioBtn.on{border-color:#ffd34d;box-shadow:0 0 6px rgba(255,211,77,.6)}
-#radioBtn[hidden],#radioDevBtn[hidden]{display:none}
-#radioDevBtn{position:fixed;z-index:20;top:calc(6px + env(safe-area-inset-top,0px));left:calc(50% + min(26vw,170px) + 38px);width:32px;height:32px;padding:0;border-radius:50%;border:1px solid rgba(120,220,255,.6);background:rgba(10,16,22,.55);font-size:15px;line-height:30px;cursor:pointer;touch-action:none}
-#radioDevBtn.on{border-color:#5fd8ff;box-shadow:0 0 6px rgba(95,216,255,.65)}
+#radioBtn[hidden],#rb2[hidden]{display:none}
+#rb2{position:fixed;z-index:20;top:calc(6px + env(safe-area-inset-top,0px));left:calc(50% + min(26vw,170px) + 38px);width:32px;height:32px;padding:0;border-radius:50%;border:1px solid rgba(120,220,255,.6);background:rgba(10,16,22,.55);font-size:15px;line-height:30px;cursor:pointer;touch-action:none}
+#rb2.on{border-color:#5fd8ff;box-shadow:0 0 6px rgba(95,216,255,.65)}
 #radioWheel .rwBank{position:absolute;top:calc(50% + min(42vmin,180px) + 6px);font:700 11px Consolas,"DejaVu Sans Mono",ui-monospace,monospace;letter-spacing:1px;color:#f0eec4;opacity:.75;text-shadow:0 1px 2px #000}
-#radioWheel.dev #rwSvg .seg path{stroke:rgba(95,216,255,.5)}#radioWheel.dev #rwSvg .seg.cur path{stroke:#5fd8ff}#radioWheel.dev #rwSvg .seg.on path{fill:rgba(170,235,255,.92)}
-#radioWheel.dev .rwMid,#radioWheel.dev .rwBank{color:#bfefff}
+#radioWheel.x2 #rwSvg .seg path{stroke:rgba(95,216,255,.5)}#radioWheel.x2 #rwSvg .seg.cur path{stroke:#5fd8ff}#radioWheel.x2 #rwSvg .seg.on path{fill:rgba(170,235,255,.92)}
+#radioWheel.x2 .rwMid,#radioWheel.x2 .rwBank{color:#bfefff}
 #radioWheel{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;pointer-events:none;background:radial-gradient(circle,rgba(0,0,0,.45),rgba(0,0,0,0) 62%);touch-action:none}
 #radioWheel[hidden]{display:none}
 #radioWheel.sticky{pointer-events:auto}
@@ -690,7 +691,7 @@ body.pc .titleFs{display:none}
   </div>
   <div id="flash"></div>
   <canvas id="bfHud" aria-hidden="true"></canvas>
-  <button id="radioBtn" type="button" aria-label="Radio" hidden>📻</button><button id="radioDevBtn" type="button" aria-label="Dev radio" hidden>🎛</button>
+  <button id="radioBtn" type="button" aria-label="Radio" hidden>📻</button><button id="rb2" type="button" aria-label="Radio 2" hidden>🎛</button>
   <div id="radioWheel" hidden><svg id="rwSvg" viewBox="-160 -160 320 320" aria-hidden="true"></svg><div class="rwMid"><b id="rwName">RADIO</b><span id="rwSub"></span></div><div class="rwBank" id="rwBank"></div></div>
   <canvas id="radar" width="300" height="300" aria-hidden="true"></canvas>
   <canvas id="seatHud" width="160" height="160" aria-hidden="true"></canvas>
@@ -715,7 +716,7 @@ body.pc .titleFs{display:none}
     <svg id="hmAtt" viewBox="-40 -40 80 80" aria-hidden="true"><g fill="none" stroke="#e8fbff" stroke-width="2.5" stroke-linecap="round"><path d="M-26 -22L26 22M26 -22L-26 22"/><circle r="7" fill="#7b6cff" stroke="none"/><path d="M0 8v26M-6 34h12"/></g></svg>
     <div class="lock" id="hmLock"></div>
     <div id="hmDot" aria-hidden="true"></div>
-    <div class="warn" id="hmWarn">MISSILE</div>
+    <div class="warn" id="hmWarn">MISSILE</div><div id="hmRadar" hidden>UNDER RADAR</div>
     <div class="hint" id="hmHint"></div>
     <div id="hmStick"><i></i></div>
     <div id="hmTags"></div>
@@ -733,6 +734,7 @@ body.pc .titleFs{display:none}
       <div class="mapPick" role="radiogroup" aria-label="Choose a map">
         <button type="button" class="mapTile" data-map="pier" role="radio"><b>Seaside pier</b><small>No save</small></button>
         <button type="button" class="mapTile" data-map="airfield" role="radio"><b>Desert airfield</b><small>No save</small></button>
+        <button type="button" class="mapTile" data-map="city" role="radio"><b>Ruined city block</b><small>No save</small></button>
       </div>
       <button class="btn" id="continueBtn" type="button" hidden>Continue<small id="continueInfo">Wave 1</small></button>
       <button class="btn" id="newBtn" type="button">New game<small id="newInfo">Defend the pier</small></button>
@@ -1260,7 +1262,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V105';
+const GAME_VERSION = 'V106';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -1574,7 +1576,7 @@ function downdraftTick(){
   if (isFinite(want)) DD.g.gain.setTargetAtTime(want, AU.ctx.currentTime, 0.25);
 }
 // where a round lands decides what it sounds like: deck planks on the pier, tarmac on the airfield, nothing over water
-function surfAt(x, z){ if (LOC.cur === 'airfield') return 'imConc'; return Math.abs(x) <= halfW(z) + 0.3 && z < 6 ? 'imWood' : null; }
+function surfAt(x, z){ if (LOC.cur !== 'pier') return 'imConc'; return Math.abs(x) <= halfW(z) + 0.3 && z < 6 ? 'imWood' : null; }
 function impactSfx(x, z){ const k = surfAt(x, z); if (!k || Math.random() > 0.6) return; sfxAt(k, x, 0.4, z, 1, 10); }
 function m134Load(){
   if (!AU.ctx || M134.loading) return; M134.loading = true;
@@ -2461,6 +2463,66 @@ function buildAirfield(){
   g.visible = false; scene.add(g);
   return set;
 }
+// V106: Ruined city block. The player's "Apocalyptic City" set: a quarantined street that ends at a walled outpost. You hold the
+// crossroads; the horde comes down the street from the gate. The lane is fresh asphalt between concrete barriers, widened by a dozer.
+// Set units -> metres: x' = (x - cx)*s, z' = (z - cz)*s (the outpost wall lands just past the far end of the lane)
+const CITY = {url: 'assets/city_ruin.glb', s: 0.085, cx: 337, cz: -188, y: 0.51, M: null};
+function cityToon(o){ o.traverse(m => { if (!m.isMesh) return; const a = m.material, map = a.map;
+  if (map && map.encoding !== THREE.LinearEncoding){ map.encoding = THREE.LinearEncoding; map.needsUpdate = true; }
+  m.material = new THREE.MeshToonMaterial({map, gradientMap: gradSoft, side: THREE.DoubleSide, color: map ? (/^(road|road_staff|foreground|rubbish)/.test(m.name || (m.parent && m.parent.name) || '') ? new THREE.Color(0.66, 0.63, 0.6) : new THREE.Color(0.98, 0.95, 0.92)) : a.color.clone(), alphaTest: a.alphaTest || (a.transparent ? 0.4 : 0)});
+  m.castShadow = false; m.receiveShadow = true; }); return o; }
+function buildCity(){
+  const set = {mode: 'unroll', fog: 0x8d867a, fogR: [55, 175], sky: [[0.80, 0.74, 0.64], [0.45, 0.52, 0.58]], gulls: false, stages: null, city: true, dozer: true};
+  const g = new THREE.Group(); set.group = g;
+  const add = o => { g.add(o); return o; };
+  const strip2 = (...a) => { const m = strip(...a); scene.remove(m); return add(m); };
+  const hN = hwOf(MAIN0);
+  // broken concrete under the whole set, so nothing ever looks out into the void
+  const gt = asphaltTex('#6f685e'); gt.repeat.set(60, 60);
+  const ground = add(new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.MeshLambertMaterial({map: gt})));
+  ground.rotation.x = -Math.PI/2; ground.position.set(0, -0.62, -60); ground.receiveShadow = true;
+  const asph = new THREE.MeshLambertMaterial({map: asphaltTex('#3d3b38'), polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2});
+  strip2(z => -hN(z) - 0.3, z => hN(z) + 0.3, 7, FAR - 4, 1, asph, 0);
+  { const parts = []; for (let z = 6; z > FAR - 3; z -= 3) parts.push(P(new B(0.14, 0.012, 1.6), 0xd8d2c0, 0, 0.006, z)); add(new THREE.Mesh(merge(parts), new THREE.MeshLambertMaterial({vertexColors: true}))); }
+  // concrete jersey barriers along the lane edge, a hazard stripe every third one
+  const jersey = (hw, sx) => {
+    const parts = [];
+    for (let z = 6, k = 0; z > FAR - 2; z -= 2.1, k++){
+      const x = sx*(hw(z) + 0.5), x2 = sx*(hw(z - 2.1) + 0.5), ang = Math.atan2(x2 - x, -2.1), cx0 = (x + x2)/2, cz0 = z - 1.05;
+      parts.push(P(new B(0.62, 0.32, 1.95).rotateY(ang), 0xbfbab0, cx0, 0.16, cz0)); parts.push(P(new B(0.3, 0.55, 1.95).rotateY(ang), 0xcac5bb, cx0, 0.58, cz0));
+      if (k % 3 === 0) parts.push(P(new B(0.32, 0.12, 1.96).rotateY(ang), 0xd8463a, cx0, 0.72, cz0));
+    }
+    const m = new THREE.Mesh(merge(parts), VC); m.castShadow = m.receiveShadow = true; return m;
+  };
+  set.stages = [{edge: [add(jersey(hN, -1)), add(jersey(hN, 1))], bar: add(barricade(MAIN0, true))}];
+  const cityStage = (MA, MB, tz) => {
+    const hA = hwOf(MA), hB = hwOf(MB), st = {sides: [], tugs: [], edge: [], bar: add(barricade(MB, true))}; st.bar.visible = false;
+    for (const sx of [-1, 1]){
+      const sg = add(new THREE.Group()), pave = new THREE.Group(), fg = new THREE.Group(); pave.position.x = sx*MA; sg.add(pave, fg);
+      const p1 = strip(sx < 0 ? z => -hB(z) - 0.3 : z => hA(z) - 0.05, sx < 0 ? z => -hA(z) + 0.05 : z => hB(z) + 0.3, 7, FAR - 4, 1, asph, 0.006);
+      scene.remove(p1); p1.position.x = -sx*MA; pave.add(p1);
+      fg.add(jersey(hB, sx)); sg.userData = {sx, pave, fence: fg}; sg.visible = false; st.sides.push(sg); st.edge.push(fg);
+      // a bulldozer pushes the barriers out to the new edge
+      const tug = new THREE.Group(), tp = [];
+      tp.push(P(new B(1.5, 0.8, 2.3), 0xe0a426, 0, 0.75, 0.1)); tp.push(P(new B(1.1, 0.75, 0.9), 0x2b2f3a, 0, 1.5, 0.45)); tp.push(P(new B(1.2, 0.06, 1.0), 0xe0a426, 0, 1.9, 0.45));
+      for (const dx of [-0.7, 0.7]) tp.push(P(new B(0.38, 0.55, 2.5), 0x1f2126, dx, 0.28, 0.1));
+      tp.push(P(new B(2.2, 0.9, 0.18), 0x8d939b, 0, 0.45, -1.35)); tp.push(P(new B(0.12, 0.12, 1.0), 0x5b5f6a, -0.6, 0.6, -0.8)); tp.push(P(new B(0.12, 0.12, 1.0), 0x5b5f6a, 0.6, 0.6, -0.8));
+      tug.add(new THREE.Mesh(merge(tp), VC)); tug.rotation.y = sx < 0 ? -Math.PI/2 : Math.PI/2;
+      tug.position.set(sx*(MB + 2.4), 0, sx < 0 ? tz[0] : tz[1]); tug.visible = false; add(tug); st.tugs.push(tug);
+    }
+    return st;
+  };
+  set.stages.push(cityStage(MAIN0, MAIN_W, [-17, -23]), cityStage(MAIN_W, MAIN_W2, [-12, -27]));
+  // the set itself, plus its right-hand row of buildings turned round to stand on the empty left side of the street
+  if (SKIN_LOAD.load) SKIN_LOAD.load(CITY.url).then(gl => {
+    const c = CITY, w = new THREE.Group(), src = cityToon(gl.scene); w.add(src);
+    const pv = new THREE.Group(); pv.position.set(c.cx, 0, -606); pv.rotation.y = Math.PI; w.add(pv);
+    for (const n of ['facade2', 'facade3', 'facade6', 'liana1', 'Plane002']){ const o = src.getObjectByName(n); if (o){ const k = o.clone(); k.position.x -= c.cx; k.position.z += 606; pv.add(k); } }
+    w.scale.setScalar(c.s); w.position.set(-c.cx*c.s, c.y - 0.02, -c.cz*c.s); add(w); set.set = w; HF.sig = '';
+  }).catch(e => console.warn('city set', e));
+  g.visible = false; scene.add(g);
+  return set;
+}
 function inFirstPerson(){
   if (state !== 'play' && state !== 'dying') return false;
   if (MODE === 'heli' && HM.on) return HM.seat !== 'pilot' || HM.view === 'cockpit';
@@ -2474,7 +2536,7 @@ function earProTick(){
 // which ambience plays where
 function ambSet(){
   if (!AU.ctx || !AU.surfG) return;
-  const t = AU.ctx.currentTime, desert = (LOC.cur || 'pier') === 'airfield';
+  const t = AU.ctx.currentTime, desert = (LOC.cur || 'pier') !== 'pier';
   AU.surfG.gain.setTargetAtTime(desert ? 0 : 0.22, t, 0.6);
   AU.desertG.gain.setTargetAtTime(desert ? 0.11 : 0, t, 0.6);
   AU.trafficG.gain.setTargetAtTime(desert ? 0.16 : 0, t, 0.6);
@@ -2512,7 +2574,7 @@ function milBases(L){
   }).catch(e => { console.warn('military post', e); MILBASE.loading = false; });
 }
 function applyLocation(name){
-  if (!LOC.sets[name]){ if (name === 'airfield') LOC.sets.airfield = buildAirfield(); else name = 'pier'; }
+  if (!LOC.sets[name]){ if (name === 'airfield') LOC.sets.airfield = buildAirfield(); else if (name === 'city') LOC.sets.city = buildCity(); else name = 'pier'; }
   const animating = PIER.t >= 0;
   const mapChanged = LOC.cur !== name;
   if (mapChanged) switchRunMap(LOC.cur, name);
@@ -3720,7 +3782,7 @@ function explode(x, z, r, dmg, quiet){
   if (MODE === 'heli' && dmg > 0 && AA.list.length) aaBlast(x, z, r, dmg);
   // explosions carry: full level out to ~30 units, then fall away with distance (and pick up the outdoor echo)
   sfxAt(quiet ? 'smallboom' : r >= 3.4 ? 'bigboom' : 'boom', x, 0.4, z, quiet ? 0.7 : 1, 30);
-  if (r >= 3.4 && AU.ctx) setTimeout(() => sfxAt(LOC.cur === 'airfield' ? 'debris' : 'wdebris', x, 0.5, z, Math.min(1, r/6), 16), 350);
+  if (r >= 3.4 && AU.ctx) setTimeout(() => sfxAt(LOC.cur !== 'pier' ? 'debris' : 'wdebris', x, 0.5, z, Math.min(1, r/6), 16), 350);
   for (let i = 0; i < en; i++){
     if (eh[i] <= 0) continue;
     const d = Math.hypot(ex[i] - x, ez[i] - z);
@@ -3763,7 +3825,7 @@ function farImpact(x, z, cosmetic){
   if (FARP.n > (PC.on ? 14 : 7)) return; FARP.n++;
   const c = camera.position, d = Math.hypot(x - c.x, z - c.z, c.y), R = PC.on ? 260 : 140;
   if (d > R){ if (Math.random() < 0.3) chips(x, 0.3, z, SPARK, 1, 1.5); return; }
-  const k = 0.75 + d*0.007, wet = LOC.cur !== 'airfield' && !surfAt(x, z);
+  const k = 0.75 + d*0.007, wet = LOC.cur === 'pier' && !surfAt(x, z);
   fx(wet ? 'white' : 'dust', x, 0.35, z, k*rnd(0.8, 1.25));
   if (!cosmetic && Math.random() < 0.35) fx(wet ? 'white' : 'dust', x + rnd(-0.5, 0.5), 0.5, z + rnd(-0.5, 0.5), k*rnd(1.1, 1.6));
   if (!cosmetic && d < 90 && Math.random() < 0.4) chips(x, 0.4, z, surfAt(x, z) === 'imWood' ? WOOD : SPARK, 2, 3.5);
@@ -4382,7 +4444,7 @@ function dfFly(v, dt, lv){
   const m = DF; m.t += dt; m.hfCd = Math.max(0, m.hfCd - dt);
   if (m.t > (m.P ? 6 : 3)) $('dfHint').style.opacity = 0;
   if (m.P){
-    const P = m.P; P.free = HM.free;
+    const P = m.P; P.free = HM.free; hfTick(dt);     // V106: buildings are solid here too, like gunship mode
     hmSimFlight(P, hmFwd(P.yaw, _dfF), dt);
     // keep it over the battle: a softer box than the gunship arena
     if (Math.abs(P.pos.x) > 45){ P.pos.x = clamp(P.pos.x, -45, 45); P.vel.x *= -0.2; }
@@ -5260,7 +5322,7 @@ function pierTick(dt){
   MAIN = MA + dW*re; GLIM = MAIN - 0.6;
   S1.bar.visible = r > 0; S1.bar.position.y = -0.6*(1 - re); S0.bar.visible = r < 0.5;
   if (r > 0 && was < 4.4) resize();
-  if (T >= 4.4 && was < 4.4){ PIER.hold = false; shake = 0.55; sfx('repair'); sfx('bigboom', 0.5); toast(PIER.mode === 'unroll' ? 'Taxiway widened!' : 'Pier widened!', '#c6ecff'); resize(); }
+  if (T >= 4.4 && was < 4.4){ PIER.hold = false; shake = 0.55; sfx('repair'); sfx('bigboom', 0.5); toast(LOC.cur === 'city' ? 'Street widened!' : PIER.mode === 'unroll' ? 'Taxiway widened!' : 'Pier widened!', '#c6ecff'); resize(); }
   if (T >= 10){ PIER.t = -1; for (const tg of S1.tugs) tg.visible = false; }
 }
 function toast(text, col){
@@ -5276,7 +5338,7 @@ function unlockedRoles(){ return ROLE_ORDER.slice(0, Math.min(ROLE_ORDER.length,
 function startWave(){
   wave++; waveT = 0; spawned = 0; spawnAcc = 0;
   { const tgt = MODE === 'def' ? stageFor(wave === 26 && ev26Wanted() ? 25 : wave) : 0;     // V101: wave 26 widens on the song's first drop
-    if (tgt > PIER.stage){ if (tgt - PIER.stage > 1) pierSet(tgt - 1); PIER.stage = tgt; PIER.t = 0; PIER.hold = true; setTimeout(() => toast(PIER.mode === 'unroll' ? (tgt > 1 ? 'Ground crew: widening again' : 'Ground crew: widening the taxiway') : (tgt > 1 ? 'More tugboats incoming' : 'Tugboats incoming'), '#c6ecff'), 900); } }
+    if (tgt > PIER.stage){ if (tgt - PIER.stage > 1) pierSet(tgt - 1); PIER.stage = tgt; PIER.t = 0; PIER.hold = true; setTimeout(() => toast(LOC.cur === 'city' ? (tgt > 1 ? 'Dozers: pushing the barriers out again' : 'Dozers: clearing the street') : PIER.mode === 'unroll' ? (tgt > 1 ? 'Ground crew: widening again' : 'Ground crew: widening the taxiway') : (tgt > 1 ? 'More tugboats incoming' : 'Tugboats incoming'), '#c6ecff'), 900); } }
   if (MODE === 'def' && wave >= 13) setTimeout(() => toast(wave === 13 ? 'Late game: guns hold more, pickups give more' : 'Ammo capacity up · Minigun holds ' + fmt(wMax('minigun')), '#ffe6a0'), 1800);
   budget = 120*Math.pow(1.38, wave - 1);
   waveDur = 24 + Math.min(12, wave);
@@ -6185,7 +6247,7 @@ function update(dt){
     { const hw = halfW(boss.z) - 1.3; boss.x += (clamp(boss.x, -hw, hw) - boss.x)*Math.min(1, dt*2); }
     boss.hit = Math.max(0, boss.hit - dt);
     for (const g of gates) if (!g.broken && z0 < g.z && boss.z >= g.z && Math.abs(boss.x - g.x) <= g.width/2 + 1) breakGate(g);
-    if (boss.z > BARRICADE_Z - 2.2){ sfx(LOC.cur === 'airfield' ? 'debris' : 'wdebris', 0.9, boss.x/6); wall -= 50; hurt = 0.7; shake = 0.7; chips(boss.x, 1.5, boss.z, RED, 30, 6); toast('The boss broke through', '#ffb3ab'); bosses.splice(bosses.indexOf(boss), 1); }
+    if (boss.z > BARRICADE_Z - 2.2){ sfx(LOC.cur !== 'pier' ? 'debris' : 'wdebris', 0.9, boss.x/6); wall -= 50; hurt = 0.7; shake = 0.7; chips(boss.x, 1.5, boss.z, RED, 30, 6); toast('The boss broke through', '#ffb3ab'); bosses.splice(bosses.indexOf(boss), 1); }
   }
 
   // grid of enemies
@@ -6995,7 +7057,7 @@ function ehFly(e, want, dt){
   if (!e.vel){ e.vel = new THREE.Vector3(); e.yaw = 0; e.pitch = 0; e.bank = 0; }
   const acc = _ehA.copy(want).sub(e.pos).multiplyScalar(0.9).addScaledVector(e.vel, -1.4); if (acc.length() > amax) acc.setLength(amax);
   e.vel.addScaledVector(acc, dt); if (e.vel.length() > vmax) e.vel.setLength(vmax);
-  e.pos.addScaledVector(e.vel, dt); e.pos.y = Math.max(3, e.pos.y);
+  e.pos.addScaledVector(e.vel, dt); e.pos.y = Math.max(3 + hfAt(e.pos.x, e.pos.z), e.pos.y);
   const to = _ehL.copy(P.pos).sub(e.pos), dist = to.length(), hv = Math.hypot(e.vel.x, e.vel.z);
   const face = dist < 70 || hv < 2 ? to : e.vel, wy = Math.atan2(face.x, -face.z);
   const dy = Math.atan2(Math.sin(wy - e.yaw), Math.cos(wy - e.yaw)), rate = lb ? 2.2 : 1.4, step = clamp(dy, -rate*dt, rate*dt);
@@ -7014,7 +7076,7 @@ function ehFly(e, want, dt){
 function ehGuns(e, dt){
   const P = HM, lb = e.kind === 'lb', loc = e.g.worldToLocal(_ehL.copy(P.pos));
   const f = lb ? -loc.z : -loc.x, sd = lb ? loc.x : loc.z, az = Math.atan2(sd, f), el = Math.atan2(loc.y, Math.hypot(f, sd)), dist = e.pos.distanceTo(P.pos);
-  const canGun = lb ? Math.abs(az) < 0.35 && Math.abs(el) < 0.35 && dist < 60 : Math.abs(az) < 1.9 && el < 0.19 && el > -1.05 && dist < 75;
+  const canGun = (lb ? Math.abs(az) < 0.35 && Math.abs(el) < 0.35 && dist < 60 : Math.abs(az) < 1.9 && el < 0.19 && el > -1.05 && dist < 75) && hfClear(e.pos, P.pos);
   e.fireT -= dt;
   if (e.fireT <= 0){
     if (!canGun){ e.fireT = 0.25; e.burst = 0; }
@@ -7030,7 +7092,7 @@ function ehGuns(e, dt){
   }
   if (lb || wave < 4) return;
   // missile: it has to hold you in front of it for a few seconds (you see LOCKING), then it fires (MISSILE)
-  const cone = Math.abs(az) < 0.7 && el < 0.45 && dist < 85;
+  const cone = Math.abs(az) < 0.7 && el < 0.45 && dist < 85 && !hmLow(P) && hfClear(e.pos, P.pos);
   e.lk = cone ? (e.lk || 0) + dt : Math.max(0, (e.lk || 0) - dt*0.7); e.missCd = (e.missCd ?? rnd(3, 6)) - dt;
   if (e.lk >= 3 && e.missCd <= 0){
     e.lk = 0; e.missCd = rnd(9, 14);
@@ -7039,6 +7101,58 @@ function ehGuns(e, dt){
     sfx('hellfire', 0.6);
   }
 }
+// ---- V106: what's solid in gunship mode. Every visible map mesh (buildings, hangars, the military posts, parked jets, AA sites,
+// dunes) is rasterised once into a 1 m height field: you can't fly through it, you can land on a roof, bullets and missiles
+// stop on it, and its height is what "under the radar" is measured from ----
+const HF = {cell: 1, x0: -156, z0: -246, nx: 312, nz: 382, h: null, sig: '', chk: 0};
+const RADAR_AGL = 6;     // below this height over whatever is under you, nothing can lock a missile on you (guns still can)
+function hfRoots(){ const L = LOC.sets[LOC.cur]; return L ? [L.group] : []; }     // the map only: AA sites come and go, so they're checked as solid blocks in hfAt instead of rebuilding
+function hfSig(){ let n = 0; for (const r of hfRoots()) r.traverseVisible(o => { if (o.isMesh) n++; }); return LOC.cur + n; }
+function hfBuild(){
+  const nx = HF.nx, nz = HF.nz, c = HF.cell, h = HF.h || (HF.h = new Float32Array(nx*nz)); h.fill(0);
+  const put = (x, z, y) => { const i = Math.floor((x - HF.x0)/c), j = Math.floor((z - HF.z0)/c); if (i >= 0 && j >= 0 && i < nx && j < nz){ const k = j*nx + i; if (y > h[k]) h[k] = y; } };
+  const v = new THREE.Vector3(), W = [];
+  for (const r of hfRoots()){ r.updateMatrixWorld(true);
+    r.traverseVisible(o => {
+      if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || !o.geometry || !o.geometry.attributes.position) return;
+      if (/wire|liana|cable/i.test(o.name + ' ' + (o.parent ? o.parent.name : ''))) return;     // overhead wires and hanging vines would count as walls down to the ground
+      const m = o.material; if (m && (m.opacity < 0.3 || m.depthWrite === false && m.transparent)) return;
+      const pa = o.geometry.attributes.position, ix = o.geometry.index, n = pa.count;
+      if (W.length < n*3) W.length = n*3;
+      let top = -1e9; for (let k = 0; k < n; k++){ v.fromBufferAttribute(pa, k).applyMatrix4(o.matrixWorld); W[k*3] = v.x; W[k*3 + 1] = v.y; W[k*3 + 2] = v.z; if (v.y > top) top = v.y; }
+      if (top < 0.6) return;     // ground, water, runway paint
+      const T = ix ? ix.count/3 : n/3;
+      for (let t = 0; t < T; t++){
+        const a = (ix ? ix.getX(t*3) : t*3)*3, b = (ix ? ix.getX(t*3 + 1) : t*3 + 1)*3, d = (ix ? ix.getX(t*3 + 2) : t*3 + 2)*3;
+        const ax = W[a], ay = W[a + 1], az = W[a + 2], bx = W[b], by = W[b + 1], bz = W[b + 2], cx = W[d], cy = W[d + 1], cz = W[d + 2];
+        if (ay < 0.6 && by < 0.6 && cy < 0.6) continue;
+        const area = (bx - ax)*(cz - az) - (cx - ax)*(bz - az);
+        // walls and poles stand on their edges in the plan view: trace the edges
+        for (const [x1, y1, z1, x2, y2, z2] of [[ax, ay, az, bx, by, bz], [bx, by, bz, cx, cy, cz], [cx, cy, cz, ax, ay, az]]){
+          const L2 = Math.hypot(x2 - x1, z2 - z1), st = Math.max(1, Math.ceil(L2/(c*0.5)));
+          for (let q = 0; q <= st; q++){ const u = q/st; put(x1 + (x2 - x1)*u, z1 + (z2 - z1)*u, y1 + (y2 - y1)*u); } }
+        if (Math.abs(area) < 0.25) continue;
+        // roofs, slopes, dunes: every cell whose centre falls inside the triangle, at the triangle's height there
+        const i0 = Math.max(0, Math.floor((Math.min(ax, bx, cx) - HF.x0)/c)), i1 = Math.min(nx - 1, Math.floor((Math.max(ax, bx, cx) - HF.x0)/c));
+        const j0 = Math.max(0, Math.floor((Math.min(az, bz, cz) - HF.z0)/c)), j1 = Math.min(nz - 1, Math.floor((Math.max(az, bz, cz) - HF.z0)/c));
+        if ((i1 - i0 + 1)*(j1 - j0 + 1) > 40000) continue;
+        for (let j = j0; j <= j1; j++){ const pz = HF.z0 + (j + 0.5)*c;
+          for (let i = i0; i <= i1; i++){ const px = HF.x0 + (i + 0.5)*c;
+            const w0 = ((bx - px)*(cz - pz) - (cx - px)*(bz - pz))/area, w1 = ((cx - px)*(az - pz) - (ax - px)*(cz - pz))/area, w2 = 1 - w0 - w1;
+            if (w0 < -0.01 || w1 < -0.01 || w2 < -0.01) continue;
+            const y = w0*ay + w1*by + w2*cy, k = j*nx + i; if (y > h[k]) h[k] = y; } }
+      }
+    }); }
+}
+// rebuilt when what's on the map changes (a model finished loading, an AA site appeared or died); checked twice a second
+function hfTick(dt){ HF.chk -= dt; if (HF.chk > 0 && HF.h) return; HF.chk = 0.5; const sg = hfSig(); if (sg !== HF.sig){ HF.sig = sg; const t0 = performance.now(); hfBuild(); if (location.search.includes('debug')) console.log('height field', sg, (performance.now() - t0).toFixed(0) + ' ms'); } }
+function hfAt(x, z){ let y = 0; if (HF.h){ const i = Math.floor((x - HF.x0)/HF.cell), j = Math.floor((z - HF.z0)/HF.cell); if (i >= 0 && j >= 0 && i < HF.nx && j < HF.nz) y = HF.h[j*HF.nx + i]; }
+  for (const a of AA.list) if (a.model && Math.abs(a.x - x) < 2.6 && Math.abs(a.z - z) < 2.6) y = Math.max(y, 3.2); return y; }
+// the helicopter's plan footprint: centre, nose, tail and both sides
+function hfFoot(x, z, fx, fz){ const a = 1.7*HB, b = 1.1*HB; return Math.max(hfAt(x, z), hfAt(x + fx*a, z + fz*a), hfAt(x - fx*a, z - fz*a), hfAt(x - fz*b, z + fx*b), hfAt(x + fz*b, z - fx*b)); }
+// clear line between two points (nothing in the height field pokes above it)
+function hfClear(a, b){ const n = Math.max(2, Math.ceil(Math.hypot(b.x - a.x, b.z - a.z)/2)); for (let k = 1; k < n; k++){ const u = k/n; if (hfAt(a.x + (b.x - a.x)*u, a.z + (b.z - a.z)*u) > a.y + (b.y - a.y)*u) return false; } return true; }
+const hmLow = P => P.pos.y - (P.gy || 2.2) - hfFoot(P.pos.x, P.pos.z, 0, 0) < RADAR_AGL;
 // ---- ground AA sites: they paint you, fire missiles (and the Type 625 its guns); take them out to clear the wave ----
 const AA = {list: [], M: {}, kinds: [
   {id: 'adats', name: 'ADATS', url: 'assets/aa_adats.json', hp: 70, gun: false},
@@ -7054,14 +7168,15 @@ function aaSpawn(){
   const pads = LOC.cur === 'airfield' && LOC.sets.airfield && LOC.sets.airfield.bases, free = pads ? pads.filter(b => AA.list.every(a => a.hp <= 0 || Math.hypot(a.x - b.x, a.z - b.z) > 4)) : [];
   if (free.length){ const b = free[(Math.random()*free.length)|0]; x = b.x + rnd(-1.5, 1.5); z = b.z + rnd(-1.5, 1.5); }
   else for (let tries = 0; tries < 20; tries++){ x = (Math.random() < 0.5 ? -1 : 1)*rnd(14, 62); z = rnd(FAR - 70, FAR - 22); if (AA.list.every(a => Math.hypot(a.x - x, a.z - z) > 16)) break; }
-  const g = new THREE.Group(); g.position.set(x, LOC.cur === 'airfield' ? 0 : -0.3, z); g.rotation.y = Math.atan2(x, z - 10) + rnd(-0.4, 0.4); scene.add(g);
+  const g = new THREE.Group(); g.position.set(x, LOC.cur !== 'pier' ? 0 : -0.3, z); g.rotation.y = Math.atan2(x, z - 10) + rnd(-0.4, 0.4); scene.add(g);
   const a = {k, name: k.name, g, x, z, hp: k.hp*(1 + 0.15*Math.max(0, wave - 2)), max: 0, lk: 0, missCd: rnd(4, 8), fireT: rnd(1, 3), burst: 0, dead: 0, model: false};
   a.max = a.hp; AA.list.push(a); aaAttach(a);
   toast('AA site spotted: ' + k.name, '#ffb35a');
 }
 function aaAttach(a){
   if (a.model) return; const M = aaModel(a.k); if (!M) return;
-  const o = vehToon(M.clone(true), 1.1, 0x9a8f6a); o.scale.setScalar(1);     // V105: real size o.traverse(m => { if (m.isMesh) m.castShadow = true; }); a.g.add(o); a.model = true;
+  const o = vehToon(M.clone(true), 1.1, 0x9a8f6a); o.scale.setScalar(1);     /* V105: real size */
+  o.traverse(m => { if (m.isMesh) m.castShadow = true; }); a.g.add(o); a.model = true;
 }
 function aaHurt(a, d){
   if (a.hp <= 0) return; a.hp -= d*vehDmgK(); hitMark(a.hp <= 0); chips(a.x, 2, a.z, SPARK, 3, 3);
@@ -7079,8 +7194,9 @@ function aaTick(dt){
     if (a.hp <= 0){ a.dead += dt; if (Math.random() < dt*12) chips(a.x + rnd(-1, 1), 2.5, a.z + rnd(-1, 1), SMOKE, 1, 1.4); if (Math.random() < dt*5 && a.dead < 6) chips(a.x, 1.8, a.z, ORANGE, 1, 1.5); if (a.dead > 14){ scene.remove(a.g); AA.list.splice(k, 1); } continue; }
     if (state !== 'play' || P.hull <= 0) continue;
     const dx = P.pos.x - a.x, dz = P.pos.z - a.z, dist = Math.hypot(dx, dz, P.pos.y);
-    const see = dist < 110 && P.pos.y > 2.5;
-    a.lk = see ? a.lk + dt : Math.max(0, a.lk - dt*0.8); a.missCd -= dt;
+    a.losT = (a.losT || 0) - dt; if (a.losT <= 0){ a.losT = 0.25; a.los = hfClear(_hmL.set(a.x, 4.6, a.z), P.pos); }
+    const see = dist < 110 && P.pos.y > 2.5 && a.los, radar = see && !hmLow(P);     // V106: under the radar the missiles can't lock, the guns still shoot
+    a.lk = radar ? a.lk + dt : Math.max(0, a.lk - dt*(see ? 1.5 : 0.8)); a.missCd -= dt;
     if (a.lk >= 6 && a.missCd <= 0){     // V104: they take longer to lock than the helicopters
       a.lk = 0; a.missCd = rnd(10, 15);
       const m = missileObj(toon(0xff6b5b)); m.scale.setScalar(1.3); m.position.set(a.x, 4, a.z); scene.add(m);
@@ -7101,7 +7217,8 @@ function aaTick(dt){
 // warning: LOCKING (yellow, slow beeps) while something holds you; MISSILE (red, fast beeps) while one is coming
 function hmThreatUi(P, dt){
   let paint = 0; for (const e of P.enemies) if (e.hp > 0 && e.lk) paint = Math.max(paint, e.lk/3); for (const a of AA.list) if (a.hp > 0) paint = Math.max(paint, a.lk/6);
-  const inc = P.emiss.some(o => o.missile && !o.decoy), el = $('hmWarn');
+  const inc = P.emiss.some(o => o.missile && !o.decoy && !o.lost), el = $('hmWarn');
+  { const lo = state === 'play' && P.hull > 0 && hmLow(P), r = $('hmRadar'); if (r.hidden === lo) r.hidden = !lo; }
   const mode = inc ? 'm' : paint > 0.05 ? 'p' : '';
   if (el.dataset.m !== mode){ el.dataset.m = mode; el.textContent = inc ? 'MISSILE' : 'LOCKING'; el.classList.toggle('paint', !inc); }
   el.style.display = mode ? 'block' : 'none';
@@ -7230,7 +7347,17 @@ function hmSimFlight(P, f, dt){
     const vt = AG.top/4.86, v3 = P.vel.length(); if (v3 > vt - 3){ const over = v3 - (vt - 3), dk = Math.min(0.5, 0.05*over*over*dt/v3); P.vel.multiplyScalar(1 - dk); } }
   P.pos.addScaledVector(P.vel, dt);
   const wasGround = P.onGround; P.onGround = false;
-  const GY = P.gy || 2.2;
+  let GY = P.gy || 2.2;
+  { // V106: buildings and everything else solid. Coming down onto it you land on it; flying into its side stops you (and hurts)
+    const hh = hfFoot(P.pos.x, P.pos.z, f.x, f.z), py = P.pos.y - P.vel.y*dt;
+    if (hh > 0.5 && P.pos.y < hh + GY){
+      if (py >= hh + GY - 0.7) GY = hh + GY;
+      else { const hs2 = Math.hypot(P.vel.x, P.vel.z); P.pos.x -= P.vel.x*dt; P.pos.z -= P.vel.z*dt;
+        if (hfFoot(P.pos.x, P.pos.z, f.x, f.z) + (P.gy || 2.2) > P.pos.y){ P.pos.y += Math.max(0.5, hs2*dt); P.vel.y = Math.max(P.vel.y, 2); }
+        P.vel.x *= -0.25; P.vel.z *= -0.25;
+        P.wallT = Math.max(0, (P.wallT || 0) - dt);
+        if (hs2 > 3 && !P.wallT){ P.wallT = 0.4; if (!P.noDmg) hmDamage(Math.min(100, (hs2 - 4)*4.5)); sfx('touchdown', clamp(0.5 + hs2/10, 0.5, 1.4), 0, true); chips(P.pos.x + f.x*2*HB, P.pos.y, P.pos.z + f.z*2*HB, SPARK, 12, 5); shake = Math.max(shake, Math.min(0.6, hs2*0.04)); } } }
+    if (P.wallT) P.wallT = Math.max(0, P.wallT - dt); }
   if (P.pos.y < GY){ P.onGround = true; const imp = Math.max(-P.vel.y, Math.hypot(P.vel.x, P.vel.z)*0.8)*(Math.abs(P.pitch) > 0.6 || Math.abs(P.bank) > 0.7 ? 1.6 : 1); if (!wasGround && imp > 1.2) sfx('touchdown', clamp(0.35 + imp/12, 0.35, 1.4), 0, true);   /* flat, level touchdowns are forgiving; nose-first or on its side is not */ if (imp > SIM.landSafe && !P.landT && !P.noDmg) hmDamage(Math.min(100, (imp - SIM.landSafe)*12)); P.landT = 0.5; P.pos.y = GY; P.vel.y = Math.max(0, P.vel.y); P.vel.x *= 1 - Math.min(1, dt*3); P.vel.z *= 1 - Math.min(1, dt*3); }
   P.landT = Math.max(0, (P.landT || 0) - dt);
   if (wasGround && !P.onGround){ P.airT = 0; P.kicked = false; }
@@ -7260,7 +7387,7 @@ function hmSimGunner(P, dt){
 }
 function hmSelect(w){ if (HM.seat !== 'pilot') return; HM.wsel = w; sfx('click'); toast(w === 'sec' ? (HM.type === 'little' ? 'Rocket volley selected' : gSec(HM.type) ? 'TOW selected' : 'Hellfire selected') : (HM.type === 'little' ? 'Miniguns selected' : 'Rockets selected'), '#c8ffd0'); hmSeatUI(); }
 function hmUpdate(dt){
-  const P = HM; heliAudioTick(P, dt);
+  const P = HM; heliAudioTick(P, dt); hfTick(dt);
   P.hfCd = Math.max(0, P.hfCd - dt); P.flCd = Math.max(0, P.flCd - dt); P.hintT -= dt;
   if (P.flPairs > 0){ P.flT -= dt; while (P.flT <= 0 && P.flPairs > 0){ P.flT += 0.35; P.flPairs--; hmFlarePair(); } }
   if (P.hfHold && P.hfCd <= 0 && P.wsel === 'sec') hmFireHellfire();
@@ -7295,7 +7422,10 @@ function hmUpdate(dt){
   if (!(sim && P.seat === 'pilot')){
     if (P.vel) P.vel.set(f.x*P.speed, 0, f.z*P.speed);
     P.pos.addScaledVector(f, P.speed*dt);
-    P.pos.y += (P.alt - P.pos.y)*Math.min(1, dt*2);
+    // V106: the arcade height keeps you over rooftops; a wall in the way stops you
+    const hh = hfFoot(P.pos.x, P.pos.z, f.x, f.z), floor = hh + (P.gy || 2.2) + 1;
+    if (hh > 0.5 && P.pos.y < floor - 1.2){ P.pos.addScaledVector(f, -P.speed*dt); P.speed *= -0.3; P.alt = Math.max(P.alt, floor); }
+    P.pos.y += (Math.max(P.alt, floor) - P.pos.y)*Math.min(1, dt*2);
   }
   if (!(sim && P.seat === 'pilot')){ P.pos.x = clamp(P.pos.x, -48, 48); P.pos.z = clamp(P.pos.z, FAR - 40, 28); }
   P.gun.copy(P.pos).addScaledVector(f, 2.2*HB); P.gun.y -= 0.9*HB;
@@ -7388,7 +7518,7 @@ function hmUpdate(dt){
     sh.m.position.addScaledVector(sh.v, dt); sh.life -= dt;
     const p = sh.m.position;
     if (sh.life <= 0 && p.y > 1.2){ scene.remove(sh.m); P.shots.splice(k, 1); continue; }     // too far: it just goes
-    let hit = p.y <= 0.35 || sh.life <= 0 || ((sh.kind === 'hellfire' || sh.kind === 'agm') && sh.to && p.distanceTo(sh.to) < 1.2);
+    let hit = p.y <= 0.35 || sh.life <= 0 || (p.y < hfAt(p.x, p.z) && !sh.cosmetic) || ((sh.kind === 'hellfire' || sh.kind === 'agm') && sh.to && p.distanceTo(sh.to) < 1.2);
     if (!hit && !sh.cosmetic) hit = hmHitHelis(p, sh.kind === 'cannon' ? 0.6 : 0.5, sh.kind === 'cannon' ? 6 : sh.kind === 'rocket' ? 18*(sh.dmgK || 1) : 110);
     if (!hit && sh.cosmetic) for (const e of HM.enemies) if (!e.remote && e.hp > 0 && e.pos.distanceTo(p) < 2.4*HB){ hit = true; break; }
     if (!hit && p.y < 6 && bosses.some(b => Math.hypot(b.x - p.x, b.z - p.z) < 2.4)) hit = true;
@@ -7432,7 +7562,8 @@ function hmUpdate(dt){
   P.warnT = Math.max(0, P.warnT - dt);
   for (let k = P.emiss.length - 1; k >= 0; k--){
     const o = P.emiss[k];
-    if (o.missile){
+    if (o.missile && !o.decoy && !o.lost && hmLow(P) && o.m.position.distanceTo(P.pos) > 6){ o.lost = true; toast('Missile lost you', '#c8ffd0'); }
+    if (o.missile && !o.lost){
       const tgt = o.decoy || P.pos;
       const want = tgt.clone().sub(o.m.position).normalize().multiplyScalar(19);
       o.v.lerp(want, Math.min(1, dt*1.6)); o.m.lookAt(o.m.position.clone().add(o.v));
@@ -7446,7 +7577,8 @@ function hmUpdate(dt){
       sfx(o.missile ? 'mpass' : 'whiz', clamp(1.3 - o.pd/(o.missile ? 22 : 8), 0.35, 1), clamp(sx/6, -1, 1), true);
     }
     o.pd = d;
-    let gone = o.life <= 0 || o.m.position.y < 0.2;
+    let gone = o.life <= 0 || o.m.position.y < 0.2 || o.m.position.y < hfAt(o.m.position.x, o.m.position.z);
+    if (gone && o.missile && o.life > 0){ chips(o.m.position.x, o.m.position.y, o.m.position.z, ORANGE, 14, 5); sfx('smallboom'); }
     if (!gone && d < (o.missile ? 2.4 : 1.7)*HB*0.9){ hmDamage(o.missile ? (o.big || 20) : (o.dmg || 1.3)); gone = true; if (o.missile){ chips(P.pos.x, P.pos.y, P.pos.z, ORANGE, 20, 6); sfx('boom'); } }
     if (o.missile && o.decoy && o.m.position.distanceTo(o.decoy) < 2){ chips(o.m.position.x, o.m.position.y, o.m.position.z, ORANGE, 14, 5); sfx('smallboom'); gone = true; }
     if (gone){ scene.remove(o.m); P.emiss.splice(k, 1); }
@@ -7904,7 +8036,7 @@ function hmKeys(){}   // keyboard and controller flying now live in inputTick()
 // ======================================================================
 const CLOUD = {ref: null, ready: false};
 // one saved run per map; RUN is always the current map's
-const MAPS = ['pier', 'airfield'], MAP_NAME = {pier: 'Seaside pier', airfield: 'Desert airfield'};
+const MAPS = ['pier', 'airfield', 'city'], MAP_NAME = {pier: 'Seaside pier', airfield: 'Desert airfield', city: 'Ruined city block'};
 const runKey = m => m === 'pier' ? 'adlords-run' : 'adlords-run-' + m;
 const RUNS = {};
 let RUN = null, heliBest = 0;
@@ -7994,7 +8126,7 @@ const CHARS = {
   kiki:    {name: 'Kiki', rar: 'SSR', model: 'assets/c_kiki.glb', anims: {idle: 'Pistol_Aim', fire: 'Pistol_Fire', pose: 'Lobby_Idle'}, hand: 'RightHand', perk: {dmg: 0.1, rate: 0.08}, line: 'Small, bouncy, and somehow always first to the trigger.'},
   noir:    {name: 'Noir', rar: 'SR', model: 'assets/c_noir.glb', anims: {idle: 'Pistol_Aim', fire: 'Pistol_Fire', pose: 'Lobby_Idle'}, hand: 'RightHand', perk: {wall: 0.12, dmg: 0.05}, line: 'Calm under fire. Keeps the barricade standing.'},
   blenderchan: {name: 'Blender Chan', rar: 'SR', model: 'assets/c_blenderchan.glb', modelHQ: 'assets/c_blenderchan_hq.glb', perk: {rate: 0.1}, line: 'Renders the horde out of existence, one frame at a time.'},
-  shibahu: {name: 'Shibahu', rar: 'SSR', model: 'assets/c_shibahu.glb', modelHQ: 'assets/c_shibahu_hq.glb', cull: true, face: 1, perk: {dmg: 0.08, rate: 0.08}, line: 'Headphones on, jacket half off, never misses the beat.'},
+  shibahu: {name: 'Shibahu', rar: 'SSR', model: 'assets/c_shibahu.glb', modelHQ: 'assets/c_shibahu_hq.glb', cull: true, face: 1, anims: {idle: 'Pistol_Aim', fire: 'Pistol_Fire', pose: 'Lobby_Idle', hi: 'Lobby_Wave'}, hand: 'Shibahu_RightHand', live: true, perk: {dmg: 0.08, rate: 0.08}, line: 'Headphones on, jacket half off, never misses the beat.'},
   boykisser: {name: 'Boykisser', rar: 'SR', model: 'assets/c_boykisser.glb', cull: true, face: 1, perk: {coins: 0.12}, line: 'You like shooting the horde, don’t you? :3'},
   white:   {name: 'Character White', rar: 'SR', model: 'assets/c_white.json', anims: {idle: 'aim', fire: 'fire', reload: 'reload'}, hand: 'mixamorigRightHand', perk: {rate: 0.05, dmg: 0.05}, line: 'All in white. Shoulders the rifle and doesn’t blink.'},
 };
@@ -8275,7 +8407,7 @@ function refreshTitle(){
   RUNS[LOC.cur] = RUN;
   refreshGems(); $('squadInfo').textContent = CHARS[PROFILE.equipped].name;
   document.querySelectorAll('#title .mapTile').forEach(b => { const m = b.dataset.map, r = RUNS[m]; b.setAttribute('aria-checked', String(m === LOC.cur)); b.querySelector('small').textContent = r ? 'Saved · wave ' + (r.wave + 1) : 'No save'; });
-  $('newInfo').textContent = LOC.cur === 'airfield' ? 'Hold the airfield' : 'Defend the pier';
+  $('newInfo').textContent = LOC.cur === 'airfield' ? 'Hold the airfield' : LOC.cur === 'city' ? 'Hold the crossroads' : 'Defend the pier';
   $('lineup').querySelectorAll('img').forEach((im, k) => { const u = ASSETS.cards[LINEUP[k][0]]; if (!im.src.endsWith(u)) im.src = u; });
   const c = $('continueBtn');
   c.hidden = !RUN; if (RUN) $('continueInfo').textContent = MAP_NAME[LOC.cur] + ' · Wave ' + (RUN.wave + 1) + ' · ● ' + fmt(RUN.coins) + ' · ' + RUN.gunners + (RUN.gunners === 1 ? ' gunner' : ' gunners');
@@ -9722,7 +9854,25 @@ function hqPlace(o, key){
   HQ.root.add(holder); HQ.h = sz.y*k; HQ.w = Math.max(sz.x, sz.z, ch ? sz.x : 0)*k;
   hqHangarFit();
 }
-function hqCharModel(id){
+// V106: characters that come with their own lobby clips stand there alive (breathing, ears and tail, blinking) instead of frozen
+const HQ_ANIM = {};
+function hqAnimChar(id, greet){
+  const c = CHARS[id]; if (!c.live || !c.anims || !SKIN_LOAD.fresh) return null;
+  if (!HQ_ANIM[id]) HQ_ANIM[id] = SKIN_LOAD.fresh(c.modelHQ || c.model).then(g => ({scene: g.scene, clips: g.animations})).catch(() => null);
+  return HQ_ANIM[id].then(r => {
+    const f = n => r && r.clips.find(a => a.name === n), idle = f(c.anims.pose); if (!idle) return null;
+    if (!r.fit){ r.fit = true;     // a skinned part's box is its bind pose; give each the posed character's real box so framing and sizing match what you see
+      const tb = new THREE.Box3().setFromObject(charStatic(r.scene, {clip: idle})); r.scene.updateMatrixWorld(true);
+      r.scene.traverse(m => { if (m.isSkinnedMesh){ m.geometry.boundingBox = tb.clone().applyMatrix4(m.matrixWorld.clone().invert()); m.geometry.boundingSphere = null; } }); }
+    const o = skClone(r.scene), mx = new THREE.AnimationMixer(o), a = mx.clipAction(idle); a.play();
+    const hi = greet && f(c.anims.hi);
+    if (hi){ const w = mx.clipAction(hi); w.setLoop(THREE.LoopOnce, 1); w.clampWhenFinished = false; a.setEffectiveWeight(0); w.play();
+      mx.addEventListener('finished', () => { a.setEffectiveWeight(1); a.crossFadeFrom(w, 0.4, false); }); }
+    else a.time = Math.random()*idle.duration;
+    mx.update(0); (HQ.mx = HQ.mx || []).push({o, mx, t: performance.now()}); return o; });
+}
+function hqCharModel(id, greet){
+  { const p = hqAnimChar(id, greet); if (p) return p.then(m => m || loadCharModel(id).then(m2 => m2 ? m2.clone(true) : null)).then(hqFace(id)); }
   if (id === 'guard' || !CHARS[id].model) return Promise.resolve((() => { const g = new THREE.Group(), m = new THREE.Mesh(gunnerGeoHi, CHAR); m.rotation.y = Math.PI; g.add(m); return g; })());
   if (CHARS[id].modelHQ && SKIN_LOAD.fresh){ if (!CHAR_HQ[id]) CHAR_HQ[id] = SKIN_LOAD.fresh(CHARS[id].modelHQ).then(g => charStatic(g.scene)).catch(() => null);
     return CHAR_HQ[id].then(m => m ? m.clone(true) : loadCharModel(id).then(m2 => m2 ? m2.clone(true) : null)).then(hqFace(id)); }
@@ -9730,12 +9880,12 @@ function hqCharModel(id){
 }
 const CHAR_HQ = {};
 const hqFace = id => m => { if (!m || !CHARS[id].face) return m; const w = new THREE.Group(); m.rotation.y += Math.PI; w.add(m); return w; };
-function hqShowChar(id){ hqShow('c:' + id, () => hqCharModel(id), Math.PI + 0.45); }
+function hqShowChar(id){ hqShow('c:' + id, () => hqCharModel(id, true), Math.PI + 0.45); }
 function hqShowSquad(){
   const id = lookId();
-  hqShow('sq:' + id, () => hqCharModel(id).then(a => { if (!a) return null;
+  hqShow('sq:' + id, () => Promise.all([hqCharModel(id), CHARS[id].live ? hqCharModel(id) : null, CHARS[id].live ? hqCharModel(id) : null]).then(([a, a1, a2]) => { if (!a) return null;
     const g = new THREE.Group(), fit = o => { const b = new THREE.Box3().setFromObject(o), s = 1.9/Math.max(1e-3, b.max.y - b.min.y), w = new THREE.Group(); w.add(o); w.scale.setScalar(s); o.position.y = -b.min.y; return w; };
-    const xs = [-0.85, 0, 0.85]; xs.forEach((x, i) => { const c = fit(i ? a.clone(true) : a); c.position.set(x, 0, i === 1 ? 0.3 : -0.2); c.rotation.y = (i - 1)*-0.18; g.add(c); });
+    const xs = [-0.85, 0, 0.85]; xs.forEach((x, i) => { const c = fit(!i ? a : (i === 1 ? a1 : a2) || a.clone(true)); c.position.set(x, 0, i === 1 ? 0.3 : -0.2); c.rotation.y = (i - 1)*-0.18; g.add(c); });
     return g; }), Math.PI + 0.25);
 }
 // Friends tab: a Fortnite-style lobby line-up. You stand in the middle; the people in your room fill the other three pads.
@@ -9858,6 +10008,8 @@ function hqLoop(){
   C.updateProjectionMatrix();
   if (HQ.auto) HQ.yaw += 0.0016;
   HQ.root.rotation.y = HQ.yaw;
+  if (HQ.mx && HQ.mx.length){ const now = performance.now(), dt = Math.min(0.1, (now - (HQ.mxT || now))/1000); HQ.mxT = now;
+    HQ.mx = HQ.mx.filter(e => { let p = e.o; while (p && p !== HQ.root) p = p.parent; if (!p) return !e.on && now - e.t < 30000; e.on = true; e.mx.update(dt); return true; }); }
   HQ.R.render(HQ.S, HQ.C);
 }
 $('hqBack').onclick = () => { sfx('click'); const b = HQ_BACK[HQ.page]; if (b) hqGo(b); else hqClose(); };
@@ -9893,25 +10045,33 @@ function socRecent(players){
   if (ch){ SOC.recent = SOC.recent.slice(0, 20); socSave(); }
 }
 const FR = {ws: null, open: false, st: {}, retry: 0, inv: null, lastPoll: -1e9, hb: null};
-const frOn = s => !!(s && s.on && performance.now() - s.at < 50000);
+const frOn = s => !!(s && s.on && performance.now() - s.at < 100000);     // V106: a missed poll or two (phone asleep, window in the background) no longer drops a friend to offline
 const frOnlineCount = () => SOC.friends.filter(f => frOn(FR.st[f.c])).length;
 const frName = c => (FR.st[c] && FR.st[c].n) || (SOC.friends.find(f => f.c === c) || SOC.recent.find(f => f.c === c) || {n: c}).n;
 function frStatus(){ return {s: state === 'title' ? 'menu' : 'play', room: NET.on && !NET.started ? NET.code : '', mode: NET.mode, open: NET.on && !NET.started && NET.players.length < netMode().max ? 1 : 0}; }
 function frConnect(){
   if (FR.ws) return;
-  const url = MP_SIG() + '?key=peerjs&id=' + encodeURIComponent('adlords-u-' + SOC.me) + '&token=' + Math.random().toString(36).slice(2, 12) + '&version=1.5.4';
-  let ws; try { ws = new WebSocket(url); } catch(e){ setTimeout(frConnect, 30000); return; }
-  FR.ws = ws;
+  // V106: the same token every time on this device. The signalling server keeps a dropped connection's ID reserved for about a minute
+  // and only gives it back to the same token, so with a fresh token per try a reconnect (Wi-Fi change, phone waking up) got
+  // "ID taken" and sat on "Connecting..." until the server let go
+  if (!SOC.tok){ SOC.tok = Math.random().toString(36).slice(2, 12); socSave(); }
+  const url = MP_SIG() + '?key=peerjs&id=' + encodeURIComponent('adlords-u-' + SOC.me) + '&token=' + SOC.tok + '&version=1.5.4';
+  let ws; try { ws = new WebSocket(url); } catch(e){ FR.err = 'blocked'; setTimeout(frConnect, 30000); return; }
+  FR.ws = ws; FR.taken = false; FR.err = '';
+  const opened = () => { if (FR.ws !== ws || FR.open) return; FR.open = true; FR.retry = 0; clearInterval(FR.hb); FR.hb = setInterval(() => frSig({type: 'HEARTBEAT'}), 5000); frPingAll(true); frRender(); };
+  // taking back our own reserved ID doesn't send OPEN again, so a connection that stays up without "ID taken" counts as open too
+  ws.onopen = () => setTimeout(() => { if (!FR.taken && ws.readyState === 1) opened(); }, 1500);
   ws.onmessage = ev => {
     let m; try { m = JSON.parse(ev.data); } catch(_){ return; }
-    if (m.type === 'OPEN'){ FR.open = true; FR.retry = 0; clearInterval(FR.hb); FR.hb = setInterval(() => frSig({type: 'HEARTBEAT'}), 5000); frPingAll(true); return; }
-    if (m.type === 'ID-TAKEN'){ FR.taken = true; try { ws.close(); } catch(_){} return; }       // the game is open twice: the other copy keeps the presence
+    if (m.type === 'OPEN'){ opened(); return; }
+    if (m.type === 'ID-TAKEN'){ FR.taken = true; FR.err = 'taken'; try { ws.close(); } catch(_){} return; }       // the game is open twice: the other copy keeps the presence
+    if (m.type === 'ERROR'){ FR.err = String((m.payload && m.payload.msg) || 'error').slice(0, 60); return; }
     const c = String(m.src || '').replace('adlords-u-', '');
     if (m.type === 'EXPIRE'){ if (FR.st[c]){ FR.st[c].on = false; frRender(); } return; }
     const pl = m.payload; if (!pl || pl.adl !== 1 || !/^[A-Z2-9]{6}$/.test(c)) return;
     frOnMsg(c, pl);
   };
-  ws.onclose = () => { if (FR.ws !== ws) return; FR.ws = null; FR.open = false; clearInterval(FR.hb); setTimeout(frConnect, FR.taken ? 60000 : Math.min(60000, 4000*(++FR.retry))); };
+  ws.onclose = () => { if (FR.ws !== ws) return; FR.ws = null; FR.open = false; clearInterval(FR.hb); if (!FR.err) FR.err = 'lost'; frRender(); clearTimeout(FR.rt); FR.rt = setTimeout(frConnect, FR.taken ? 20000 : Math.min(30000, 3000*(++FR.retry))); };
   ws.onerror = () => {};
 }
 const frSig = m => { if (FR.ws && FR.ws.readyState === 1) FR.ws.send(JSON.stringify(m)); };
@@ -9940,7 +10100,7 @@ function frAdd(c, n){
   if (!/^[A-Z2-9]{6}$/.test(c)){ toast('Friend codes are 6 letters and numbers', '#ffd0c8'); return; }
   if (c === SOC.me){ toast('That’s your own code', '#ffd0c8'); return; }
   if (!SOC.friends.find(f => f.c === c)){ SOC.friends.push({c, n: n || (SOC.recent.find(r => r.c === c) || {}).n || c}); socSave(); }
-  frSend(c, {k: 'add'}); frSend(c, {k: 'ping'}); toast('Friend added', '#c8ffd0'); frRender();
+  frSend(c, {k: 'add'}); frSend(c, {k: 'ping'}); toast(FR.open ? 'Friend added' : 'Friend added: they’ll show up once you’re connected', '#c8ffd0'); frRender();
 }
 async function frInvite(c){
   if (!FR.open){ toast('Not connected yet: check your internet', '#ffd0c8'); return; }
@@ -9978,7 +10138,8 @@ function frRender(){
   const keep = document.activeElement && document.activeElement.id === 'frIn' ? document.activeElement.value : null;
   let h = `<div class="frCode"><span>Your friend code</span><b>${SOC.me}</b><button type="button" data-a="copy">Copy</button></div>
     <div class="frAdd"><input id="frIn" maxlength="6" placeholder="FRIEND CODE" autocomplete="off" spellcheck="false"><button type="button" data-a="add">Add friend</button></div>`;
-  if (!FR.open) h += '<div class="frEmpty">Connecting to the friends service…</div>';
+  if (!FR.open) h += `<div class="frEmpty">${FR.err === 'taken' ? 'Your code is signed in somewhere else (another copy of the game open?). Retrying…' : FR.err && FR.err !== 'lost' ? 'Friends service: ' + hqEsc(FR.err) + '. Retrying…' : 'Connecting to the friends service…'} <button type="button" data-a="recon">Retry now</button></div>`;
+  else h += '<div class="frSec" style="color:#7dff9a">● Connected</div>';
   if (NET.on && !NET.started) h += `<div class="frSec">You’re in room ${NET.code}: invites bring friends into it</div>`;
   h += `<div class="frSec">Friends · ${rows.filter(r => frOn(r.s)).length} online</div>`;
   if (!rows.length) h += '<div class="frEmpty">No friends yet. Swap friend codes, or add people you’ve played with from Recent players.</div>';
@@ -9999,6 +10160,7 @@ const frClick = e => {
   const b = e.target.closest('button[data-a]'); if (!b) return; const a = b.dataset.a, c = b.dataset.c; sfx('click');
   if (a === 'copy'){ try { navigator.clipboard.writeText(SOC.me); toast('Code copied', '#c8ffd0'); } catch(_){ toast('Your code: ' + SOC.me, '#c8ffd0'); } }
   else if (a === 'add'){ frAdd($('frIn').value); }
+  else if (a === 'recon'){ FR.retry = 0; clearTimeout(FR.rt); if (FR.ws){ try { FR.ws.close(); } catch(_){} } else frConnect(); }
   else if (a === 'addr') frAdd(c);
   else if (a === 'del'){ SOC.friends = SOC.friends.filter(f => f.c !== c); socSave(); frRender(); }
   else if (a === 'inv') frInvite(c);
@@ -10007,6 +10169,9 @@ const frClick = e => {
 $('hqFriends').addEventListener('click', frClick); $('mpFriends').addEventListener('click', frClick);
 $('hqFriends').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter' && e.target.id === 'frIn') frAdd(e.target.value); });
 setTimeout(frConnect, 2000);
+document.addEventListener('visibilitychange', () => { if (document.hidden) return;
+  if (!FR.ws){ clearTimeout(FR.rt); FR.retry = 0; frConnect(); } else if (FR.open) frPingAll(true); });
+addEventListener('online', () => { if (!FR.ws){ clearTimeout(FR.rt); FR.retry = 0; frConnect(); } });
 setInterval(() => { if (!$('hqFriends').hidden || (NET.on && !NET.started)) frRender(); }, 3000);
 
 // ---- in-app updates (Android app only): the app downloads new game files in the background ----
@@ -10032,6 +10197,12 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V106', ['New map: Ruined city block. Hold the crossroads of a quarantined street while the horde pours out of the walled outpost; dozers push the concrete barriers out when the street widens',
+           'Gunship mode: buildings and everything else on the map are solid. Fly into a wall and you stop (and take damage); come down on a roof and you can land on it. Bullets and missiles stop on them too, so you can hide behind cover',
+           'Fly low (under about 6 m over whatever is below you) and you are UNDER RADAR: nothing can lock a missile on you, and a missile already chasing you loses you. Guns can still hit you',
+           'AA sites are visible again (they were there and shooting, just without their model)',
+           'Shibahu: new model with her anime look and outlines, her own aim and fire animations in the squad, and she stands in the lobby alive (breathing, ears, tail, blinking) and waves when you pick her',
+           'Friends: reconnecting after your phone sleeps or the Wi-Fi changes no longer gets stuck on “Connecting…”. The Friends tab shows when you are connected and has a Retry button, and friends stay online through a missed check-in']],
   ['V105', ["Loadouts stand in a hangar now: every vehicle parked at a set angle at its real size, Battlefield-style", "The called-in transport helicopter is an SH-60 Seahawk", "The horde is zombies; the old Sharklings are gone", "Desert map: three military posts out in the sand; in gunship mode the AA sites set up on their pads", "AA sites are real-size; enemy aircraft no longer tinted red: they carry red name tags, smoke and burn as they get hurt, and throw sparks when hit", "Hits on helicopters land along the whole airframe (no more dead spots)", "Radio: every song at the same loudness; the long mix starts somewhere random and loops", "Barrel health tops out at 3,000"]],
   ['V104', ["Gunship mode: the horde keeps wave-1 health and bosses are much lighter; the job is enemy aircraft and AA sites", "AA sites (ADATS and Type 625) set up on the beach: they lock on slowly and fire missiles, the Type 625 also shoots; guns don't hurt them, rockets and missiles do, and the wave isn't clear until they're gone", "Enemy Little Birds: fragile, fast, hard-hitting and inaccurate. Enemy helicopters fly like you do (they pitch, roll and climb), and the enemy Apache's gun can't fire above its nose", "Lock-on takes time both ways: LOCKING in yellow with slow beeps, MISSILE in red with fast beeps; your own lock box goes yellow, then red when the Hellfire will guide", "Hit markers on helicopters and AA, see-through Apache blades, the Little Bird is fragile but hits vehicles 50% harder", "Low health: smoke, then fire and a caution tone, a much louder damaged airframe, and health comes back slowly after a while untouched", "Wave mode: fly any DAP, Little Bird or Apache you've called (pick from a list); the Apache circles and guns until you take it; the Black Hawk is crewed by its gunners", "Call-in limits: five of a kind out at once (one AC-130), carry ten (five of the heavy aircraft); extras from barrels pay out in coins; each one bought costs 20% more", "Call-in bar: Freeze and Repair on top, the rest sorted by how many you have", "From wave 15: up to two ×4 gates in the shop (● 15,000)", "Your aircraft knock barrels down fast; dozers can go anywhere across the widened lane; the Apache cockpit works in wave mode; shadows follow high helicopters and the runways stop flickering", "Recruitment page rebuilt: banners, pick-up rates, points toward a pick-up member, rate info", "New squad leaders: Kiki (Legend) and Noir (Super Rare)", "No more accidental text selection"]],
   ['V103', ['AC-130 Gunship in the shop (● 20,000): it circles high over the pier for a short time and you work its guns yourself, the 105mm howitzer, 40mm Bofors and 25mm Gatling, on a thermal sight (white-hot, black-hot or night vision)', 'The M1 Abrams is a real tank model now, turret and all', 'New squad leader: Blender Chan (SR)']],
@@ -10162,26 +10333,30 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
 })();
 // ================= V98: radio =================
 // GTA-style station wheel: hold Q in a seat (or press the 📻 button anywhere), aim with the mouse or your finger, let go to tune in.
-// Five station slots plus OFF. Every recording is on station 1 for now; the other four wait for their own tracks.
-// V101: the home-made recordings are WetGangRadio, a station that only appears once the dev code is entered (Settings > Code);
-// everyone else sees the open station slots. 'Messing With Sound Stage' left the radio: it's the wave 26 boss track now
-// V102: the dev code no longer adds a station to the normal wheel; it unlocks a separate DEV wheel (🎛 button, or Tab while a wheel is open)
-// with three stations of its own. The normal wheel keeps five open slots for everyone.
-const WGR = {id: 'wgr', name: 'WetGangRadio', tag: 'home-made samples', tracks: [['5gum', '5 Gum'], ['senor_dark', 'Señor Dark'], ['dog_i_am_now', 'Dog I Am Now'], ['loopdy_loop', 'Loopdy Loop'],
-    ['playing_the_cello', 'Playing the Cello'], ['kid_at_lunch_table', 'Kid at Lunch Table']]};
-// one 96-minute broadcast: every tune-in drops you somewhere new in it, like a live station
-const CLASSY = {id: 'classy', name: 'Y.102 Classy Wet', tag: 'smooth all night', live: true, tracks: [['classy_wet', 'Classy Wet live']]};
-const ROCKS = {id: 'rocks', name: 'Wet Rocks FM', tag: 'rocks, wet', tracks: [['plutonium_cold', 'Plutonium Cold'], ['hydrogen_bomb_infant', 'Hydrogen Bomb Infant'], ['tiny_pebbles', 'Tiny Pebbles'],
-    ['heartburn_by_the_calories', 'Heartburn by the Calories'], ['missle_67', 'Missle 67'], ['traveler', 'Traveler'], ['inferno_circle', 'Inferno Circle'], ['dont_be_afraid', 'Don’t Be Afraid'], ['lucky_child', 'Lucky Child']]};
-const RADIO_MAIN = [1, 2, 3, 4, 5].map(n => ({id: 'st' + n, name: 'STATION ' + n, tracks: []})), RADIO_DEV = [WGR, CLASSY, ROCKS];
-const devOn = () => !!SETTINGS.wgr;
-const radioById = id => RADIO_MAIN.concat(RADIO_DEV).find(s => s.id === id) || null;
+// Five station slots plus OFF. A code from Settings > Code can open a second wheel; what's on it is encrypted with that code.
+const RPK = 'KCSWjPr7EhellKus5xBXoH9zkUD8jDpeyuN0ttLKGdVCZ7t50SYgznQrwaec8Nbkl6kDGyd02vaOr8GexyiXd/IxENkWYP2VJ8BCpZF2KnzMnV0ObZI+S5aqGJD/003hwyqq9QxkYZu2Rm0aHWzdF4n6bPyiPT0KrI+icgy99oGeody9pov2ZLM9zTCvH9u69hKfPwMxUPC1y6pI10drWgoydQSEtC9uUW7aFbyCm0I/+8IhSCIMVmE5YzuPV+6Y72bKhwXCecIS1l5EYQHiD8wVfylE1z2lE1Yfywc19ANKwE3IvxEqhceQ5uvmGUunY5a6fkhrdMprcxqoWjdkQZ0gywwNEknPKJe6D6iSFTkJPLkyduw6TtsJ216DnhJVxEcslDrQORnShg6oBnuZKR/2hpbgmKNQBfYzsa8rqCkpGHAozzVd6azAoyundwu4wbCH7nYTmgWdcZRkwsQbuG8Z7Vlsw/gVg66aUpcVTjSOyrIrNFHiq2O+dNkU+v1ahXwYa87pwCD0dz4xLltyP3wJizyg7PVlyIotRrFDyF1UlN/mFhZ5Vjx8IryADkvoRa6DmHdb0wR8NFJ3VQ1RAeDigLLYv8B8k2YVBQi3civRBKjzOu/cwxA3IHZkbNXWrIVy2Gk7qKh8rSxeyMpzMuXFbfNjbeqIc36h5FHR8UjTJcbCMsw+nbbr3O4eYi0d+jzNTds1QCxho8JczJuGR9yLTm3038PobA3Nv4vJ3wFgrtSu3yrcGwb31vTgsZ3tB09ctTD0S4E4xTF++aTvEoV2AiCRgCa1220J7I2Sb2VGbjaOmf+IzFUCw00mUjvG+kLf47hcG+IweIaMTpIrJdf/Ic8FiuXhHRym2DUF2ftE7CQoYCjK/Vo5fu6doQnzmLSCLkXlUopsgRW8g+3PirG100CG0MdNYgFIN80EU4YgLN6AgMxpAz4cNNVOeEDyqESFLdQxrFjVamM2ewLy0IVb+H5IiPCX6x1CfhgwK8vH3HdcFLrhMau1QTzE9zgKcQCYqqB7F1GsyOPhWo8D4+neNqPuiXB9EUapmNGHjPC4o/si';
+const RADIO_MAIN = [1, 2, 3, 4, 5].map(n => ({id: 'st' + n, name: 'STATION ' + n, tracks: []})), RADIO_X = [];
+const devOn = () => RADIO_X.length > 0;
+const PK = {key: null};
+const pkSha = t => crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
+async function pkDec(key, name, buf){ const iv = new Uint8Array(await pkSha(name)).slice(0, 16); return crypto.subtle.decrypt({name: 'AES-CTR', counter: iv, length: 128}, key, buf); }
+async function pkUnlock(code){
+  try { const key = await crypto.subtle.importKey('raw', await pkSha(code + '|adl-pk'), 'AES-CTR', false, ['decrypt']);
+    const raw = Uint8Array.from(atob(RPK), c => c.charCodeAt(0)), d = new Uint8Array(await pkDec(key, 'meta', raw));
+    if (d[0] !== 80 || d[1] !== 75 || d[2] !== 49) return false;
+    const list = JSON.parse(new TextDecoder().decode(d.subarray(3)));
+    if (!RADIO_X.length){ for (const x of list){ x.pk = true; RADIO_X.push(x); } }
+    PK.key = key; if (RADIO.segs && RADIO.open) radioBank(RADIO.bank); return true;
+  } catch(e){ console.warn('pk', e); return false; }
+}
+const radioById = id => RADIO_MAIN.concat(RADIO_X).find(s => s.id === id) || null;
 let RADIO_ST = RADIO_MAIN, RW_N = RADIO_MAIN.length + 1;
-function radioBank(b){ if (b === 'dev' && !devOn()) b = 'main'; RADIO.bank = b; RADIO_ST = b === 'dev' ? RADIO_DEV : RADIO_MAIN; RW_N = RADIO_ST.length + 1;
-  const w = $('radioWheel'); if (w) w.classList.toggle('dev', b === 'dev'); if (RADIO.segs) radioBuild(); }
-if (!SETTINGS.v101radio){ SETTINGS.v101radio = true; if (!devOn()) SETTINGS.radio = -1; }
-if (typeof SETTINGS.radio === 'number') SETTINGS.radio = SETTINGS.radio === 0 && devOn() ? 'wgr' : '';     // V102: stations are saved by id now
-if (SETTINGS.radio && (!radioById(SETTINGS.radio) || (RADIO_DEV.some(x => x.id === SETTINGS.radio) && !devOn()))) SETTINGS.radio = '';
+function radioBank(b){ if (b === 'x' && !devOn()) b = 'main'; RADIO.bank = b; RADIO_ST = b === 'x' ? RADIO_X : RADIO_MAIN; RW_N = RADIO_ST.length + 1;
+  const w = $('radioWheel'); if (w) w.classList.toggle('x2', b === 'x'); if (RADIO.segs) radioBuild(); }
+if (!SETTINGS.v101radio){ SETTINGS.v101radio = true; SETTINGS.radio = -1; }
+if (typeof SETTINGS.radio === 'number') SETTINGS.radio = '';
+if (SETTINGS.radio && !radioById(SETTINGS.radio) && !SETTINGS.pk) SETTINGS.radio = '';
+if (SETTINGS.wgr){ delete SETTINGS.wgr; if (!SETTINGS.pk) SETTINGS.radio = ''; }
 // wheel slots clockwise from the top: OFF, then the five stations
 const RADIO = {open: false, src: '', x: 0, y: 0, sel: -1, sticky: false, pid: null, ox: 0, oy: 0, moved: false, cur: SETTINGS.radio || '', bank: 'main', au: null, q: {}, last: {}, segs: null};
 const RW_R0 = 58, RW_R1 = 152, RW_DEAD = 26;
@@ -10236,7 +10411,7 @@ function radioRender(){
   RADIO.segs.forEach((g, k) => { g.classList.toggle('on', k === RADIO.sel); g.classList.toggle('cur', k ? k === ci : !RADIO.cur); });
   const k = RADIO.sel >= 0 ? RADIO.sel : ci, st = k ? RADIO_ST[k - 1] : null, cur = !!st && st.id === RADIO.cur;
   $('rwName').textContent = st ? st.name : RADIO.sel < 0 && RADIO.cur ? radioById(RADIO.cur).name : 'RADIO OFF';
-  $('rwBank').textContent = devOn() ? (RADIO.bank === 'dev' ? 'DEV WHEEL · Tab / 🎛 for main' : 'Tab / 🎛 for DEV wheel') : '';
+  $('rwBank').textContent = devOn() ? (RADIO.bank === 'x' ? 'WHEEL 2 · Tab / 🎛 to switch' : 'Tab / 🎛 to switch') : '';
   $('rwSub').textContent = !st ? (RADIO.sel < 0 ? (RADIO.cur ? '♪ ' + (RADIO.now || '') : 'aim at a station, let go') : '') : !st.tracks.length ? 'no signal yet' : cur && RADIO.now ? '♪ ' + RADIO.now : st.tag || '';
 }
 function radioAim(x, y){
@@ -10247,7 +10422,7 @@ function radioAim(x, y){
 }
 function radioOpen(src, bank){
   if (RADIO.open) return;
-  radioBank(bank || (RADIO_DEV.some(x => x.id === RADIO.cur) ? 'dev' : 'main'));
+  radioBank(bank || (RADIO_X.some(x => x.id === RADIO.cur) ? 'x' : 'main'));
   RADIO.open = true; RADIO.src = src; RADIO.x = RADIO.y = 0; RADIO.sel = -1; RADIO.sticky = false; RADIO.moved = false;
   $('radioWheel').classList.remove('sticky'); $('radioWheel').hidden = false; radioRender(); sfx('click', 0.4);
 }
@@ -10276,7 +10451,7 @@ function radioStatic(dur = 0.55, off = false){
 }
 function radioTune(id){
   const was = RADIO.cur; RADIO.cur = id; SETTINGS.radio = id; saveSettings(); $('radioBtn').classList.toggle('on', !!id);
-  $('radioDevBtn').classList.toggle('on', RADIO_DEV.some(x => x.id === id));
+  $('rb2').classList.toggle('on', RADIO_X.some(x => x.id === id));
   if (!id){ radioStatic(0.32, true); RADIO.tok = (RADIO.tok || 0) + 1; RADIO.tuneT_busy = false; if (RADIO.au){ RADIO.au.pause(); RADIO.au.removeAttribute('src'); RADIO.au.load(); } RADIO.now = ''; return; }
   if (was !== id) radioStatic(0.6);
   if (RADIO.au && !RADIO.au.paused) RADIO.au.pause();
@@ -10294,9 +10469,9 @@ function radioQueue(st){
 }
 // the app serves its files without byte ranges, so a plain <audio src> can't jump into a song; a blob URL of the whole file can
 const RADIO_BLOB = new Map();
-function radioBlob(url){
+function radioBlob(url, pk){
   if (RADIO_BLOB.has(url)) return RADIO_BLOB.get(url);
-  const p = fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.blob(); }).then(b => URL.createObjectURL(b)).catch(() => { RADIO_BLOB.delete(url); return url; });
+  const p = fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return pk ? r.arrayBuffer().then(b => pkDec(PK.key, pk, b)).then(b => new Blob([b], {type: 'audio/mpeg'})) : r.blob(); }).then(b => URL.createObjectURL(b)).catch(() => { RADIO_BLOB.delete(url); return url; });
   RADIO_BLOB.set(url, p);
   if (RADIO_BLOB.size > 3){ const [k, v] = RADIO_BLOB.entries().next().value; RADIO_BLOB.delete(k); v.then(u => { if (u.startsWith('blob:') && RADIO.au && RADIO.au.src !== u) URL.revokeObjectURL(u); }); }
   return p;
@@ -10307,7 +10482,7 @@ function radioNext(tuneIn){
   const tr = radioQueue(st), au = RADIO.au, tok = RADIO.tok = (RADIO.tok || 0) + 1, id = RADIO.cur;
   RADIO.now = tr[1]; RADIO.tuneT_busy = true; radioRender();
   if (tuneIn || state === 'play') toast('📻 ' + st.name + (st.live ? '' : ' · ' + tr[1]), '#f0eec4');
-  radioBlob('assets/radio/' + tr[0] + '.mp3').then(u => {
+  radioBlob(st.pk ? 'assets/pk/' + tr[0] + '.bin' : 'assets/radio/' + tr[0] + '.mp3', st.pk ? tr[0] : '').then(u => {
     if (tok !== RADIO.tok || RADIO.cur !== id) return;
     RADIO.tuneT_busy = false; au.src = u; au.loop = !!st.live; radioVolume();     // V105: the long mix loops back to its start instead of re-rolling
     // like GTA, tuning in lands you partway through a song, as if the station had been playing all along (anywhere at all in the long live mix)
@@ -10325,14 +10500,16 @@ function skinOptions(){
 }
 function codeEnter(){
   const v = ($('sCode').value || '').trim().toUpperCase(); $('sCode').value = ''; if (!v) return;
-  if (cyrb53(v, 26) === 'zsypv07iff'){ SETTINGS.wgr = true; saveSettings(); sfx('reward'); toast('🎛 DEV radio wheel unlocked', '#f0eec4'); }
+  if (cyrb53(v, 26) === 'zsypv07iff'){ pkUnlock(v).then(ok => { if (!ok) return; SETTINGS.pk = v; saveSettings(); sfx('reward'); toast('🎛 Unlocked', '#f0eec4'); }); }
   else if (cyrb53(v, 26) === 'md8k2vws9d'){ SETTINGS.drews = true; saveSettings(); skinOptions(); sfx('reward'); toast('The Drews are in: horde look and squad', '#f0eec4'); }
+  else if (cyrb53(v, 26) === '1giaqiwd904'){ earnGems(10000, 'added'); sfx('reward'); }
   else { sfx('deny'); toast('Unknown code', '#ffd2cc'); }
 }
+if (SETTINGS.pk) pkUnlock(SETTINGS.pk).then(ok => { if (!ok){ delete SETTINGS.pk; saveSettings(); } });
 $('sCodeBtn').onclick = codeEnter; $('sCode').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') codeEnter(); });
 // the 📻 button: drag out of it toward a station and let go, or tap it and then tap a station
 { const w = $('radioWheel');
-  for (const [b, bank] of [[$('radioBtn'), 'main'], [$('radioDevBtn'), 'dev']]){
+  for (const [b, bank] of [[$('radioBtn'), 'main'], [$('rb2'), 'x']]){
   b.addEventListener('pointerdown', e => {
     e.preventDefault(); e.stopPropagation(); audioInit();
     if (RADIO.open){ if (RADIO.bank !== bank){ radioBank(bank); radioRender(); sfx('click', 0.4); } else radioClose(); return; }
@@ -10343,8 +10520,8 @@ $('sCodeBtn').onclick = codeEnter; $('sCode').addEventListener('keydown', e => {
     if (RADIO.moved) radioPick(); else { RADIO.sticky = true; w.classList.add('sticky'); radioAim(0, 0); } };
   b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
   }
-  // Tab swaps between the normal and the DEV wheel while one is open
-  addEventListener('keydown', e => { if (RADIO.open && devOn() && e.code === 'Tab'){ e.preventDefault(); e.stopImmediatePropagation(); radioBank(RADIO.bank === 'dev' ? 'main' : 'dev'); RADIO.sel = -1; radioRender(); sfx('click', 0.4); } }, true);
+  // Tab swaps between the wheels while one is open
+  addEventListener('keydown', e => { if (RADIO.open && devOn() && e.code === 'Tab'){ e.preventDefault(); e.stopImmediatePropagation(); radioBank(RADIO.bank === 'x' ? 'main' : 'x'); RADIO.sel = -1; radioRender(); sfx('click', 0.4); } }, true);
   // tap mode: the wheel follows the cursor / finger from the screen centre; a tap on a station picks it, a tap in the middle closes it
   const rel = e => { const r = $('rwSvg').getBoundingClientRect(), k = 320/r.width; return [(e.clientX - r.left - r.width/2)*k, (e.clientY - r.top - r.height/2)*k]; };
   w.addEventListener('pointermove', e => { if (RADIO.sticky){ const [x, y] = rel(e); radioAim(x, y); } });
@@ -10352,7 +10529,7 @@ $('sCodeBtn').onclick = codeEnter; $('sCode').addEventListener('keydown', e => {
 }
 // plays only while you're in a run; the button shows during play
 setInterval(() => {
-  const live = state === 'play' || state === 'dying', btn = $('radioBtn'), db = $('radioDevBtn');
+  const live = state === 'play' || state === 'dying', btn = $('radioBtn'), db = $('rb2');
   if (btn.hidden === live) btn.hidden = !live;
   if (db.hidden === (live && devOn())) db.hidden = !(live && devOn());
   if (RADIO.open && !live) radioClose();
@@ -10361,7 +10538,7 @@ setInterval(() => {
   if (RADIO.cur && !RADIO.tuneT_busy && on && !document.hidden && !APPBG.on && !EV.music){ if (!RADIO.au || !RADIO.au.src) radioNext(true); else if (RADIO.au.paused) RADIO.au.play().catch(() => {}); }
   else if (RADIO.au && !RADIO.au.paused) RADIO.au.pause();
 }, 300);
-$('radioBtn').classList.toggle('on', !!RADIO.cur); $('radioDevBtn').classList.toggle('on', RADIO_DEV.some(x => x.id === RADIO.cur));
+$('radioBtn').classList.toggle('on', !!RADIO.cur); $('rb2').classList.toggle('on', RADIO_X.some(x => x.id === RADIO.cur));
 // ================= V101: wave 26, the boss song =================
 // 'Messing With Sound Stage' (9:41) drives the whole wave. Song time (from the audio itself, so the game stays on the beat):
 //   0:00 the wave starts on the narrow lane, a light trickle      0:41 first mini drop: the lane widens, more of them
@@ -10378,7 +10555,7 @@ function ev26Start(){
   Object.assign(EV, {on: true, t: 0, cues: new Set(), menu: false, noAudio: false, music: true, B: budget/waveDur});
   budget = Infinity; bossPending = 0;
   if (RADIO.au && !RADIO.au.paused) RADIO.au.pause();
-  if (!EV.au){ EV.au = new Audio('assets/radio/messing_with_sound_stage.mp3'); EV.au.preload = 'auto';
+  if (!EV.au){ EV.au = new Audio('assets/music/messing_with_sound_stage.mp3'); EV.au.preload = 'auto';
     EV.au.addEventListener('error', () => { EV.noAudio = true; });
     EV.au.addEventListener('ended', () => { EV.music = false; }); }
   if (!EV.g && AU.ctx){ try { const s = AU.ctx.createMediaElementSource(EV.au); EV.g = AU.ctx.createGain(); s.connect(EV.g); EV.g.connect(AU.ctx.destination); EV.au.volume = 1; } catch(e){ EV.g = null; } }

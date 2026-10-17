@@ -769,7 +769,7 @@ body.pc .titleFs{display:none}
       <section class="bfPane on" data-pane="game">
         <h3 class="subh">World</h3>
         <div class="set">
-          <label for="sLoc">Location</label><select id="sLoc"><option value="pier">Seaside pier</option><option value="airfield">Desert airfield</option></select>
+          <label for="sLoc">Location</label><select id="sLoc"><option value="pier">Seaside pier</option><option value="airfield">Desert airfield</option><option value="city">Ruined city block</option></select>
           <label for="sSkin">Enemy look</label><select id="sSkin"><option value="zombie">Zombies</option></select>
           <label for="sDap">DAP model</label><select id="sDap"><option value="pods">UH-60M with pods</option><option value="light">Light (faster)</option><option value="detailed">Detailed</option></select>
           <label for="sAutoLand">Landscape when you take a seat</label><input class="sw" type="checkbox" id="sAutoLand">
@@ -1266,7 +1266,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V110';
+const GAME_VERSION = 'V111';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -1790,7 +1790,7 @@ function hsVoice(id, kind, persp, pos, st){
   T(v.yawL, Math.max(0, -yw)*0.9, 0.15); T(v.yawR, Math.max(0, yw)*0.9, 0.15); T(v.av, 0.5, 0.3);
   const rate = 1 + 0.035*ld + 0.025*sp - 0.04*dm*Math.max(0, Math.sin(now*1.7));
   for (const L of [v.hover, v.load, v.dmg, v.low, v.yawL, v.yawR]) if (L) L.s.playbackRate.setTargetAtTime(rate, now, 0.2);
-  let vol = (st.vol ?? 1)*(v.own ? (persp === '1p' ? 0.95 : 0.85) : 1.3), lpf = 20000, wet = 0, pn = 0;
+  let vol = (st.vol ?? 1)*(v.own ? (persp === '1p' ? (kind === 'lb' ? 1.6 : 0.95) : 0.85) : 1.3),     // V111: the Little Bird's own cockpit rotor is louder lpf = 20000, wet = 0, pn = 0;
   if (v.own && now < (AU.duckUntil || 0)) vol *= persp === '1p' ? 0.45 : 0.7;
   if (pos){ const S = spatial(pos.x, pos.y, pos.z, st.ref || 18); vol *= S.vol; lpf = S.lp; wet = S.wet; pn = S.pan; }
   v.mix.gain.setTargetAtTime(SETTINGS.sound ? vol : 0, now, now - (v.t0 || (v.t0 = now)) < 0.4 ? 0.04 : 0.12); v.lp.frequency.setTargetAtTime(lpf, now, 0.12); v.send.gain.setTargetAtTime(wet*0.8, now, 0.2);
@@ -10218,6 +10218,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V111', ['Little Bird in first person: its rotor is louder and the radio in your headset is turned up too (the rotor more than the radio)', 'Settings → Location lists the Ruined city block']],
   ['V110', ['Rockets fly 1.5× faster: the Apache and DAP rocket pods and the Little Bird’s rocket volley, in gunship mode and wave mode. TOWs and Hellfires are unchanged']],
   ['V109', ['Helicopter damage sounds are another 20% louder', 'When your helicopter is badly hurt the radio fades down, like turning the music off to focus, and comes back as you heal', 'Bass rounds (waves 26 and 30): every drop brings 8 bosses at once and 8 more every 22 s while the beat runs, with the horde throughout. They’re lighter, and any still standing when the music goes quiet burn out, so the breaks stay clear', 'Settings → Graphics: Potato mode. About 240 pixels across, no shadows, short draw distance, fewer particles, a lighter crowd and no hangar: for the oldest, slowest devices', 'First person: the radio no longer plays through the headset and the open speakers at once']],
   ['V108', ['Helicopters: the damage sounds (engine strain, rattles, the caution tone) are twice as loud', 'More damage you can see: sparks and pieces fly off with every hit, thicker smoke and fire as it gets worse, the screen edges darken and pulse, the glass cracks in first person, and the HUD flickers and the airframe shakes when it is critical']],
@@ -10416,7 +10417,7 @@ function radioMix(snap){
   // V109: badly hurt, you turn the music down to focus: from about half health it fades, to about a third of the volume when critical
   const hurtK = MODE === 'heli' && HM.on && HM.hull > 0 ? clamp((55 - HM.hull)/40, 0, 1) : 0, duck = 1 - 0.65*hurtK;
   RADIO.fx.lp.frequency.setTargetAtTime(m ? 650 : 20000, t, tc); RADIO.fx.g.gain.setTargetAtTime(radioLevel()*(m ? 0.55 : 1)*duck, t, snap ? tc : 0.6);
-  const hs = !m && inFirstPerson() ? 1 : 0; RADIO.fx.head.gain.setTargetAtTime(hs*0.62, t, 0.15);     /* V101: in the headset it's a few dB down, so the cockpit is on top */
+  const hs = !m && inFirstPerson() ? 1 : 0, lb1 = (MODE === 'heli' && HM.on && HM.type === 'little') || (DF.on && DF.v && DF.v.type === 'little'); RADIO.fx.head.gain.setTargetAtTime(hs*(lb1 ? 0.9 : 0.62), t, 0.15);     // V111: up in the Little Bird, whose rotor is louder     /* V101: in the headset it's a few dB down, so the cockpit is on top */
   RADIO.fx.open.gain.setTargetAtTime(1 - hs, t, 0.15);
 }
 function radioBuild(){

@@ -1118,7 +1118,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V90';
+const GAME_VERSION = 'V91';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -4042,8 +4042,8 @@ function dfFlyWeapons(v, dt, lv){
     if (firing){ v.guns[0].muzzle.getWorldPosition(_gq); if (!gunVoice('lb' + v.uid, 'fire', 0, 1.1, persp === '1p' ? {bank: 'lb_1p_mg'} : {pos: _gq, bank: 'lb_3p_mg'})) sfx('heliGun', 0.6); }
     if (v.volley > 0){
       v.vt -= dt;
-      while (v.vt <= 0 && v.volley > 0){ v.vt += 0.125; v.volley--; const from = v.pods[v.volley & 1].getWorldPosition(new THREE.Vector3()), to = dfBoresight(v); to.x += rnd(-1.4, 1.4); to.z += rnd(-1.4, 1.4);
-        gsShoot('rocket', from, to, {dmg: 18*lv, aoe: 2.4*loRkt('little').aoeK}); if (v.volley === 13) v.vSnd = hsShot('lb', persp, 'volley', 1, 0); if (!v.vSnd && !(v.volley & 1)) sfx('rocket', 0.6, 0, true); }
+      while (v.vt <= 0 && v.volley > 0){ v.vt += LB_RIPPLE[v.vIdx = (v.vIdx || 0) + 1] || 0.1; v.volley--; const from = v.pods[v.volley & 1].getWorldPosition(new THREE.Vector3()), to = dfBoresight(v); to.x += rnd(-1.4, 1.4); to.z += rnd(-1.4, 1.4);
+        gsShoot('rocket', from, to, {dmg: 18*lv, aoe: 2.4*loRkt('little').aoeK}); if (v.vIdx === 1) v.vSnd = hsShot('lb', persp, 'volley', 1, 0); if (!v.vSnd) sfx('rocket', 0.6, 0, true); }
     }
     return;
   }
@@ -4059,7 +4059,7 @@ function dfFlyWeapons(v, dt, lv){
     apGunnerAI(v, dt);
   }
 }
-function dfVolley(v){ if (DF.rkT > 0 || v.volley) return; v.volley = 14; v.vt = 0; v.vSnd = false; DF.rkT = 3.2/rateMul; }
+function dfVolley(v){ if (DF.rkT > 0 || v.volley) return; v.volley = 7; v.vt = 0; v.vIdx = 0; v.vSnd = false; DF.rkT = 6; }
 // the Apache's front seat when no player is in it: short bursts at whatever is closest to the barricade
 function apGunnerAI(v, dt){
   if (v.crew && v.crew.gun !== undefined && v.crew.gun !== NET.me) return;      // a friend has the gun
@@ -4327,9 +4327,9 @@ const CANNON = {mag: 12, rate: 0.1, reload: 1.3, r: 1.6, dmg: 9};
 const cannonR = () => CANNON.r*(1 + 0.3*Math.min(2, Math.log2(Math.max(1, dmgMul))));
 function cannonTick(P, dt){
   if (P.reload > 0){ P.reload -= dt; if (P.reload <= 0){ P.reload = 0; P.mag = CANNON.mag; } return false; }
-  P.fireT -= dt; if (P.fireT > 0) return false;
-  P.fireT += CANNON.rate; if (P.fireT < 0) P.fireT = 0;
-  if (--P.mag <= 0){ P.reload = CANNON.reload; P.fireT = 0; }
+  P.cfT = (P.cfT || 0) - dt; if (P.cfT > 0) return false;
+  P.cfT += CANNON.rate; if (P.cfT < 0) P.cfT = 0;
+  if (--P.mag <= 0){ P.reload = CANNON.reload; P.cfT = 0; }
   return true;
 }
 function gsShoot(kind, from, to, extra){
@@ -5971,7 +5971,7 @@ function hmStart(type = 'apache'){
   } else if (type === 'little'){
     if (HM.heliL && !HM.heliL.model && loadedParts.little?.body){ scene.remove(HM.heliL.g); HM.heliL = null; }
     if (!HM.heliL){ HM.heliL = buildLittle(); HM.heliL.hull.scale.setScalar((HM.heliL.model ? 0.4 : 0.42)*HB); scene.add(HM.heliL.g); }
-    HM.heli = HM.heliL; HM.rkMax = HM.rockets = 28; HM.hellfire = 0; HM.rkMag = false;
+    HM.heli = HM.heliL; HM.rkMax = HM.rockets = 7; HM.hellfire = 0; HM.rkMag = true;
   } else {
     if (!HM.heliA){ HM.heliA = buildApache(); HM.heliA.g.scale.setScalar(HM_SCALE*HB); scene.add(HM.heliA.g); }
     HM.heli = HM.heliA; HM.rkMax = HM.rockets = RK_MAG.apache; HM.rkMag = true;
@@ -6191,7 +6191,7 @@ function hmGunnerAGM(){
   hmFireAGM(P, to); toast('AGM away', '#c8ffd0');
 }
 function hmFireHellfire(){
-  if (HM.type === 'little'){ if (HM.seat === 'pilot' && HM.rockets > 0 && HM.hfCd <= 0 && !HM.volley && state === 'play'){ HM.volley = 14; HM.volleyT = 0; HM.hfCd = 1.1; } return; }
+  if (HM.type === 'little'){ if (HM.seat === 'pilot' && HM.rockets > 0 && HM.hfCd <= 0 && !HM.volley && state === 'play'){ HM.volley = Math.min(7, HM.rockets); HM.volleyT = 0; HM.vIdx = 0; HM.hfCd = 0.9; } return; }
   if (HM.seat !== 'pilot'){ if (HM.type === 'apache') hmGunnerAGM(); return; }
   if (HM.hellfire <= 0 || HM.hfCd > 0 || state !== 'play') return;
   HM.hellfire--; HM.hfCd = 0.9;
@@ -6306,7 +6306,7 @@ function hmSimFlight(P, f, dt){
   } else { P.pq = 0; P.kicked = true; }
   const hs = Math.hypot(P.vel.x, P.vel.z);
   // turn clip: pedal turns run ~55 deg/s up to ~55 kts but only ~10 deg/s at ~95 kts; sideslip bleeds speed
-  const kts = hs*4.86, yawScale = clamp(1 - (kts - 55)/45*0.8, 0.2, 1);
+  const kts = hs*4.86, yawScale = clamp(1 - (kts - 55)/45*0.8, P.type === 'little' ? 0.38 : 0.2, 1);   // V91: the Little Bird keeps more pedal at speed
   // bank turns follow a coordinated-turn rate (g*tan(bank)/speed); roll clip: ~65 deg bank at ~110 kts turns ~30 deg/s
   const bt = Math.min(1.2, SIM.bankTurn*SIM.g*Math.min(3, Math.abs(Math.tan(P.bank)))*Math.max(0, Math.cos(P.bank))/Math.max(hs, 6) + SIM.bankTurn*SIM.g*Math.abs(Math.sin(P.bank))*Math.max(0, -Math.cos(P.bank))/Math.max(hs, 6));
   P.wy = (P.wy || 0) + (ky*SIM.yaw*AG.yaw*yawScale - (P.wy || 0))*Math.min(1, dt*SIM.yawSpin);   // pedal turns spin up and coast down
@@ -6435,13 +6435,13 @@ function hmUpdate(dt){
       else gunVoice('hmw', 'fire', 0, 0.9);
     } else if (P.gunT < 0) P.gunT = 0;
     if (little){ for (const gg of P.heli.guns){ gg.spinV += ((P.firing ? 1 : 0) - gg.spinV)*Math.min(1, dt*(P.firing ? 6 : 1.2)); gunTick(gg, dt); }
-      // rocket volley: 14 in about two-thirds of a second, alternating pods, all bending onto the aim point
+      // rocket volley: 7 per load (pair, pair, pair, single), alternating pods
       if (P.volley > 0){ P.volleyT -= dt;
-        while (P.volleyT <= 0 && P.volley > 0 && P.rockets > 0){ P.volleyT += P.volley % 2 ? 0.125 : 0; P.volley--; P.rockets--;
+        while (P.volleyT <= 0 && P.volley > 0 && P.rockets > 0){ P.volleyT += LB_RIPPLE[P.vIdx = (P.vIdx || 0) + 1] || 0.1; P.volley--; P.rockets--;
           const from = P.heli.pods[P.volley & 1].getWorldPosition(new THREE.Vector3()), tgt = heliSim() ? hmAimPoint(new THREE.Vector3()) : hmBoresight(new THREE.Vector3());
           tgt.x += rnd(-1.4, 1.4); tgt.z += rnd(-1.4, 1.4); if (heliSim() && gSec('little')) hmShoot('rocket', from, hmNoseDir(new THREE.Vector3()), 62, {follow: 'volley', aoeK: loRkt('little').aoeK}); else hmShoot('rocket', from, tgt.clone().sub(from), 62, {aoeK: loRkt('little').aoeK});
           // the recorded 7-rocket ripple covers the whole volley; the synth one per rocket until it has loaded
-          if (P.volley === 13) P.volleySnd = hsShot('lb', hmPersp(), 'volley', 0.6);
+          if (P.vIdx === 1) P.volleySnd = hsShot('lb', hmPersp(), 'volley', 0.6);
           if (!P.volleySnd) sfx('rocket', 0.65, P.volley & 1 ? 0.4 : -0.4, true); } } }
   } else if (!dap){
     // Apache 30mm: keeps reloading even when you let go of the trigger
@@ -6645,6 +6645,8 @@ function hmNoseDir(out){ return simNose(HM, out, ROCKET_DEP); }
 // slides in the direction you're moving (the HUD I-beam shows it; the fixed cross is the nose)
 const HM_RSPD = {little: 170, apache: 42, dap: 42};
 const RK_MAG = {apache: 7, dap: 4, reload: 6};
+// V91: the Little Bird's 7-rocket ripple: two in quick succession, a beat, two more, a beat, two more, then the last one
+const LB_RIPPLE = [0, 0.07, 0.17, 0.07, 0.17, 0.07, 0.14, 0.1];
 // V85: where an unguided rocket really comes down: it leaves the pods toward the aim point at 42 m/s plus the helicopter's own
 // velocity and flies straight, so the I-beam sits on that exact spot instead of an estimate
 const _rkF = new THREE.Vector3(), _rkV = new THREE.Vector3();
@@ -8371,8 +8373,8 @@ const LO_OPTS = {
         m134: {name: 'Twin M134', desc: 'Two fixed miniguns on the skids.'}},
   sec: {hellfire: {name: 'Hellfire', desc: 'Unguided against the ground: straight to the reticle spot. Locks enemy helicopters.'},
         ghf: {name: 'TOW', desc: 'Wire-guided: leaves forward, then flies wherever you keep the reticle. Turns slower than a rocket.'},
-        volley: {name: 'Rocket volley', desc: '14 rockets in under a second, straight to the reticle spot.'},
-        gvolley: {name: 'Guided volley', desc: '14 rockets that curve toward the reticle.'}},
+        volley: {name: 'Rocket volley', desc: '7 rockets (pair, pair, pair, single), straight to the reticle spot, then a reload.'},
+        gvolley: {name: 'Guided volley', desc: '7 rockets (pair, pair, pair, single) that curve toward the reticle.'}},
   cm: {flares: {name: 'Flares', desc: 'Six pairs over 1.75 seconds. Missiles go for the newest pair.'}},
   up: {none: {name: 'None', desc: 'Stock aircraft.'},
        armor: {name: 'Armor plating', desc: 'Takes 25% less damage, handles 6% slower.'},
@@ -8818,6 +8820,8 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V91', ['Apache 30mm gunner: fixed firing twice as fast as it should (one round every 0.1 s, as measured)',
+           'Little Bird: rockets come in loads of 7, fired pair, pair, pair, single, then a reload; pedal turns are quicker at speed']],
   ['V90', ['Shop prices no longer climb with the wave: weapons, weapon upgrades and vehicles cost the same every wave (each extra level or extra vehicle still costs more). Runs saved before this get the difference back as coins when you continue',
            'Phones: when a wave gets crowded, far-off sounds (other helicopters, their guns, impacts, echo) switch to the original short synth sounds so the audio keeps up; your own aircraft and guns keep their recordings']],
   ['V89', ['Black Hawk door gun: no invisible wall when looking down and back',

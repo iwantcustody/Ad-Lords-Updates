@@ -1266,7 +1266,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V109';
+const GAME_VERSION = 'V110';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -4834,7 +4834,7 @@ function gsShoot(kind, from, to, extra){
   const m = kind === 'cannon' ? tracerObj(2.6, 0.07) : kind === 'hellfire' ? missileObj(hfMat) : new THREE.Mesh(shotGeo, kind === 'rocket' ? rocketMat : hfMat);
   m.position.copy(from); scene.add(m);
   if (kind === 'cannon'){ _trX.copy(to).sub(from).normalize(); m.position.addScaledVector(_trX, 2.8); m.lookAt(_trD.copy(m.position).sub(_trX)); }
-  const speed = kind === 'cannon' ? 70 : kind === 'rocket' ? 38 : 30;
+  const speed = kind === 'cannon' ? 70 : kind === 'rocket' ? 57 : 30;     // V110: rockets 1.5x faster (TOWs and Hellfires unchanged)
   const v = to.clone().sub(from).normalize().multiplyScalar(speed);
   GS_.shots.push({kind, m, v, to: to.clone(), life: extra && extra.followDF ? 4 : 3, ...extra, ghost: NET.ghost});
 }
@@ -7454,8 +7454,8 @@ function hmUpdate(dt){
     if (P.firing && P.fireT <= 0 && P.rockets > 0 && !little){
       const RK = loRkt(P.type), rx = {dmgK: RK.dmgK*(dap ? 1.35 : 1), aoeK: RK.aoeK*(dap ? 1.6 : 1)};
       P.rockets--; P.fireT = 0.115*RK.rateK; const side = right.clone().multiplyScalar((P.rockets % 2 ? 1 : -1)*(dap ? 1.2 : 1.5)*HB); const from = P.pos.clone().add(side); from.y -= (dap ? 0.2 : 0.7)*HB;
-      if (heliSim()){ const tgt = hmAimPoint(new THREE.Vector3()); tgt.x += rnd(-0.6, 0.6); tgt.z += rnd(-0.6, 0.6); if (gPri(P.type)) hmShoot('rocket', from, hmNoseDir(new THREE.Vector3()), 42, Object.assign({follow: 'rocket'}, rx)); else hmShoot('rocket', from, tgt.sub(from), 42, rx); }
-      else { const aim = hmBoresight(new THREE.Vector3()); aim.x += rnd(-1.2, 1.2); aim.z += rnd(-1.2, 1.2); hmShoot('rocket', from, aim.sub(from), 42, rx); }
+      if (heliSim()){ const tgt = hmAimPoint(new THREE.Vector3()); tgt.x += rnd(-0.6, 0.6); tgt.z += rnd(-0.6, 0.6); if (gPri(P.type)) hmShoot('rocket', from, hmNoseDir(new THREE.Vector3()), 63, Object.assign({follow: 'rocket'}, rx)); else hmShoot('rocket', from, tgt.sub(from), 63, rx); }
+      else { const aim = hmBoresight(new THREE.Vector3()); aim.x += rnd(-1.2, 1.2); aim.z += rnd(-1.2, 1.2); hmShoot('rocket', from, aim.sub(from), 63, rx); }
       if (!hsShot('ap', hmPersp(), 'rkt', 0.9, 0)) sfx('rocket', 0.8, P.rockets % 2 ? 0.4 : -0.4, true);     // V85: the DAP uses the Apache's rocket recording
     }
     // Little Bird: the two fixed M134s are the pilot's (on the DAP the crew works every minigun)
@@ -7480,7 +7480,7 @@ function hmUpdate(dt){
       if (P.volley > 0){ P.volleyT -= dt;
         while (P.volleyT <= 0 && P.volley > 0 && P.rockets > 0){ P.volleyT += LB_RIPPLE[P.vIdx = (P.vIdx || 0) + 1] || 0.1; P.volley--; P.rockets--;
           const from = P.heli.pods[P.volley & 1].getWorldPosition(new THREE.Vector3()), tgt = heliSim() ? hmAimPoint(new THREE.Vector3()) : hmBoresight(new THREE.Vector3());
-          tgt.x += rnd(-1.4, 1.4); tgt.z += rnd(-1.4, 1.4); if (heliSim() && gSec('little')) hmShoot('rocket', from, hmNoseDir(new THREE.Vector3()), 62, {follow: 'volley', aoeK: loRkt('little').aoeK}); else hmShoot('rocket', from, tgt.clone().sub(from), 62, {aoeK: loRkt('little').aoeK});
+          tgt.x += rnd(-1.4, 1.4); tgt.z += rnd(-1.4, 1.4); if (heliSim() && gSec('little')) hmShoot('rocket', from, hmNoseDir(new THREE.Vector3()), 93, {follow: 'volley', aoeK: loRkt('little').aoeK}); else hmShoot('rocket', from, tgt.clone().sub(from), 93, {aoeK: loRkt('little').aoeK});
           // the recorded 7-rocket ripple covers the whole volley; the synth one per rocket until it has loaded
           if (P.vIdx === 1) P.volleySnd = hsShot('lb', hmPersp(), 'volley', 0.6);
           if (!P.volleySnd) sfx('rocket', 0.65, P.volley & 1 ? 0.4 : -0.4, true); } } }
@@ -10218,6 +10218,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V110', ['Rockets fly 1.5× faster: the Apache and DAP rocket pods and the Little Bird’s rocket volley, in gunship mode and wave mode. TOWs and Hellfires are unchanged']],
   ['V109', ['Helicopter damage sounds are another 20% louder', 'When your helicopter is badly hurt the radio fades down, like turning the music off to focus, and comes back as you heal', 'Bass rounds (waves 26 and 30): every drop brings 8 bosses at once and 8 more every 22 s while the beat runs, with the horde throughout. They’re lighter, and any still standing when the music goes quiet burn out, so the breaks stay clear', 'Settings → Graphics: Potato mode. About 240 pixels across, no shadows, short draw distance, fewer particles, a lighter crowd and no hangar: for the oldest, slowest devices', 'First person: the radio no longer plays through the headset and the open speakers at once']],
   ['V108', ['Helicopters: the damage sounds (engine strain, rattles, the caution tone) are twice as loud', 'More damage you can see: sparks and pieces fly off with every hit, thicker smoke and fire as it gets worse, the screen edges darken and pulse, the glass cracks in first person, and the HUD flickers and the airframe shakes when it is critical']],
   ['V107', ['Wave 30 is a second bass round: the same song and boss drops as wave 26', 'Ruined city block: the horde and its bosses are 2.5× bigger (and that much easier to hit), same speed', 'The extra gates from the wave-15 shop are ×2 now instead of ×4']],

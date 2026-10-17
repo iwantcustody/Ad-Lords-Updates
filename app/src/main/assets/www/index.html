@@ -405,6 +405,7 @@ button.ccard{cursor:pointer}
 #gs button{background:rgba(10,16,22,.6)!important;color:#e8fbff!important;box-shadow:none!important;border:1.5px solid rgba(232,251,255,.75)!important;border-radius:6px!important;font-family:var(--body)!important;font-weight:800!important;font-size:13px!important}
 #gs button small{font-family:var(--display)!important;font-size:18px!important;font-weight:400!important}
 #gs svg.ret g{stroke:#e8fbff}
+#gs .scope,#gs svg.ret,#dg > svg,#dg .vig{display:none}   /* V98: the gunship-mode sights are drawn instead */
 #gs .tint{position:absolute;inset:0;background:radial-gradient(ellipse at center, rgba(40,90,50,0) 45%, rgba(4,18,8,.55) 100%), repeating-linear-gradient(0deg, rgba(0,0,0,.08) 0 2px, rgba(0,0,0,0) 2px 4px), rgba(60,140,80,.12)}
 #gs .top{position:absolute;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top, 0px)) 14px 0;display:flex;justify-content:space-between;align-items:flex-start;font-family:var(--display);font-size:16px;letter-spacing:1px;text-shadow:0 0 6px rgba(0,0,0,.6)}
 #gs .bar{width:120px;height:8px;border:1.5px solid #c8ffd0;border-radius:5px;margin-top:4px;overflow:hidden}
@@ -533,6 +534,23 @@ body.ts .tsEditBtn{display:inline-block}
 body.ts #hm .alt,body.ts #df .alt,body.ts #fab{display:none!important}
 .titleFs{position:absolute;right:12px;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:151;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.45);background:rgba(10,16,22,.5);color:#fff;font-size:12px;cursor:pointer}
 body.pc .titleFs{display:none}
+/* V98: radio station wheel (hold Q, or press / drag from the 📻 button) */
+#radioBtn{position:fixed;z-index:20;top:calc(6px + env(safe-area-inset-top,0px));left:calc(50% + min(26vw,170px));width:32px;height:32px;padding:0;border-radius:50%;border:1px solid rgba(240,238,196,.55);background:rgba(10,16,22,.55);font-size:16px;line-height:30px;cursor:pointer;touch-action:none}
+#radioBtn.on{border-color:#ffd34d;box-shadow:0 0 6px rgba(255,211,77,.6)}
+#radioBtn[hidden]{display:none}
+#radioWheel{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;pointer-events:none;background:radial-gradient(circle,rgba(0,0,0,.45),rgba(0,0,0,0) 62%);touch-action:none}
+#radioWheel[hidden]{display:none}
+#radioWheel.sticky{pointer-events:auto}
+#rwSvg{width:min(84vmin,360px);height:min(84vmin,360px)}
+#rwSvg .seg path{fill:rgba(12,16,20,.78);stroke:rgba(240,238,196,.35);stroke-width:1.5;transition:fill .08s}
+#rwSvg .seg text{fill:#f0eec4;font:700 12px Consolas,"DejaVu Sans Mono",ui-monospace,monospace;text-anchor:middle;dominant-baseline:middle}
+#rwSvg .seg text.s{font-size:9px;font-weight:600;opacity:.75}
+#rwSvg .seg.empty text{opacity:.4}
+#rwSvg .seg.cur path{stroke:#ffd34d;stroke-width:3}
+#rwSvg .seg.on path{fill:rgba(240,238,196,.92)}
+#rwSvg .seg.on text{fill:#111;opacity:1}
+#radioWheel .rwMid{position:absolute;display:flex;flex-direction:column;align-items:center;max-width:min(30vmin,130px);text-align:center;color:#f0eec4;font:700 13px Consolas,"DejaVu Sans Mono",ui-monospace,monospace;text-shadow:0 1px 2px #000}
+#radioWheel .rwMid span{font-size:10px;font-weight:600;opacity:.8;margin-top:3px}
 </style>
 
 <div id="wrap">
@@ -578,6 +596,8 @@ body.pc .titleFs{display:none}
   </div>
   <div id="flash"></div>
   <canvas id="bfHud" aria-hidden="true"></canvas>
+  <button id="radioBtn" type="button" aria-label="Radio" hidden>📻</button>
+  <div id="radioWheel" hidden><svg id="rwSvg" viewBox="-160 -160 320 320" aria-hidden="true"></svg><div class="rwMid"><b id="rwName">RADIO</b><span id="rwSub"></span></div></div>
   <canvas id="radar" width="300" height="300" aria-hidden="true"></canvas>
   <canvas id="seatHud" width="160" height="160" aria-hidden="true"></canvas>
   <div id="lookStick" aria-hidden="true"><i></i><span>AIM</span></div>
@@ -789,6 +809,7 @@ body.pc .titleFs{display:none}
           <label for="sMaster">Volume</label><input type="range" id="sMaster" min="0" max="1" step="0.05">
           <label for="sSfx">Effects</label><input type="range" id="sSfx" min="0" max="1" step="0.05">
           <label for="sAmb">Ambience (sea, wind, distant traffic)</label><input type="range" id="sAmb" min="0" max="1" step="0.05">
+          <label for="sRadio">Radio (hold Q or tap 📻 to pick a station)</label><input type="range" id="sRadio" min="0" max="1" step="0.05">
         </div>
         <h3 class="subh">Weapon sounds</h3>
         <p class="fine">Pick the recorded shot or the original game sound for each squad gun, its volume, or mute it.</p>
@@ -1127,8 +1148,8 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V97';
-const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
+const GAME_VERSION = 'V98';
+const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
 const AU = {ctx: null, master: null, sfx: null, amb: null, noise: null, last: {}, voices: 0, rotor: null, rotorGain: null, waves: null};
@@ -1233,6 +1254,7 @@ function applyVolumes(){
   AU.sfx.gain.setTargetAtTime(SETTINGS.sfx, t, 0.05);
   if (AU.raw) AU.raw.gain.setTargetAtTime(SETTINGS.sound ? SETTINGS.master*SETTINGS.sfx : 0, t, 0.05);
   AU.amb.gain.setTargetAtTime(SETTINGS.amb, t, 0.05);
+  if (typeof radioVolume === 'function') radioVolume();
 }
 addEventListener('pointerdown', audioInit, {capture: true});
 addEventListener('keydown', audioInit, {capture: true});
@@ -3539,6 +3561,8 @@ function shoot(x, y, z, tx, tz, speed, dmg, pierce, kindIdx, life = 1.2, spread 
   const a = Math.atan2(tx - x, -(tz - z)) + rnd(-spread, spread), d = Math.hypot(tx - x, tz - z), t = Math.max(0.05, d/speed);
   const i = un++;
   ux[i] = x; uz[i] = z; uy[i] = y; uvx[i] = Math.sin(a)*speed; uvz[i] = -Math.cos(a)*speed; uvy[i] = ty !== null ? (ty - y)/t : y > 2.4 ? (1.0 - y)/t : 0;
+  // V98: aircraft rounds fly a straight 3D line at their muzzle speed (the old 0.05 s floor made close, steep shots overshoot the aim point)
+  if (SHOT_FAR && ty !== null){ const dy = ty - y, L = Math.hypot(d, dy) || 1; uvx[i] *= d/L; uvz[i] *= d/L; uvy[i] = dy/L*speed; }
   if (tr >= 2) tr = Math.random() < TRS().trQty ? 3 : 2;      // the tracer share you set
   ud[i] = NET.ghost ? 0 : dmg*dmgMul; upi[i] = pierce + apLv(); ul[i] = SHOT_FAR ? 7 : Math.max(life, t + 0.3); uk[i] = kindIdx; um[i] = 3; ulast[i] = 0; utr[i] = tr; uo[i] = SHOT_OWN; uf[i] = SHOT_FAR;
   // extra tracer density (PC): cosmetic streaks alongside the real round, a few metres apart along the same line
@@ -4056,8 +4080,8 @@ function dgStart(){
   netCrew(v, 'g' + gun.side, true);
   DG.th = DG.gun.th; DG.ph = DG.gun.ph;
   { const sol = gunSolve(DG.gun, v.ocx, v.ocz); if (sol){ DG.th = sol[0]; DG.ph = sol[1]; } }
-  DG.gun.flashBase = 0.42; DG.gun.own = true;
-  $('dgHint').firstChild.textContent = PC.on ? 'Drag to aim · hold to fire' : SETTINGS.gunner.aim === 'stick' ? 'AIM stick or swipe to look · FIRE button shoots' : SETTINGS.gunner.aim === 'swipe' ? 'Swipe to look · FIRE button shoots' : 'Drag to aim · hold to fire';
+  DG.gun.flashBase = 0.42; DG.gun.own = true; GUNIN.mdx = GUNIN.mdy = 0; HM.zoom = false; if (PC.on) heliCapture();
+  $('dgHint').firstChild.textContent = PC.on ? 'Mouse aims · left click fires · right click zooms · arrows aim too' : SETTINGS.gunner.aim === 'stick' ? 'AIM stick or swipe to look · FIRE button shoots' : SETTINGS.gunner.aim === 'swipe' ? 'Swipe to look · FIRE button shoots' : 'Drag to aim · hold to fire';
   $('dg').hidden = false; $('hud').hidden = true; $('bottom').hidden = true; $('dgHint').style.opacity = 1; autoLand();
   camera.near = 0.03; camera.updateProjectionMatrix(); flash(); hsSeat();
 }
@@ -4067,18 +4091,17 @@ function dgEnd(){
   if (LAND.on) toggleLandscape(false);
   if (DG.gun){ DG.gun.flashBase = 0.45; DG.gun.own = false; DG.gun.rng = 0; }
   if (DG.v && DG.gun) netCrew(DG.v, 'g' + DG.gun.side, false);
-  DG.on = false; DG.hold = false; DG.v = null; $('dg').hidden = true;
+  DG.on = false; DG.hold = false; DG.v = null; $('dg').hidden = true; HM.zoom = false; if (PC.on && document.pointerLockElement && !(MODE === 'heli' && HM.on)) document.exitPointerLock();
   if (state !== 'over'){ $('hud').hidden = false; $('bottom').hidden = false; }
   camera.near = 0.08; resize(); flash();
 }
 function dgGun(v, gun, dt, lv){
   DG.t += dt;
-  const ks = DG.keys, ka = dt*1.4;
-  if (ks.left) DG.th += ka; if (ks.right) DG.th -= ka; if (ks.up) DG.ph += ka; if (ks.down) DG.ph -= ka;
+  { const [dx, dy] = gunnerAimDelta(GUNIN, dt); DG.th += dx*1.05*(gun.side || 1); DG.ph += dy*1.05; }
   if (PEN.on){ const dz = v => Math.abs(v) < 0.12 ? 0 : v; DG.th -= dz(PEN.x)*1.5*dt*(gun.side < 0 ? 1 : -1); DG.ph -= dz(PEN.y)*1.1*dt; }
-  [DG.th, DG.ph] = (gun.lim || gunLimits)(DG.th, DG.ph);
+  [DG.th, DG.ph] = dapLimits(DG.th, DG.ph);
   aimGun(gun, gun.side, DG.th, DG.ph); gun.g.updateMatrixWorld(true);
-  const hold = DG.hold || ks.fire;
+  const hold = DG.hold || DG.keys.fire;
   gun.up = clamp((gun.up || 0) + (hold ? dt/0.4 : -dt*0.6), 0, 1);
   let firing = false;
   if (hold && gun.up >= 1){ gun.fireT = (gun.fireT || 0) - dt; while (gun.fireT <= 0){ gun.fireT += M134_STEP/rateMul; gunFire(gun, 150, 2.2*lv, 1, 0.018, 2.2); } firing = true; }
@@ -4104,6 +4127,7 @@ function dgSync(){
   const gun = DG.gun, v = DG.v; if (!gun || !v) return false;
   v.g.updateMatrixWorld(true);
   gunnerEye(gun, v.g);
+  if (HM.zoom){ camera.fov *= 0.45; camera.updateProjectionMatrix(); }
   if (shake){ camera.position.x += rnd(-1, 1)*shake*0.05; camera.position.y += rnd(-1, 1)*shake*0.05; }
   $('dgTime').style.width = Math.max(0, 100 - v.t/v.dur*100) + '%';
   $('dgKills').textContent = fmt(kills - DG.kills0);
@@ -4163,7 +4187,7 @@ function dfFly(v, dt, lv){
   } else {
   const kx = clamp((act('right') ? 1 : 0) - (act('left') ? 1 : 0) + gpAx(0), -1, 1), ky = clamp((act('up') ? 1 : 0) - (act('down') ? 1 : 0) - gpAx(1), -1, 1);
   const sx = m.stick || PEN.on ? m.sx : kx, sy = m.stick || PEN.on ? m.sy : ky;
-  const climb = m.climb || clamp((act('nextW') ? 1 : 0) - (act('prevW') ? 1 : 0) - gpAx(3), -1, 1);
+  const climb = m.climb || clamp((act('nextW') ? 1 : 0) - (act('prevW') && !RADIO.open ? 1 : 0) - gpAx(3), -1, 1);
   v.yaw -= sx*1.3*dt;
   m.speed += ((sy > 0 ? sy*15 : sy*6) - m.speed)*Math.min(1, dt*1.4);
   m.alt = clamp(m.alt + climb*5*dt, 4, 18);
@@ -4454,7 +4478,7 @@ function gsPlaceHeli(){
 function gunshipStart(){
   autoLand();
   if (GS_.on){ GS_.dur += 12; GS_.rockets += 3; GS_.hellfires += 2; toast('Apache resupplied', '#c8ffd0'); return; }
-  Object.assign(GS_, {on: true, firing: false, phase: 'arrive', t: 0, dur: VEHICLES.apache.dur, ang: -0.6, kills: 0, rockets: 6, hellfires: 4, rkCd: 0, hfCd: 0, fireT: 0, salvo: 0, wasFp: fp, mag: CANNON.mag, reload: 0});
+  Object.assign(GS_, {on: true, azOk: false, firing: false, phase: 'arrive', t: 0, dur: VEHICLES.apache.dur, ang: -0.6, kills: 0, rockets: 6, hellfires: 4, rkCd: 0, hfCd: 0, fireT: 0, salvo: 0, wasFp: fp, mag: CANNON.mag, reload: 0});
   GS_.aim.set(cx*0.5, 0, -22);
   { const d = densestEnemy(); if (d >= 0) GS_.aim.set(ex[d], 0, Math.max(ez[d], -40)); }
   if (!GS_.heli){ GS_.heli = buildApache(); GS_.heli.g.scale.setScalar(GS_SCALE); scene.add(GS_.heli.g); }
@@ -4486,6 +4510,7 @@ function apPilotMfd(h){
 }
 function gsEnd(){
   if (!GS_.on) return;
+  HM.zoom = false; if (PC.on && document.pointerLockElement && !(MODE === 'heli' && HM.on)) document.exitPointerLock();
   if (GS_.follow){
     const v = GS_.follow; GS_.follow = null; v.g.visible = true; netCrew(v, 'gun', false);
     GS_.on = false; GS_.phase = ''; GS_.firing = false; flash(); $('gs').hidden = true;
@@ -4531,6 +4556,7 @@ function gsTargetNear(p){
   for (let i = 0; i < en; i++){ if (eh[i] <= 0) continue; const d = Math.hypot(ex[i] - p.x, ez[i] - p.z); if (d < 7 && eh[i]/(1 + d*0.15) > bh){ bh = eh[i]/(1 + d*0.15); best = i; } }
   return best >= 0 ? {i: best, id: eid[best]} : null;
 }
+const _gsD = new THREE.Vector3();
 function gsUpdate(dt){
   const P = GS_; P.t += dt;
   if (P.follow){
@@ -4562,6 +4588,11 @@ function gsUpdate(dt){
     if (k >= 1){ P.phase = 'gun'; P.t = 0; P.cockpit.visible = false; camera.near = 0.08; camera.updateProjectionMatrix(); flash(); $('gs').hidden = false; $('hud').hidden = true; $('gsHint').style.opacity = 1; P.started = time; }
   } else if (P.phase === 'gun'){
     if (P.t > 2.5) $('gsHint').style.opacity = 0;
+    // V98: aimed like the gunship's front seat: turret azimuth and elevation (same limits), the aim point is where that line meets the ground
+    { if (!P.azOk){ const dx = P.aim.x - P.gun.x, dy = P.aim.y - P.gun.y, dz = P.aim.z - P.gun.z; P.az = Math.atan2(dx, -dz); P.el = clamp(Math.atan2(dy, Math.hypot(dx, dz)), -1.35, 0.25); P.azOk = true; HM.zoom = false; GUNIN.mdx = GUNIN.mdy = 0; if (PC.on){ heliCapture(); $('gsHint').textContent = 'Mouse aims · left click: 30 mm · right click: zoom · F: Hellfire · 2: rockets'; } }
+      const [ddx, ddy] = gunnerAimDelta(GUNIN, dt); P.az += ddx; P.el = clamp(P.el + ddy, -1.35, 0.25);
+      const d = _gsD.set(Math.sin(P.az)*Math.cos(P.el), Math.sin(P.el), -Math.cos(P.az)*Math.cos(P.el)), t = d.y < -0.01 ? (0.2 - P.gun.y)/d.y : 160;
+      P.aim.copy(P.gun).addScaledVector(d, Math.min(t, 160)); P.rng = d.y < -0.01 ? Math.min(t, 160) : 0; }
     // 30mm: auto-fire at the reticle
     if (!P.firing && P.reload > 0) cannonTick(P, dt);
     if (P.firing && cannonTick(P, dt)){ const to = P.aim.clone(); to.x += rnd(-0.7, 0.7); to.z += rnd(-0.7, 0.7); gsShoot('cannon', P.gun, to); if (!hsShot('ap', '1p', '30mmb', 0.9)) sfx('cannon30', 0.8, 0, true); }
@@ -4594,8 +4625,10 @@ function gsSync(dt){
   }
   if (P.phase === 'gun'){
     if (P.heli) P.heli.g.visible = false;
-    camera.position.copy(P.gun); camera.lookAt(P.aim);
-    camera.fov = 38; camera.updateProjectionMatrix();
+    camera.position.copy(P.gun);
+    if (P.azOk){ _gsD.set(Math.sin(P.az)*Math.cos(P.el), Math.sin(P.el), -Math.cos(P.az)*Math.cos(P.el)); camera.lookAt(_v3.copy(P.gun).addScaledVector(_gsD, 20)); } else camera.lookAt(P.aim);
+    camera.fov = 38*(HM.zoom ? 0.45 : 1); camera.updateProjectionMatrix();
+    apGunnerHud((P.rng || 0)*3.3, 0, 0);     // V98: the gunship front seat's sight
     $('gsTime').style.width = Math.max(0, 100 - P.t/P.dur*100) + '%';
     $('gsKills').textContent = fmt(P.kills);
     $('gsRk').textContent = P.rockets + ' salvo' + (P.rockets === 1 ? '' : 's'); $('gsRockets').disabled = !P.rockets || P.rkCd > 0;
@@ -4944,6 +4977,7 @@ const ACTIONS = [
   ['call4', 'Call-in 4', ['Digit4', '']], ['call5', 'Call-in 5', ['Digit5', '']], ['call6', 'Call-in 6', ['Digit6', '']],
   ['call7', 'Call-in 7', ['Digit7', '']], ['call8', 'Call-in 8', ['Digit8', '']],
   ['pause', 'Pause / leave seat', ['Escape', 'KeyP']],
+  ['radio', 'Radio wheel (hold, in any aircraft or seat)', ['KeyQ', '']],
   ['#', 'Gunship · Battlefield-style flight'],
   ['hThrUp', 'Throttle up (climb)', ['ShiftLeft', '']],
   ['hThrDown', 'Throttle down (descend)', ['ControlLeft', '']],
@@ -4986,6 +5020,8 @@ function actPress(a){
     return;
   }
   if (state !== 'play') return;
+  // V98: Q is still "previous weapon" on foot in the lane, so the radio key only opens the wheel in a seat (the 📻 button works anywhere)
+  if (a === 'radio'){ if (radioSeat()) radioOpen('key'); return; }
   if (MODE === 'heli' && HM.on && heliSim()){
     if (ACT_GROUP[a] === 'lane' && a !== 'fire') return;     // the gunship keys take over
     if (a === 'fire' || a === 'hFire'){ if (HM.seat === 'pilot' && HM.wsel === 'sec'){ HM.hfHold = true; hmFireHellfire(); } else HM.firing = true; }
@@ -5010,8 +5046,9 @@ function actPress(a){
       return;
     }
     if (a === 'missile') dfHellfire(); else if (a === 'fire') DF.fire = true; return; }
-  if (DG.on){ if (a === 'fire') DG.hold = true; return; }
-  if (GS_.on && GS_.phase === 'gun'){ if (a === 'fire') GS_.firing = true; return; }
+  if (DG.on){ if (a === 'fire' || a === 'hFire') DG.hold = true; else if (a === 'hZoom') HM.zoom = true; return; }
+  if (GS_.on && GS_.phase === 'gun'){ if (a === 'fire' || a === 'hFire') GS_.firing = true; else if (a === 'hZoom') HM.zoom = true;
+    else if (a === 'missile' || a === 'hSwitch') $('gsHellfire').onclick(); else if (a === 'hSec') $('gsRockets').onclick(); return; }
   if (a === 'prevW') cycleWeapon(-1); else if (a === 'nextW') cycleWeapon(1);
   else if (a === 'view') toggleView();
   else if (a === 'doorgun'){ if (!$('dgBtn').hidden) dgStart(); }
@@ -5019,6 +5056,7 @@ function actPress(a){
   else if (a.startsWith('call')){ const k = hotbar()[+a.slice(4) - 1]; if (k) deploy(k); }
 }
 function actRelease(a){
+  if (a === 'radio'){ if (RADIO.open && RADIO.src === 'key') radioPick(); return; }
   if (a === 'hZoom'){ HM.zoom = false; return; } if (a === 'hFree'){ HM.free = false; return; }
   if (a === 'hFire') a = 'fire';
   if (a === 'fire') HM.hfHold = false;
@@ -5227,10 +5265,10 @@ function pilotSeat(){ return state === 'play' && ((MODE === 'heli' && HM.on && H
 // nx, ny in screen widths (+x right, +y down); each seat turns that into its own aim units
 function gunnerLook(nx, ny){
   if (SETTINGS.gunner.inv) ny = -ny;
-  if (DG.on && DG.gun){ DG.th -= nx*2.4; DG.ph -= ny*2.4; [DG.th, DG.ph] = (DG.gun.lim || gunLimits)(DG.th, DG.ph); }
+  if (DG.on && DG.gun){ const z = HM.zoom ? 0.45 : 1; DG.th += nx*1.92*z*(DG.gun.side || 1); DG.ph -= ny*1.92*z; [DG.th, DG.ph] = dapLimits(DG.th, DG.ph); }
   else if (MODE === 'heli' && HM.on && HM.seat !== 'pilot'){ const z = HM.zoom ? 0.45 : 1;
     if (HM.type === 'dap'){ HM.th += nx*1.92*z*(HM.gside || 1); HM.ph -= ny*1.92*z; } else { HM.aimAz += nx*1.2*z; HM.aimEl = clamp(HM.aimEl - ny*1.2*z, -1.35, 0.25); } }
-  else if (GS_.on && GS_.phase === 'gun'){ const w = cv.getBoundingClientRect().width; gsAim(nx*w, ny*w); }
+  else if (GS_.on && GS_.phase === 'gun'){ const z = HM.zoom ? 0.45 : 1; GS_.az += nx*1.2*z; GS_.el = clamp(GS_.el - ny*1.2*z, -1.35, 0.25); }
 }
 const swipeFires = () => SETTINGS.gunner.aim === 'swipefire';
 const LS = {id: null, ox: 0, oy: 0, x: 0, y: 0, on: false};
@@ -5296,10 +5334,10 @@ async function heliCapture(){
   } catch(_){}
   try { if (!document.pointerLockElement && cv.requestPointerLock) cv.requestPointerLock(); } catch(_){}
 }
-cv.addEventListener('mousedown', e => { if (((MODE === 'heli' && HM.on) || (DF.on && DF.P)) && heliSim() && state === 'play' && !document.pointerLockElement) heliCapture(); });
+cv.addEventListener('mousedown', e => { if ((((MODE === 'heli' && HM.on) || (DF.on && DF.P)) && heliSim() || (PC.on && (DG.on || (GS_.on && GS_.phase === 'gun')))) && state === 'play' && !document.pointerLockElement) heliCapture(); });
 document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && navigator.keyboard && navigator.keyboard.unlock) navigator.keyboard.unlock(); });
 addEventListener('beforeunload', e => { if (MODE === 'heli' && HM.on && (state === 'play' || state === 'paused')){ e.preventDefault(); e.returnValue = ''; } });
-addEventListener('mousemove', e => { if (document.pointerLockElement !== cv) return; const P = MODE === 'heli' && HM.on ? HM : DF.on && DF.P ? DF.P : null; if (P){ P.mdx = (P.mdx || 0) + (e.movementX || 0); P.mdy = (P.mdy || 0) + (e.movementY || 0); } });
+addEventListener('mousemove', e => { if (RADIO.open && RADIO.src === 'key'){ radioAim(RADIO.x + (e.movementX || 0), RADIO.y + (e.movementY || 0)); return; } if (document.pointerLockElement !== cv) return; const P = MODE === 'heli' && HM.on ? HM : DF.on && DF.P ? DF.P : (DG.on || (GS_.on && GS_.phase === 'gun')) ? GUNIN : null; if (P){ P.mdx = (P.mdx || 0) + (e.movementX || 0); P.mdy = (P.mdy || 0) + (e.movementY || 0); } });
 document.addEventListener('pointerlockchange', () => { const on = document.pointerLockElement === cv; $('hm').classList.toggle('locked', on); if (!on) INPUT.lockExitT = performance.now(); if (!on && MODE === 'heli' && HM.on && state === 'play' && heliSim()) pauseGame(); });
 // mouse hover walks the squad (desktop), like the pen does
 cv.addEventListener('pointermove', e => {
@@ -5373,16 +5411,11 @@ function inputTick(dt){
     if (stickId !== null || penFire || (stickEl.classList.contains('pen') && stickEl.style.display === 'block')) return;
     const x = clamp(kx + lx + GF.roll, -1, 1), y = clamp(ky - ly + GF.pitch, -1, 1);
     if (x || y || HM._kb){ HM.sx = x; HM.sy = y; HM._kb = !!(x || y); }
-    const c = clamp((act('nextW') ? 1 : 0) - (act('prevW') ? 1 : 0) - ry, -1, 1);
+    const c = clamp((act('nextW') ? 1 : 0) - (act('prevW') && !RADIO.open ? 1 : 0) - ry, -1, 1);
     if (c || HM._kc){ HM.climb = c; HM._kc = !!c; }
     return;
   }
-  if (DG.on){
-    DG.keys.left = kx < 0; DG.keys.right = kx > 0; DG.keys.up = ky > 0; DG.keys.down = ky < 0;
-    const ax = lx + rx, ay = ly + ry;
-    if (ax || ay){ DG.th -= ax*dt*1.6*(DG.gun && DG.gun.side < 0 ? -1 : 1); DG.ph -= ay*dt*1.2; if (DG.gun) [DG.th, DG.ph] = (DG.gun.lim || gunLimits)(DG.th, DG.ph); }
-    return;
-  }
+  if (DG.on || (GS_.on && GS_.phase === 'gun')) return;     // V98: aim keys and sticks come through gunnerAimDelta, like the gunship seats
   if (DF.on) return;   // dfFly reads keys and sticks itself
   if (GS_.on && GS_.phase === 'gun'){
     const x = kx + lx + rx, y = -ky + ly + ry;
@@ -5718,13 +5751,15 @@ function update(dt){
   FARP.n = 0;
   for (let i = 0; i < un; i++){
     if (ul[i] <= 0) continue;
-    const x0 = ux[i], z0 = uz[i];
+    const x0 = ux[i], z0 = uz[i], y0 = uy[i];
     ux[i] += uvx[i]*dt; uz[i] += uvz[i]*dt; uy[i] += uvy[i]*dt; ul[i] -= dt;
-    const x1 = ux[i], z1 = uz[i];
+    let x1 = ux[i], z1 = uz[i], gnd = false;
     if (uf[i]){
-      if (uy[i] < 0.05){ ul[i] = 0; farImpact(x1, z1, uf[i] === 2); continue; }
+      // V98: the strike lands where the round actually crossed the ground, not a whole frame of travel past it (at 170 m/s that's 3-6 m),
+      // and that last stretch still hits whoever is standing there
+      if (uy[i] < 0.05){ const f = y0 > uy[i] ? clamp((y0 - 0.05)/(y0 - uy[i]), 0, 1) : 1; x1 = ux[i] = x0 + (x1 - x0)*f; z1 = uz[i] = z0 + (z1 - z0)*f; uy[i] = 0.05; farImpact(x1, z1, uf[i] === 2); gnd = true; }
       if (Math.abs(x1) > 2500 || Math.abs(z1) > 2500 || uy[i] > 900){ ul[i] = 0; continue; }
-      if (uf[i] === 2 || Math.abs(x1) > halfW(z1) + 0.1 || z1 < FAR - 4) continue;      // cosmetic, or out over the water / sand: just flies
+      if (uf[i] === 2 || Math.abs(x1) > halfW(z1) + 0.1 || z1 < FAR - 4){ if (gnd) ul[i] = 0; continue; }      // cosmetic, or out over the water / sand: just flies
     } else if ((uy[i] < 2.6 && Math.abs(x1) > halfW(z1) + 0.1) || Math.abs(x1) > 30 || z1 < FAR - 4 || uy[i] < 0.05){ ul[i] = 0; continue; }
     if (uy[i] > 2.6) continue;
     for (let k = 0; k < barrels.length && ul[i] > 0; k++){
@@ -5785,6 +5820,7 @@ function update(dt){
         checkBoss(); break;
       }
     }
+    if (gnd) ul[i] = 0;
   }
 
   // compact enemies; the ones we shot fall over
@@ -6466,7 +6502,7 @@ function hmSimFlight(P, f, dt){
   else { P.lookYaw = (P.lookYaw || 0)*Math.max(0, 1 - dt*4); P.lookPitch = (P.lookPitch || 0)*Math.max(0, 1 - dt*4); }
   const kp = (act('hPitchDown') ? 1 : 0) - (act('hPitchUp') ? 1 : 0);
   const ky = (act('hYawR') ? 1 : 0) - (act('hYawL') ? 1 : 0) + gpAx(2) + TS.ax.yaw;
-  const kc = clamp((act('hThrUp') || act('nextW') ? 1 : 0) - (act('hThrDown') || act('prevW') ? 1 : 0) + TS.ax.coll, -1, 1);
+  const kc = clamp((act('hThrUp') || act('nextW') ? 1 : 0) - (act('hThrDown') || (act('prevW') && !RADIO.open) ? 1 : 0) + TS.ax.coll, -1, 1);
   // mouse gives the airframe a nudge of angular speed that dies away (BF-like inertia), instead of setting the angle directly:
   // a 300 px swipe ends up ~18 deg of roll, reached over about half a second
   const AG = heliAgi(P.type);
@@ -6546,11 +6582,17 @@ const LB_AGI = {rate: 1.35, yaw: 1.4, lift: 1.32, drag: 1.02, sink: 1, top: 195}
 // per airframe: the Black Hawk is heavier (a bit slower in the climb, the dive and the turns), the Apache is the reference
 const HELI_AGI = {apache: {rate: 1, yaw: 1, lift: 1, drag: 1, sink: 1, top: 150}, dap: {rate: 0.88, yaw: 0.9, lift: 0.94, drag: 1.3, sink: 1.05, top: 135}, little: LB_AGI};
 const _simR = new THREE.Vector3(), _simE = new THREE.Euler(), _simQ = new THREE.Quaternion(), _simQ2 = new THREE.Quaternion(), _simO = new THREE.Vector3(), _simX = new THREE.Vector3(1, 0, 0);
-function hmSimGunner(P, dt){
-  const sens = SETTINGS.heliSens || 1, inv = SETTINGS.heliInvert ? -1 : 1, z = P.zoom ? 0.45 : 1;
-  const mdx = P.mdx || 0, mdy = P.mdy || 0; P.mdx = P.mdy = 0;
+// V98: one gunner feel for the whole game. Gunship mode is the baseline; the wave-mode seats (door guns, Apache front seat)
+// read the same mouse, aim keys, stick, sensitivity, invert and zoom through this
+const GUNIN = {mdx: 0, mdy: 0};
+function gunnerAimDelta(src, dt){
+  const sens = SETTINGS.heliSens || 1, inv = SETTINGS.heliInvert ? -1 : 1, z = HM.zoom ? 0.45 : 1;
+  const mdx = src.mdx || 0, mdy = src.mdy || 0; src.mdx = src.mdy = 0;
   const ax = (act('hAimR') ? 1 : 0) - (act('hAimL') ? 1 : 0) + gpAx(2) + gpAx(0), ay = (act('hAimU') ? 1 : 0) - (act('hAimD') ? 1 : 0) - gpAx(3) - gpAx(1);
-  const dx = (mdx*0.0026*sens + ax*1.1*dt)*z, dy = (-mdy*0.0026*sens*inv + ay*0.8*dt)*z;
+  return [(mdx*0.0026*sens + ax*1.1*dt)*z, (-mdy*0.0026*sens*inv + ay*0.8*dt)*z];
+}
+function hmSimGunner(P, dt){
+  const [dx, dy] = gunnerAimDelta(P, dt);
   if (P.type === 'dap'){ P.th += dx*1.05*(P.gside || 1); P.ph += dy*1.05; } else { P.aimAz += dx; P.aimEl = clamp(P.aimEl + dy, -1.35, 0.25); }
 }
 function hmSelect(w){ if (HM.seat !== 'pilot') return; HM.wsel = w; sfx('click'); toast(w === 'sec' ? (HM.type === 'little' ? 'Rocket volley selected' : gSec(HM.type) ? 'TOW selected' : 'Hellfire selected') : (HM.type === 'little' ? 'Miniguns selected' : 'Rockets selected'), '#c8ffd0'); hmSeatUI(); }
@@ -6615,7 +6657,7 @@ function hmUpdate(dt){
         const from = P.pos.clone().addScaledVector(right, (P.tc & 1 ? 1 : -1)*(little ? 0.5 : 0.8)*HB); from.y -= (little ? 0.25 : 0.1)*HB;
         if (little){ const gg = P.heli.guns[P.tc & 1]; gg.flash.visible = true; gg.flashT = 0.035; }
         { const rr = Math.min(from.distanceTo(aim)*0.012, 2.2)*Math.sqrt(Math.random()), ra = Math.random()*6.2832, ax = aim.x + Math.cos(ra)*rr, az = aim.z + Math.sin(ra)*rr;
-          SHOT_FAR = 1; SHOT_OWN = 1; shoot(from.x, from.y, from.z, ax, az, 170, gau ? 2.9 : 1.6, gau ? 2 : 1, 5, 2.4, 0, P.tc & 2 ? 3 : 2, aim.y < 0.6 ? -0.05 : aim.y); SHOT_FAR = 0; SHOT_OWN = 0; }
+          SHOT_FAR = 1; SHOT_OWN = 1; shoot(from.x, from.y, from.z, ax, az, 170, gau ? 2.9 : 1.6, gau ? 2 : 1, 5, 2.4, 0, P.tc & 2 ? 3 : 2, aim.y); SHOT_FAR = 0; SHOT_OWN = 0; }     // V98: straight through the reticle's own point; the round meets the ground just past it, on the same line of sight
         if ((P.tc & 3) === 0 && P.enemies.length){ const d = (heliSim() ? hmNoseDir(_gd) : _gd.copy(aim).sub(from)).normalize();
           for (const e of P.enemies){ if (e.hp <= 0) continue; const rel = _gq.copy(e.pos).sub(from), along = rel.dot(d); if (along > 0 && along < 90 && rel.addScaledVector(d, -along).length() < 2.2){ hmHitHelis(e.pos, 0, 2.4); break; } } }
       }
@@ -6834,7 +6876,8 @@ function hmNoseDir(out){ return simNose(HM, out, ROCKET_DEP); }
 // where the selected weapon's rounds actually land: they leave with the helicopter's own velocity, so the impact point
 // slides in the direction you're moving (the HUD I-beam shows it; the fixed cross is the nose)
 const HM_RSPD = {little: 170, apache: 42, dap: 42};
-const RK_MAG = {apache: 7, dap: 4, reload: 6}, RK_INH = 0.35;
+// V98: unguided rockets no longer inherit the helicopter's motion, so they land on the aim point the reticle springs back to
+const RK_MAG = {apache: 7, dap: 4, reload: 6}, RK_INH = 0;
 // V91: the Little Bird's 7-rocket ripple: two in quick succession, a beat, two more, a beat, two more, then the last one
 const LB_RIPPLE = [0, 0.07, 0.17, 0.07, 0.17, 0.07, 0.14, 0.1];
 // V85: where an unguided rocket really comes down: it leaves the pods toward the aim point at 42 m/s plus the helicopter's own
@@ -6975,7 +7018,8 @@ function hmCamera(dt){
   $('hmMissile').disabled = agmSeat ? P.agmCd > 0 : !(P.type === 'little' ? P.rockets : P.hellfire) || P.hfCd > 0 || P.volley > 0; $('hmFlare').disabled = !P.flares || P.flCd > 0;
   $('hmSound').textContent = SETTINGS.sound ? '🔊' : '🔇';
   if (P.seat === 'pilot'){
-    const lb0 = P.type === 'little', ap = (heliSim() ? (lb0 || P.wsel === 'sec' || gPri(P.type) ? hmAimPoint(_hmV) : hmRocketImpact(_hmV)) : hmBoresight(_hmV)).project(camera), lb = lb0, hs = P.vel ? Math.hypot(P.vel.x, P.vel.z) : Math.abs(P.speed || 0);
+    // V98: every aircraft marks the nose aim point; the sway comes from the HUD's trailing reticle (the Little Bird's feel), not momentum drift
+    const lb0 = P.type === 'little', ap = (heliSim() ? hmAimPoint(_hmV) : hmBoresight(_hmV)).project(camera), lb = lb0, hs = P.vel ? Math.hypot(P.vel.x, P.vel.z) : Math.abs(P.speed || 0);
     { const k = 1 - Math.exp(-dt*22); if (!P.apS || Math.abs(ap.x - P.apS.x) > 0.5 || Math.abs(ap.y - P.apS.y) > 0.5) P.apS = {x: ap.x, y: ap.y}; else { P.apS.x += (ap.x - P.apS.x)*k; P.apS.y += (ap.y - P.apS.y)*k; } ap.x = P.apS.x; ap.y = P.apS.y; }
     const msl = P.wsel === 'sec' && !lb, rk = P.rockets > 0 ? 'RDY' : 'RLD', g = gPri(P.type) && heliSim() ? 'GUID ' : '', g2 = gSec(P.type) && heliSim() ? 'GUID ' : '';
     const wpn = lb ? (P.wsel === 'sec' ? 'rkt' : 'mg') : P.type === 'blackhawk' ? 'none' : msl ? 'tow' : 'rkt', bore = _hudB.copy(P.pos).addScaledVector(hmNoseDir(_hudN), 200).project(camera);
@@ -7637,7 +7681,7 @@ function crewBoard(){
   if (GS_.on || DG.on || DF.on || state !== 'play' || MODE !== 'def') return;
   const v = crewTarget(); if (!v) return;
   autoLand();
-  Object.assign(GS_, {on: true, follow: v, firing: false, phase: 'gun', t: 0, dur: 1e9, kills: 0, rockets: 6, hellfires: 4, rkCd: 0, hfCd: 0, fireT: 0, salvo: 0, wasFp: fp, mag: CANNON.mag, reload: 0});
+  Object.assign(GS_, {on: true, azOk: false, follow: v, firing: false, phase: 'gun', t: 0, dur: 1e9, kills: 0, rockets: 6, hellfires: 4, rkCd: 0, hfCd: 0, fireT: 0, salvo: 0, wasFp: fp, mag: CANNON.mag, reload: 0});
   { const d = densestEnemy(); GS_.aim.set(d >= 0 ? ex[d] : 0, 0, d >= 0 ? Math.max(ez[d], -40) : -22); }
   if (!GS_.gunCam) GS_.gunCam = new THREE.PerspectiveCamera(38, 1, 0.3, 300);
   netCrew(v, 'gun', true);
@@ -8225,7 +8269,7 @@ addEventListener('pagehide', () => { if (state === 'play') pauseGame(); });
 // ---- settings ----
 function bindSettings(){
   const S_ = SETTINGS;
-  $('sSound').checked = S_.sound; $('sMaster').value = S_.master; $('sSfx').value = S_.sfx; $('sAmb').value = S_.amb; $('sShadows').checked = S_.shadows; $('sMocap').checked = S_.mocap !== false; $('sHq').checked = S_.hq; $('sLite').checked = !!S_.liteCrowd; $('sMouse').checked = !!S_.mouseMove; $('sPc').value = S_.pcMode || 'auto'; $('sHf').value = S_.heliFlight || 'auto'; $('sHs').value = S_.heliSens || 1; $('sHi').checked = !!S_.heliInvert; renderBinds(); renderHotbarSet(); refreshPadInfo(); $('sLoc').value = S_.location || 'pier'; $('sSkin').value = S_.enemySkin || 'classic';
+  $('sSound').checked = S_.sound; $('sMaster').value = S_.master; $('sSfx').value = S_.sfx; $('sAmb').value = S_.amb; $('sRadio').value = S_.radioVol; $('sShadows').checked = S_.shadows; $('sMocap').checked = S_.mocap !== false; $('sHq').checked = S_.hq; $('sLite').checked = !!S_.liteCrowd; $('sMouse').checked = !!S_.mouseMove; $('sPc').value = S_.pcMode || 'auto'; $('sHf').value = S_.heliFlight || 'auto'; $('sHs').value = S_.heliSens || 1; $('sHi').checked = !!S_.heliInvert; renderBinds(); renderHotbarSet(); refreshPadInfo(); $('sLoc').value = S_.location || 'pier'; $('sSkin').value = S_.enemySkin || 'classic';
   $('muteBtn').textContent = S_.sound ? '🔊' : '🔇'; $('muteBtn').setAttribute('aria-label', S_.sound ? 'Mute sound' : 'Turn sound on');
 }
 function applyGraphics(){
@@ -8233,7 +8277,7 @@ function applyGraphics(){
   scene.traverse(o => { if (o.material){ (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.needsUpdate = true); } });
   renderer.setPixelRatio(pxBase()*DYN.scale); resize();
 }
-for (const [id, key] of [['sMaster', 'master'], ['sSfx', 'sfx'], ['sAmb', 'amb']]) $(id).addEventListener('input', e => { SETTINGS[key] = +e.target.value; applyVolumes(); saveSettings(); });
+for (const [id, key] of [['sMaster', 'master'], ['sSfx', 'sfx'], ['sAmb', 'amb'], ['sRadio', 'radioVol']]) $(id).addEventListener('input', e => { SETTINGS[key] = +e.target.value; applyVolumes(); saveSettings(); });
 $('sSound').addEventListener('change', e => { SETTINGS.sound = e.target.checked; audioInit(); applyVolumes(); saveSettings(); bindSettings(); });
 $('sDap').value = SETTINGS.dapLook || 'pods';
 $('sDap').addEventListener('change', e => { SETTINGS.dapLook = e.target.value; saveSettings(); toast('DAP model changes on the next load', '#e8fbff'); });
@@ -8396,11 +8440,13 @@ function bfHud(o){
     hitBrackets(ax, ay, 9*s); dmgNum(ax, ay);
   } else if (o.wpn === 'rkt'){
     smallCross(bore.x, bore.y);
-    if (aim){ const w = 6*s, h = 16*s, ax = aim.x, ay = aim.y + h/2 + 4*s;   // the I-beam: where the rockets come down
+    // V98: on the Apache and Black Hawk the I-beam trails the nose and springs back exactly like the Little Bird's big minigun cross
+    const lgx = o.kind === 'lb' ? 0 : BHX.lag.x, lgy = o.kind === 'lb' ? 0 : BHX.lag.y;
+    if (aim){ const w = 6*s, h = 16*s, ax = aim.x + lgx, ay = aim.y + lgy + h/2 + 4*s;   // the I-beam: where the rockets come down
       x.beginPath(); x.moveTo(ax - w, ay - h/2); x.lineTo(ax + w, ay - h/2); x.moveTo(ax - w, ay + h/2); x.lineTo(ax + w, ay + h/2); x.moveTo(ax, ay - h/2); x.lineTo(ax, ay + h/2); x.stroke();
       hitBrackets(aim.x, aim.y, 12*s); dmgNum(ax - 4*s, ay); }
   } else if (o.wpn === 'tow'){
-    const b = 38*s, bh = 22*s, e = 7*s, px = aim ? aim.x : bore.x, py = aim ? aim.y : bore.y;
+    const lg = o.kind !== 'lb', b = 38*s, bh = 22*s, e = 7*s, px = (aim ? aim.x : bore.x) + (lg ? BHX.lag.x : 0), py = (aim ? aim.y : bore.y) + (lg ? BHX.lag.y : 0);
     x.beginPath(); for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ x.moveTo(px + sx*b, py + sy*(bh - e)); x.lineTo(px + sx*b, py + sy*bh); x.lineTo(px + sx*(b - e), py + sy*bh); } x.stroke();
     x.beginPath(); x.arc(px, py, 1.1*s, 0, 6.29); x.fill(); dmgNum(px - b + 30*s, py);
   } else if (o.cockpit) smallCross(bore.x, bore.y);
@@ -9132,6 +9178,9 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V98', ['Radio: hold Q in any seat (or press the 📻 button) for a station wheel; aim at a station and let go. AD LORDS FM plays your own recordings, four more station slots are ready for new tracks, and Settings → Audio has a Radio volume',
+           'Apache and Black Hawk: the rocket and TOW reticles now trail the nose and spring back exactly like the Little Bird\'s minigun cross, and unguided rockets land on the aim point',
+           'Little Bird: minigun rounds no longer land past the reticle when you fly low; strikes show where the round really meets the ground, and close-in rounds still hit', 'Gunner seats in wave mode now work exactly like gunship mode: mouse aim (click to capture), arrow keys and stick, the same sensitivity, invert, zoom (right click) and swing limits', 'Wave-mode Apache front seat uses the gunship gunner sight and turret aiming (no more dragging a ground marker); F fires the Hellfire, 2 the rocket salvo', 'Door guns in wave mode: same aim speed and direction on both sides as the gunship door guns, the BF sight only', 'Holding Q for the radio no longer drops the helicopter (Q is also collective down)']],
   ['V97', ['Helicopter HUD now uses your Battlefield 6 UI pack (Apache, Little Bird, Black Hawk/DAP): status text, attitude box, weapon lines and arrow placed from its layout', 'PC: aircraft name in the brackets, the real seat maps, FREE LOOK / CAMERA / EXIT with your keys, segmented health bar, flare and equipment tiles, weapon box with the live weapon big and the other small, ammo counts, upgrade icons with your loadout upgrade named']],
   ['V96', ['Helicopter HUD rebuilt from your Battlefield 6 clips: minigun reticle (small cross + a big cross that trails the nose and springs back), rocket I-beam under the nose cross, TOW corner box', 'Hit brackets on the reticle (red on a kill) and a running damage number beside it', 'Heading tape, altitude ladder (Little Bird: dashed ladder with the readout at its foot), A1.5 attitude box with slip ball, BF status lines (MINIGN RDY, LT RKT RLD, GUID RKT, AT AIM MSL, FLRS, SMK LNCHR / EMRG RPR)', 'Artificial horizon: a long dashed line on the real horizon, first person only', 'PC: aircraft name, crew seats, FREE LOOK / CAMERA / EXIT keys and a weapon + ammo box along the bottom', 'Minigun strikes up close throw dark dirt, a low haze and sparks']],
   ['V95', ['Little Bird in wave mode: the cockpit view works (view button / V), with the real cockpit around you', 'Little Bird in wave mode: both miniguns now converge on the HUD marker, so close-in fire no longer goes high']],
@@ -9248,6 +9297,103 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
     .catch(e => { console.warn('M134 model unavailable', e); loadedParts.m134 = {}; }).then(() => { lazyReady.m134 = true; gunDone(); });
   requestAnimationFrame(frame);
 })();
+// ================= V98: radio =================
+// GTA-style station wheel: hold Q in a seat (or press the 📻 button anywhere), aim with the mouse or your finger, let go to tune in.
+// Five station slots plus OFF. Every recording is on station 1 for now; the other four wait for their own tracks.
+const RADIO_ST = [
+  {name: 'AD LORDS FM', tag: 'home-made samples', tracks: [['5gum', '5 Gum'], ['senor_dark', 'Señor Dark'], ['dog_i_am_now', 'Dog I Am Now'], ['loopdy_loop', 'Loopdy Loop'],
+    ['messing_with_sound_stage', 'Messing With Sound Stage'], ['playing_the_cello', 'Playing the Cello'], ['kid_at_lunch_table', 'Kid at Lunch Table']]},
+  {name: 'STATION 2', tracks: []}, {name: 'STATION 3', tracks: []}, {name: 'STATION 4', tracks: []}, {name: 'STATION 5', tracks: []},
+];
+// wheel slots clockwise from the top: OFF, then the five stations
+const RADIO = {open: false, src: '', x: 0, y: 0, sel: -1, sticky: false, pid: null, ox: 0, oy: 0, moved: false, st: SETTINGS.radio ?? -1, au: null, q: {}, tuned: {}, segs: []};
+const RW_N = 6, RW_R0 = 58, RW_R1 = 152, RW_DEAD = 26;
+const radioSeat = () => (MODE === 'heli' && HM.on) || DF.on || DG.on || (GS_.on && GS_.phase === 'gun');
+const radioVolume = () => { if (RADIO.au) RADIO.au.volume = clamp(SETTINGS.sound ? (SETTINGS.master ?? 0.8)*(SETTINGS.radioVol ?? 0.6) : 0, 0, 1); };
+function radioBuild(){
+  const svg = $('rwSvg'), NS = 'http://www.w3.org/2000/svg', pt = (r, a) => (r*Math.cos(a)).toFixed(1) + ' ' + (r*Math.sin(a)).toFixed(1);
+  { const hub = document.createElementNS(NS, 'circle'); hub.setAttribute('r', RW_R0 - 4); hub.setAttribute('fill', 'rgba(12,16,20,.85)'); hub.setAttribute('stroke', 'rgba(240,238,196,.35)'); svg.append(hub); }
+  for (let k = 0; k < RW_N; k++){
+    const a0 = (-90 + (k - 0.5)*360/RW_N + 1.2)*Math.PI/180, a1 = (-90 + (k + 0.5)*360/RW_N - 1.2)*Math.PI/180, am = (-90 + k*360/RW_N)*Math.PI/180;
+    const g = document.createElementNS(NS, 'g'), p = document.createElementNS(NS, 'path'), t = document.createElementNS(NS, 'text'), t2 = document.createElementNS(NS, 'text');
+    p.setAttribute('d', `M${pt(RW_R0, a0)} L${pt(RW_R1, a0)} A${RW_R1} ${RW_R1} 0 0 1 ${pt(RW_R1, a1)} L${pt(RW_R0, a1)} A${RW_R0} ${RW_R0} 0 0 0 ${pt(RW_R0, a0)}Z`);
+    const mx = (RW_R0 + RW_R1)/2*Math.cos(am), my = (RW_R0 + RW_R1)/2*Math.sin(am);
+    const st = k ? RADIO_ST[k - 1] : null;
+    t.setAttribute('x', mx.toFixed(1)); t.setAttribute('y', (my - 6).toFixed(1)); t.textContent = k ? st.name : 'OFF';
+    t2.setAttribute('x', mx.toFixed(1)); t2.setAttribute('y', (my + 9).toFixed(1)); t2.setAttribute('class', 's'); t2.textContent = !k ? 'radio off' : st.tracks.length ? st.tracks.length + ' tracks' : 'no signal';
+    g.setAttribute('class', 'seg' + (k && !st.tracks.length ? ' empty' : '')); g.append(p, t, t2); svg.append(g); RADIO.segs.push(g);
+  }
+}
+function radioRender(){
+  RADIO.segs.forEach((g, k) => { g.classList.toggle('on', k === RADIO.sel); g.classList.toggle('cur', k === RADIO.st + 1); });
+  const k = RADIO.sel >= 0 ? RADIO.sel : RADIO.st + 1, st = k ? RADIO_ST[k - 1] : null, cur = RADIO.st >= 0 && k === RADIO.st + 1;
+  $('rwName').textContent = st ? st.name : 'RADIO OFF';
+  $('rwSub').textContent = !st ? (RADIO.sel < 0 ? 'aim at a station, let go' : '') : !st.tracks.length ? 'no signal yet' : cur && RADIO.now ? '♪ ' + RADIO.now : st.tag || '';
+}
+function radioAim(x, y){
+  const L = Math.hypot(x, y), m = RW_R1*0.9; if (L > m){ x *= m/L; y *= m/L; }
+  RADIO.x = x; RADIO.y = y;
+  const sel = L < RW_DEAD ? -1 : ((Math.round((Math.atan2(y, x)*180/Math.PI + 90)/(360/RW_N)) % RW_N) + RW_N) % RW_N;
+  if (sel !== RADIO.sel){ RADIO.sel = sel; if (sel >= 0) sfx('click', 0.25); radioRender(); }
+}
+function radioOpen(src){
+  if (RADIO.open) return;
+  RADIO.open = true; RADIO.src = src; RADIO.x = RADIO.y = 0; RADIO.sel = -1; RADIO.sticky = false; RADIO.moved = false;
+  $('radioWheel').classList.remove('sticky'); $('radioWheel').hidden = false; radioRender(); sfx('click', 0.4);
+}
+function radioClose(){ RADIO.open = false; RADIO.pid = null; RADIO.sticky = false; $('radioWheel').hidden = true; $('radioWheel').classList.remove('sticky'); }
+function radioPick(){
+  const k = RADIO.sel; radioClose();
+  if (k < 0) return;
+  if (k === 0){ if (RADIO.st >= 0){ radioTune(-1); toast('📻 Radio off', '#f0eec4'); } return; }
+  const st = RADIO_ST[k - 1];
+  if (!st.tracks.length){ toast('📻 ' + st.name + ': no signal yet', '#f0eec4'); return; }
+  if (k - 1 !== RADIO.st) radioTune(k - 1);
+}
+function radioTune(i){
+  RADIO.st = i; SETTINGS.radio = i; saveSettings(); $('radioBtn').classList.toggle('on', i >= 0);
+  if (i < 0){ if (RADIO.au){ RADIO.au.pause(); RADIO.au.removeAttribute('src'); RADIO.au.load(); } RADIO.now = ''; return; }
+  radioNext(true);
+}
+function radioNext(tuneIn){
+  const st = RADIO_ST[RADIO.st]; if (!st || !st.tracks.length) return;
+  if (!RADIO.au){ RADIO.au = new Audio(); RADIO.au.preload = 'auto'; RADIO.au.addEventListener('ended', () => radioNext(false)); RADIO.au.addEventListener('error', () => setTimeout(() => radioNext(false), 800)); }
+  // a shuffled run through the station; a new shuffle once it's all been played
+  let q = RADIO.q[RADIO.st]; if (!q || q.i >= q.list.length){ const list = st.tracks.map((_, j) => j); for (let j = list.length - 1; j > 0; j--){ const r = (Math.random()*(j + 1))|0; [list[j], list[r]] = [list[r], list[j]]; } q = RADIO.q[RADIO.st] = {list, i: 0}; }
+  const tr = st.tracks[q.list[q.i++]], au = RADIO.au;
+  RADIO.now = tr[1]; au.src = 'assets/radio/' + tr[0] + '.mp3'; radioVolume();
+  // like GTA, the first time you tune in you land partway through a song, as if the station had been playing all along
+  if (tuneIn && !RADIO.tuned[RADIO.st]){ RADIO.tuned[RADIO.st] = true; au.addEventListener('loadedmetadata', () => { if (isFinite(au.duration) && au.duration > 20) au.currentTime = au.duration*rnd(0.08, 0.55); }, {once: true}); }
+  if (state === 'play' || state === 'dying') au.play().catch(() => {});
+  if (tuneIn || state === 'play') toast('📻 ' + st.name + ' · ' + tr[1], '#f0eec4');
+  radioRender();
+}
+radioBuild();
+// the 📻 button: drag out of it toward a station and let go, or tap it and then tap a station
+{ const b = $('radioBtn'), w = $('radioWheel');
+  b.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation(); audioInit();
+    if (RADIO.open){ radioClose(); return; }
+    radioOpen('touch'); RADIO.pid = e.pointerId; RADIO.ox = e.clientX; RADIO.oy = e.clientY; try { b.setPointerCapture(e.pointerId); } catch(_){}
+  });
+  b.addEventListener('pointermove', e => { if (!RADIO.open || RADIO.sticky || RADIO.pid !== e.pointerId) return; e.stopPropagation(); const dx = e.clientX - RADIO.ox, dy = e.clientY - RADIO.oy; if (Math.hypot(dx, dy) > RW_DEAD) RADIO.moved = true; radioAim(dx*1.2, dy*1.2); });
+  const up = e => { if (!RADIO.open || RADIO.sticky || RADIO.pid !== e.pointerId) return; e.stopPropagation(); RADIO.pid = null;
+    if (RADIO.moved) radioPick(); else { RADIO.sticky = true; w.classList.add('sticky'); radioAim(0, 0); } };
+  b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
+  // tap mode: the wheel follows the cursor / finger from the screen centre; a tap on a station picks it, a tap in the middle closes it
+  const rel = e => { const r = $('rwSvg').getBoundingClientRect(), k = 320/r.width; return [(e.clientX - r.left - r.width/2)*k, (e.clientY - r.top - r.height/2)*k]; };
+  w.addEventListener('pointermove', e => { if (RADIO.sticky){ const [x, y] = rel(e); radioAim(x, y); } });
+  w.addEventListener('pointerdown', e => { if (!RADIO.sticky) return; e.preventDefault(); e.stopPropagation(); const [x, y] = rel(e); radioAim(x, y); if (Math.hypot(x, y) > RW_R1 + 40) RADIO.sel = -1; radioPick(); });
+}
+// plays only while you're in a run; the button shows during play
+setInterval(() => {
+  const live = state === 'play' || state === 'dying', btn = $('radioBtn');
+  if (btn.hidden === live) btn.hidden = !live;
+  if (RADIO.open && !live) radioClose();
+  if (RADIO.st >= 0 && live && !document.hidden){ if (!RADIO.au || !RADIO.au.src) radioNext(true); else if (RADIO.au.paused) RADIO.au.play().catch(() => {}); }
+  else if (RADIO.au && !RADIO.au.paused) RADIO.au.pause();
+}, 300);
+$('radioBtn').classList.toggle('on', RADIO.st >= 0);
 // test hook (only with ?debug in the address): runs code inside the game's scope
 if (/[?&]debug\b/.test(location.search)) window.__dbg = src => eval(src);
 })();

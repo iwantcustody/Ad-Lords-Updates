@@ -686,6 +686,7 @@ body.pc .titleFs{display:none}
         <h3 class="subh touchOnly">Pen tap does…</h3>
         <div class="set touchOnly" id="penTapSet"></div>
         <p id="saveNote"></p>
+        <div class="set"><span>Code</span><input id="sCode" type="text" maxlength="24" autocomplete="off" spellcheck="false" placeholder="Enter a code" style="width:9em;font:inherit;padding:4px 6px;border-radius:6px;border:1px solid rgba(0,0,0,.25)"><button class="btn small" id="sCodeBtn" type="button">OK</button></div>
         <div class="set" id="updRow" hidden><span>Updates</span><button class="btn small" id="updCheck" type="button">Check now</button></div>
         <div class="set"><span>Change log</span><button class="btn small" id="newsBtn" type="button">What's new</button></div>
         <h3 class="subh">Credits</h3>
@@ -1148,7 +1149,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V100';
+const GAME_VERSION = 'V101';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -2317,8 +2318,13 @@ function buildAirfield(){
     for (const [x0, x1, z0, z1] of [[-150, -40, FAR - 110, FAR - 175], [45, 150, FAR - 112, FAR - 170]])
       for (let z = z0; z > z1; z -= 3.2) parts.push(P(new B(x1 - x0, 0.06, 1.7).rotateX(-0.35), 0x203a5e, (x0 + x1)/2, 0.75, z));
     // brown desert ranges
-    for (let k = 0; k < 11; k++){ const h = rnd(10, 26); parts.push(P(new THREE.IcosahedronGeometry(1, 1).scale(rnd(26, 44), h, rnd(14, 22)), [0x9b7a5a, 0x8a6b50, 0xad8b66][k % 3], -200 + k*40 + rnd(-8, 8), -0.4, FAR - 200 - rnd(0, 30))); }
-    for (const sx of [-1, 1]) for (let k = 0; k < 4; k++) parts.push(P(new THREE.IcosahedronGeometry(1, 1).scale(rnd(18, 30), rnd(6, 13), rnd(18, 30)), [0x9b7a5a, 0xa98663][k % 2], sx*rnd(90, 140), -0.4, FAR + 20 - k*55));
+    // V101: lumpy, half-buried ridges and dunes (the old round blobs looked like boulders floating on the sand from the air)
+    const ridge = (sx, sy, sz) => { const g = new THREE.IcosahedronGeometry(1, 2), p = g.attributes.position;
+      for (let i = 0; i < p.count; i++){ const x = p.getX(i), y = p.getY(i), z = p.getZ(i), n = 1 + 0.18*Math.sin(x*5.1 + z*3.7) + 0.12*Math.sin(z*7.3 - x*2.9) + 0.08*Math.sin((x + z)*11);
+        p.setXYZ(i, x*n*sx, Math.max(-0.35, y)*n*sy*(y > 0 ? 1 : 0.2), z*n*sz); }
+      g.computeVertexNormals(); return g; };
+    for (let k = 0; k < 11; k++){ const h = rnd(10, 26); parts.push(P(ridge(rnd(34, 56), h, rnd(16, 26)), [0x9b7a5a, 0x8a6b50, 0xad8b66][k % 3], -200 + k*40 + rnd(-8, 8), -h*0.12, FAR - 200 - rnd(0, 30))); }
+    for (const sx of [-1, 1]) for (let k = 0; k < 4; k++) parts.push(P(ridge(rnd(30, 46), rnd(3.5, 7), rnd(26, 40)), [0xc9a274, 0xbf9a6c][k % 2], sx < 0 ? -rnd(95, 145) : rnd(150, 190), -0.6, FAR + 20 - k*55));     // right side kept clear of the PC airport
     const am = add(new THREE.Mesh(merge(parts), VC)); am.castShadow = true; am.receiveShadow = true;
     // creosote scrub
     const bushG = new THREE.IcosahedronGeometry(0.5, 0).scale(1, 0.6, 1);
@@ -3599,8 +3605,8 @@ function shoot(x, y, z, tx, tz, speed, dmg, pierce, kindIdx, life = 1.2, spread 
   // extra tracer density (PC): cosmetic streaks alongside the real round, a few metres apart along the same line
   if (SHOT_FAR && tr === 3){ let extra = (TRS().trDens || 1) - 1;
     while (extra > 0 && un < BUCAP){ if (extra < 1 && Math.random() > extra) break; extra--;
-      const j = un++, b = a + rnd(-0.006, 0.006), back = rnd(0.004, 0.022);
-      ux[j] = x - uvx[i]*back; uz[j] = z - uvz[i]*back; uy[j] = y - uvy[i]*back; uvx[j] = Math.sin(b)*speed; uvz[j] = -Math.cos(b)*speed; uvy[j] = uvy[i]*rnd(0.99, 1.01);
+      const j = un++, b = a + rnd(-0.006, 0.006), back = rnd(0.004, 0.022), hs = Math.hypot(uvx[i], uvz[i]);     // V101: same horizontal speed as the real round, so they line up when you dive
+      ux[j] = x - uvx[i]*back; uz[j] = z - uvz[i]*back; uy[j] = y - uvy[i]*back; uvx[j] = Math.sin(b)*hs; uvz[j] = -Math.cos(b)*hs; uvy[j] = uvy[i]*rnd(0.99, 1.01);
       ud[j] = 0; upi[j] = 0; ul[j] = 7; uk[j] = kindIdx; um[j] = 3; ulast[j] = 0; utr[j] = 3; uo[j] = 0; uf[j] = 2; } }
 }
 // where an aircraft round lands: dust you can lead your fire with; past ~250 m (PC) only the tracer shows where it went
@@ -4841,7 +4847,7 @@ function checkBoss(){
 function unlockedRoles(){ return ROLE_ORDER.slice(0, Math.min(ROLE_ORDER.length, wave)); }
 function startWave(){
   wave++; waveT = 0; spawned = 0; spawnAcc = 0;
-  { const tgt = MODE === 'def' ? stageFor(wave) : 0;
+  { const tgt = MODE === 'def' ? stageFor(wave === 26 && ev26Wanted() ? 25 : wave) : 0;     // V101: wave 26 widens on the song's first drop
     if (tgt > PIER.stage){ if (tgt - PIER.stage > 1) pierSet(tgt - 1); PIER.stage = tgt; PIER.t = 0; PIER.hold = true; setTimeout(() => toast(PIER.mode === 'unroll' ? (tgt > 1 ? 'Ground crew: widening again' : 'Ground crew: widening the taxiway') : (tgt > 1 ? 'More tugboats incoming' : 'Tugboats incoming'), '#c6ecff'), 900); } }
   if (MODE === 'def' && wave >= 13) setTimeout(() => toast(wave === 13 ? 'Late game: guns hold more, pickups give more' : 'Ammo capacity up · Minigun holds ' + fmt(wMax('minigun')), '#ffe6a0'), 1800);
   budget = 120*Math.pow(1.38, wave - 1);
@@ -4855,6 +4861,7 @@ function startWave(){
   if (bossPending && !seen.has('boss')) cardQueue.push('boss');
   toast('Wave ' + wave, '#fff'); sfx('wave');
   state = 'play';
+  if (wave === 26 && ev26Wanted()) ev26Start();
   showNextCard();
 }
 function showNextCard(){
@@ -4930,7 +4937,7 @@ function renderShop(flashId){
     grid.appendChild(b);
   }
 }
-$('shopGo').onclick = () => { $('shop').hidden = true; if (NET.on && NET.started && !netMode().pvp){ netShopDone(); return; } startWave(); };
+$('shopGo').onclick = () => { if (EV.menu){ ev26CloseMenu(); return; } $('shop').hidden = true; if (NET.on && NET.started && !netMode().pvp){ netShopDone(); return; } startWave(); };
 // when a vehicle choice is opened from the shop, return there afterwards
 const _choiceA = $('choiceA').onclick, _choiceB = $('choiceB').onclick;
 $('choiceA').onclick = () => { _choiceA(); if (state === 'shop'){ $('shop').hidden = false; renderShop(); } };
@@ -5644,6 +5651,7 @@ function fire(vol = 1){
 
 function update(dt){
   time += dt; t += dt; waveT += PIER.hold ? 0 : dt;
+  if (EV.on || EV.music) ev26Tick(dt);
   if (PIER.t >= 0) pierTick(dt);
   cx += (tx - cx)*Math.min(1, dt*12);
   freezeT = Math.max(0, freezeT - dt);
@@ -5652,7 +5660,7 @@ function update(dt){
 
   // spawning: this wave's budget, spread over its duration
   if (!frozen && !PIER.hold && spawned < budget && !NET.mirror){
-    spawnAcc += budget/waveDur*dt;
+    spawnAcc += (EV.on ? EV.B*ev26Rate() : budget/waveDur)*dt;
     let guard = 0;
     while (spawnAcc > 0 && spawned < budget && guard++ < 20){
       let sum = 0; const newest = roles[roles.length - 1];
@@ -5881,7 +5889,7 @@ function update(dt){
   let left = en, bossLeft = bosses.length;
   if (cmdMode){ left = 0; for (let i = 0; i < en; i++) if (!ecmd[i] && eh[i] > 0) left++; bossLeft = bosses.filter(b => !b.cmd).length; }
   const cmdCleared = cmdMode && en > left;          // only the commanders' units are still up
-  if (!NET.mirror && !NET.noWaves && spawned >= budget && !bossPending && !bossLeft && left === 0 && waveT > 3 && !(GS_.on && GS_.phase !== 'leave')){
+  if (!NET.mirror && !NET.noWaves && !EV.on && spawned >= budget && !bossPending && !bossLeft && left === 0 && waveT > 3 && !(GS_.on && GS_.phase !== 'leave')){
     if (MODE === 'heli'){ if (HM.breakT <= 0 && !HM.toSpawn && !HM.enemies.some(e => e.hp > 0)) hmWaveClear(); }
     else {
     while (barrels.length) removeBarrel(barrels[0]);
@@ -6075,7 +6083,7 @@ function sync(dt){
     hudT = 0.1;
     $('wave').textContent = wave;
     $('coinN').textContent = fmt(coins);
-    const left = Math.max(0, Math.round((budget - spawned)/ROLES.normal.hp));
+    const left = isFinite(budget) ? Math.max(0, Math.round((budget - spawned)/ROLES.normal.hp)) : 0;
     $('inc').textContent = fmt(en + left + bosses.length + bossPending);
     $('hpfill').style.width = Math.max(0, wall) + '%';
     $('hpfill').style.background = wall < 30 ? 'linear-gradient(#ff8a7a,#ff5a4b)' : '';
@@ -9223,6 +9231,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V101', ['Wave 26 is a boss fight set to “Messing With Sound Stage”: the lane widens on the first drop, three bosses on the bass drop at 2:00, a shop opens in each breakdown and closes when the beat drops (4:29 and 7:31), and more bosses land on each drop', 'Little Bird: the extra tracers now follow the same line as the real rounds, so they line up with the crosshair when you dive', 'Airfield: the desert hills are lower, lumpier ridges and dunes, so they look right from up high', 'Radio in the headset is a little quieter so the cockpit sits on top of it', 'Settings > Code']],
   ['V100', ['Sound no longer breaks up late in big rounds: besides the radio, your own aircraft and the menus, only five weapons sound at once, whatever you control first, then your own crew, then the nearest. Blasts and impacts get three slots (nearest first), and only the two nearest other helicopters keep their rotor sound', 'Radio in first person (cockpit, gunner seats, door guns) sounds like it’s coming through your headset']],
   ['V99', ['Radio keeps playing when you pause, open the shop, a card or Settings: muffled and a little quieter, back to full when you return to the fight', 'Leaving the app (home button, app switcher, screen off) now pauses the run and stops all sound and processing, so it no longer runs in the background and drains the battery (Android: the app update this needs is offered when you open the game)']],
   ['V98', ['Radio: hold Q in any seat (or press the 📻 button) for a station wheel; aim at a station and let go. AD LORDS FM plays your own recordings, four more station slots are ready for new tracks, and Settings → Audio has a Radio volume',
@@ -9347,14 +9356,18 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
 // ================= V98: radio =================
 // GTA-style station wheel: hold Q in a seat (or press the 📻 button anywhere), aim with the mouse or your finger, let go to tune in.
 // Five station slots plus OFF. Every recording is on station 1 for now; the other four wait for their own tracks.
-const RADIO_ST = [
-  {name: 'AD LORDS FM', tag: 'home-made samples', tracks: [['5gum', '5 Gum'], ['senor_dark', 'Señor Dark'], ['dog_i_am_now', 'Dog I Am Now'], ['loopdy_loop', 'Loopdy Loop'],
-    ['messing_with_sound_stage', 'Messing With Sound Stage'], ['playing_the_cello', 'Playing the Cello'], ['kid_at_lunch_table', 'Kid at Lunch Table']]},
-  {name: 'STATION 2', tracks: []}, {name: 'STATION 3', tracks: []}, {name: 'STATION 4', tracks: []}, {name: 'STATION 5', tracks: []},
-];
+// V101: the home-made recordings are WetGangRadio, a station that only appears once the dev code is entered (Settings > Code);
+// everyone else sees the open station slots. 'Messing With Sound Stage' left the radio: it's the wave 26 boss track now
+const WGR = {name: 'WetGangRadio', tag: 'home-made samples', tracks: [['5gum', '5 Gum'], ['senor_dark', 'Señor Dark'], ['dog_i_am_now', 'Dog I Am Now'], ['loopdy_loop', 'Loopdy Loop'],
+    ['playing_the_cello', 'Playing the Cello'], ['kid_at_lunch_table', 'Kid at Lunch Table']]};
+const devOn = () => !!SETTINGS.wgr;
+let RADIO_ST = [], RW_N = 0;
+function radioStations(){ RADIO_ST = (devOn() ? [WGR] : []).concat([1, 2, 3, 4].map(n => ({name: 'STATION ' + n, tracks: []}))); RW_N = RADIO_ST.length + 1; }
+radioStations();
+if (!SETTINGS.v101radio){ SETTINGS.v101radio = true; if (!devOn()) SETTINGS.radio = -1; }
 // wheel slots clockwise from the top: OFF, then the five stations
 const RADIO = {open: false, src: '', x: 0, y: 0, sel: -1, sticky: false, pid: null, ox: 0, oy: 0, moved: false, st: SETTINGS.radio ?? -1, au: null, q: {}, tuned: {}, segs: []};
-const RW_N = 6, RW_R0 = 58, RW_R1 = 152, RW_DEAD = 26;
+const RW_R0 = 58, RW_R1 = 152, RW_DEAD = 26;
 const radioSeat = () => (MODE === 'heli' && HM.on) || DF.on || DG.on || (GS_.on && GS_.phase === 'gun');
 // V99: the radio runs through a low-pass and a gain in the game's audio, so menus can muffle it instead of stopping it
 const radioLevel = () => clamp(SETTINGS.sound ? (SETTINGS.master ?? 0.8)*(SETTINGS.radioVol ?? 0.6) : 0, 0, 1);
@@ -9368,7 +9381,7 @@ function radioWire(){
     const open = c.createGain(), head = c.createGain(); open.gain.value = 1; head.gain.value = 0;
     const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 180; hp.Q.value = 0.7;
     const hc = c.createBiquadFilter(); hc.type = 'lowpass'; hc.frequency.value = 6800; hc.Q.value = 0.7;
-    const pk = c.createBiquadFilter(); pk.type = 'peaking'; pk.frequency.value = 2400; pk.Q.value = 0.9; pk.gain.value = 4;
+    const pk = c.createBiquadFilter(); pk.type = 'peaking'; pk.frequency.value = 2400; pk.Q.value = 0.9; pk.gain.value = 3;
     const sh = c.createWaveShaper(); { const n = 1024, cu = new Float32Array(n); for (let i = 0; i < n; i++){ const x = i/(n - 1)*2 - 1; cu[i] = Math.tanh(x*1.6)/Math.tanh(1.6); } sh.curve = cu; }
     const mono = c.createChannelSplitter(2), mix = c.createChannelMerger(2), l = c.createGain(), r = c.createGain(), lx = c.createGain(), rx = c.createGain();
     l.gain.value = r.gain.value = 0.7; lx.gain.value = rx.gain.value = 0.3;
@@ -9384,9 +9397,10 @@ const radioVolume = () => { if (!RADIO.au) return; if (radioWire()){ radioMix(tr
 function radioMix(snap){
   if (!RADIO.fx) return; const c = AU.ctx, t = c.currentTime, m = radioMuffled(), tc = snap ? 0.01 : 0.25;
   RADIO.fx.lp.frequency.setTargetAtTime(m ? 650 : 20000, t, tc); RADIO.fx.g.gain.setTargetAtTime(radioLevel()*(m ? 0.55 : 1), t, tc);
-  const hs = !m && inFirstPerson() ? 1 : 0; RADIO.fx.head.gain.setTargetAtTime(hs*1.05, t, 0.15); RADIO.fx.open.gain.setTargetAtTime(1 - hs, t, 0.15);
+  const hs = !m && inFirstPerson() ? 1 : 0; RADIO.fx.head.gain.setTargetAtTime(hs*0.62, t, 0.15);     // V101: in the headset it's a few dB down, so the cockpit is on top RADIO.fx.open.gain.setTargetAtTime(1 - hs, t, 0.15);
 }
 function radioBuild(){
+  $('rwSvg').innerHTML = ''; RADIO.segs = [];
   const svg = $('rwSvg'), NS = 'http://www.w3.org/2000/svg', pt = (r, a) => (r*Math.cos(a)).toFixed(1) + ' ' + (r*Math.sin(a)).toFixed(1);
   { const hub = document.createElementNS(NS, 'circle'); hub.setAttribute('r', RW_R0 - 4); hub.setAttribute('fill', 'rgba(12,16,20,.85)'); hub.setAttribute('stroke', 'rgba(240,238,196,.35)'); svg.append(hub); }
   for (let k = 0; k < RW_N; k++){
@@ -9445,6 +9459,14 @@ function radioNext(tuneIn){
   radioRender();
 }
 radioBuild();
+// V101: dev code. Only a hash is stored here, so reading the page doesn't give it away
+const cyrb53 = (str, seed = 0) => { let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed; for (let i = 0, ch; i < str.length; i++){ ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (4294967296*(2097151 & h2) + (h1 >>> 0)).toString(36); };
+function codeEnter(){
+  const v = ($('sCode').value || '').trim().toUpperCase(); $('sCode').value = ''; if (!v) return;
+  if (cyrb53(v, 26) === 'zsypv07iff'){ const was = devOn(); SETTINGS.wgr = true; saveSettings(); radioStations(); radioBuild(); if (!was && RADIO.st >= 0) RADIO.st += 1; sfx('reward'); toast('📻 WetGangRadio unlocked', '#f0eec4'); }
+  else { sfx('deny'); toast('Unknown code', '#ffd2cc'); }
+}
+$('sCodeBtn').onclick = codeEnter; $('sCode').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') codeEnter(); });
 // the 📻 button: drag out of it toward a station and let go, or tap it and then tap a station
 { const b = $('radioBtn'), w = $('radioWheel');
   b.addEventListener('pointerdown', e => {
@@ -9468,10 +9490,64 @@ setInterval(() => {
   if (RADIO.open && !live) radioClose();
   const on = live || radioMuffled();       // V99: keeps playing (muffled) through pause, the shop, cards and Settings
   if (RADIO.au) radioMix(false);
-  if (RADIO.st >= 0 && on && !document.hidden && !APPBG.on){ if (!RADIO.au || !RADIO.au.src) radioNext(true); else if (RADIO.au.paused) RADIO.au.play().catch(() => {}); }
+  if (RADIO.st >= 0 && on && !document.hidden && !APPBG.on && !EV.music){ if (!RADIO.au || !RADIO.au.src) radioNext(true); else if (RADIO.au.paused) RADIO.au.play().catch(() => {}); }
   else if (RADIO.au && !RADIO.au.paused) RADIO.au.pause();
 }, 300);
 $('radioBtn').classList.toggle('on', RADIO.st >= 0);
+// ================= V101: wave 26, the boss song =================
+// 'Messing With Sound Stage' (9:41) drives the whole wave. Song time (from the audio itself, so the game stays on the beat):
+//   0:00 the wave starts on the narrow lane, a light trickle      0:41 first mini drop: the lane widens, more of them
+//   1:28 spawns stop so the field is clear for                     2:00 the bass drop: three bosses and a rush
+//   2:43 spawns stop -> 3:10 the breakdown: a quick shop opens, the music plays on, it closes on the drop at 4:29 (four bosses)
+//   5:45 spawns stop -> 6:12 second breakdown: shop until the last drop at 7:31 (five bosses)  9:00 last spawns, clear it out
+const EV26 = {widen: 41, drops: [[120, 3], [269, 4], [451, 5]], menus: [[190, 269], [372, 451]], last: 540,
+  rate: [[0, 0.03], [41, 0.06], [88, 0], [120, 0.08], [163, 0], [269, 0.1], [345, 0], [451, 0.12], [540, 0]]};     // share of a normal wave 26's spawn rate
+const EV = {on: false, t: 0, au: null, g: null, B: 0, cues: new Set(), menu: false, menuEnd: 0, noAudio: false, music: false};
+const ev26Wanted = () => MODE === 'def' && !(NET.on && NET.started);
+function ev26Rate(){ let r = 0; for (const [t0, v] of EV26.rate) if (EV.t >= t0) r = v; return r; }
+function ev26Level(){ return clamp(SETTINGS.sound ? (SETTINGS.master ?? 0.8)*Math.max(0.35, SETTINGS.radioVol ?? 0.6)*1.1 : 0, 0, 1); }
+function ev26Start(){
+  Object.assign(EV, {on: true, t: 0, cues: new Set(), menu: false, noAudio: false, music: true, B: budget/waveDur});
+  budget = Infinity; bossPending = 0;
+  if (RADIO.au && !RADIO.au.paused) RADIO.au.pause();
+  if (!EV.au){ EV.au = new Audio('assets/radio/messing_with_sound_stage.mp3'); EV.au.preload = 'auto';
+    EV.au.addEventListener('error', () => { EV.noAudio = true; });
+    EV.au.addEventListener('ended', () => { EV.music = false; }); }
+  if (!EV.g && AU.ctx){ try { const s = AU.ctx.createMediaElementSource(EV.au); EV.g = AU.ctx.createGain(); s.connect(EV.g); EV.g.connect(AU.ctx.destination); EV.au.volume = 1; } catch(e){ EV.g = null; } }
+  EV.au.currentTime = 0; ev26Vol(); EV.au.play().catch(() => { EV.noAudio = true; });
+  toast('Wave 26 · turn it up', '#f0eec4');
+}
+function ev26Vol(){ if (!EV.au) return; const v = ev26Level(); if (EV.g) EV.g.gain.setTargetAtTime(v, AU.ctx.currentTime, 0.05); else EV.au.volume = v; }
+function ev26Stop(){ EV.on = false; EV.menu = false; EV.music = false; if (EV.au){ EV.au.pause(); } }
+function ev26OpenMenu(end){
+  EV.menu = true; EV.menuEnd = end; state = 'shop';
+  $('shopTitle').textContent = 'Breather'; renderShop(); $('shop').hidden = false; $('hud').hidden = false; $('bottom').hidden = false;
+  if (document.pointerLockElement) document.exitPointerLock();
+  ev26MenuLabel(); toast('Shop open until the beat drops', '#ffe6a0');
+}
+function ev26MenuLabel(){ const s = Math.max(0, Math.ceil(EV.menuEnd - EV.t)); $('shopGo').textContent = 'Ready · drop in ' + Math.floor(s/60) + ':' + String(s % 60).padStart(2, '0'); }
+function ev26CloseMenu(){ if (!EV.menu) return; EV.menu = false; $('shop').hidden = true; if (state === 'shop') state = 'play'; flyRecapture(); }
+// once per frame from update(), and on a timer so the shop and pause keep in step with the music
+function ev26Tick(dt){
+  if (!EV.on && !EV.music) return;
+  if (wave !== 26 || MODE !== 'def' || state === 'over' || state === 'title'){ ev26Stop(); return; }
+  const live = state === 'play' || state === 'dying' || state === 'card' || (state === 'shop' && EV.menu) || state === 'choice';
+  if (EV.au && EV.music){ if (live && EV.au.paused && !EV.noAudio) EV.au.play().catch(() => { EV.noAudio = true; }); else if (!live && !EV.au.paused) EV.au.pause(); }
+  if (EV.au && !EV.noAudio && EV.au.currentTime > 0) EV.t = EV.au.currentTime; else if (live && dt) EV.t += dt;     // no audio: keep time ourselves
+  ev26Vol();
+  if (!EV.on) return;
+  const T = EV.t, once = k => !EV.cues.has(k) && EV.cues.add(k);
+  if (T >= EV26.widen && once('widen') && PIER.stage < 2){ PIER.stage = 2; PIER.t = 0; PIER.hold = true; toast(PIER.mode === 'unroll' ? 'Ground crew: widening again' : 'More tugboats incoming', '#c6ecff'); }
+  for (const [at, n] of EV26.drops) if (T >= at && once('drop' + at)){
+    ev26CloseMenu(); bossPending += n; bossNextT = waveT + 0.5; spawnAcc += EV.B*0.8; shake = Math.max(shake, 0.6);
+    toast(n + ' bosses on the drop', '#ff9a90'); }
+  for (const [a, b] of EV26.menus){
+    if (T >= a && T < b - 4 && !EV.menu && !EV.cues.has('menu' + a) && state === 'play' && en === 0 && !bosses.length && !bossPending){ EV.cues.add('menu' + a); ev26OpenMenu(b); }
+  }
+  if (EV.menu) ev26MenuLabel();
+  if (T >= EV26.last + 1 && once('end')){ EV.on = false; budget = spawned; }     // the music plays on while you clear the rest
+}
+setInterval(() => { if (state !== 'play') ev26Tick(0.1); }, 100);
 // test hook (only with ?debug in the address): runs code inside the game's scope
 if (/[?&]debug\b/.test(location.search)) window.__dbg = src => eval(src);
 })();

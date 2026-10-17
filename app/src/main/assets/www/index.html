@@ -1790,7 +1790,7 @@ function hsVoice(id, kind, persp, pos, st){
   T(v.yawL, Math.max(0, -yw)*0.9, 0.15); T(v.yawR, Math.max(0, yw)*0.9, 0.15); T(v.av, 0.5, 0.3);
   const rate = 1 + 0.035*ld + 0.025*sp - 0.04*dm*Math.max(0, Math.sin(now*1.7));
   for (const L of [v.hover, v.load, v.dmg, v.low, v.yawL, v.yawR]) if (L) L.s.playbackRate.setTargetAtTime(rate, now, 0.2);
-  let vol = (st.vol ?? 1)*(v.own ? (persp === '1p' ? (kind === 'lb' ? 1.6 : 0.95) : 0.85) : 1.3),     // V111: the Little Bird's own cockpit rotor is louder lpf = 20000, wet = 0, pn = 0;
+  let vol = (st.vol ?? 1)*(v.own ? (persp === '1p' ? (kind === 'lb' ? 1.6 : 0.95) : 0.85) : 1.3) /* V111: the Little Bird's own cockpit rotor is louder */, lpf = 20000, wet = 0, pn = 0;
   if (v.own && now < (AU.duckUntil || 0)) vol *= persp === '1p' ? 0.45 : 0.7;
   if (pos){ const S = spatial(pos.x, pos.y, pos.z, st.ref || 18); vol *= S.vol; lpf = S.lp; wet = S.wet; pn = S.pan; }
   v.mix.gain.setTargetAtTime(SETTINGS.sound ? vol : 0, now, now - (v.t0 || (v.t0 = now)) < 0.4 ? 0.04 : 0.12); v.lp.frequency.setTargetAtTime(lpf, now, 0.12); v.send.gain.setTargetAtTime(wet*0.8, now, 0.2);

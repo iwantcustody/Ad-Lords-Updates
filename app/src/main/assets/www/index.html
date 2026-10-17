@@ -1266,7 +1266,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V111';
+const GAME_VERSION = 'V112';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -4489,7 +4489,7 @@ function dfFly(v, dt, lv){
 function dfFlyUi(v){
   const m = DF;
   $('dfTime').style.width = Math.max(0, 100 - v.t/v.dur*100) + '%'; $('dfKills').textContent = fmt(kills - m.kills0);
-  if (v.type === 'little'){ $('dfHfN').textContent = v.volley ? '…' : m.rkT > 0 ? Math.ceil(m.rkT) + 's' : 'RDY'; $('dfHf').disabled = m.rkT > 0 || !!v.volley; }
+  if (v.type === 'little'){ $('dfHfN').textContent = m.rkT > 1 ? Math.ceil(m.rkT) + 's' : (v.lbR ?? 7) + (v.lbM === 0 ? '' : ' +7'); $('dfHf').disabled = m.rkT > 0 || !!v.volley || v.lbR === 0; }
   else { $('dfHfN').textContent = m.hf; $('dfHf').disabled = !m.hf || m.hfCd > 0; }
   $('dfRkN').textContent = '∞';
   return true;
@@ -4514,8 +4514,9 @@ function dfFlyWeapons(v, dt, lv){
     if (v.volley > 0){
       v.vt -= dt;
       while (v.vt <= 0 && v.volley > 0){ v.vt += LB_RIPPLE[v.vIdx = (v.vIdx || 0) + 1] || 0.1; v.volley--; const from = v.pods[v.volley & 1].getWorldPosition(new THREE.Vector3()), to = dfBoresight(v); to.x += rnd(-1.4, 1.4); to.z += rnd(-1.4, 1.4);
-        gsShoot('rocket', from, to, {dmg: 18*lv, aoe: 2.4*loRkt('little').aoeK}); if (v.vIdx === 1) v.vSnd = hsShot('lb', persp, 'volley', 1, 0); if (!v.vSnd) sfx('rocket', 0.6, 0, true); }
+        gsShoot('rocket', from, to, {dmg: 18*lv, aoe: 2.4*loRkt('little').aoeK}); if (!hsShot('lb', persp, 'rkt', 1, 0)) sfx('rocket', 0.6, 0, true); }
     }
+    if (v.lbM !== undefined){ if (v.lbM < 1){ v.lbMT -= dt; if (v.lbMT <= 0){ v.lbMT = 30; v.lbM++; } } if (v.lbR <= 0 && v.lbM > 0){ v.lbM--; v.lbR = 7; DF.rkT = Math.max(DF.rkT, 6); } }
     return;
   }
   if (v.type === 'apache'){
@@ -4524,14 +4525,18 @@ function dfFlyWeapons(v, dt, lv){
     if (m.fire && !m.sec && m.rkT <= 0){
       const RK = loRkt('apache'); m.rkT = 0.115*RK.rateK; v.rk = (v.rk || 0) ^ 1;
       const from = v.pods[v.rk].getWorldPosition(new THREE.Vector3()), to = dfBoresight(v); to.x += rnd(-1, 1); to.z += rnd(-1, 1);
-      if (DF.P && gPri('apache')){ const nd = simNose(DF.P, new THREE.Vector3(), ROCKET_DEP); gsShoot('rocket', from, from.clone().addScaledVector(nd, 30), {dmg: 24*lv*RK.dmgK, aoe: 2.8*RK.aoeK, followDF: 'rocket'}); } else gsShoot('rocket', from, to, {dmg: 24*lv*RK.dmgK, aoe: 2.8*RK.aoeK});
+      if (DF.P && (gPri('apache') || LO('apache').pri === 'gmsl')){ const nd = simNose(DF.P, new THREE.Vector3(), ROCKET_DEP), gm = LO('apache').pri === 'gmsl'; gsShoot('rocket', from, from.clone().addScaledVector(nd, 30), {dmg: 24*lv*RK.dmgK*(gm ? 1.6 : 1), aoe: 2.8*RK.aoeK, followDF: gm ? 'msl' : 'rocket'}); if (gm) m.rkT = 0.5; } else gsShoot('rocket', from, to, {dmg: 24*lv*RK.dmgK, aoe: 2.8*RK.aoeK});
       if (!hsShot('ap', persp, 'rkt', 0.85, v.rk ? 0.3 : -0.3)) sfx('rocket', 0.7, v.rk ? 0.35 : -0.35, true);
     }
     apGunnerAI(v, dt);
   }
 }
 const _dfAim = new THREE.Vector3();
-function dfVolley(v){ if (DF.rkT > 0 || v.volley) return; v.volley = 7; v.vt = 0; v.vIdx = 0; v.vSnd = false; DF.rkT = 6; }
+function dfVolley(v){
+  // V112: a pair per press like gunship mode: 7 to a magazine (pair, pair, pair, single), a 6 s reload, a spare magazine back every 30 s
+  if (v.lbR === undefined){ v.lbR = 7; v.lbM = 1; v.lbMT = 30; }
+  if (DF.rkT > 0 || v.volley || v.lbR <= 0) return; v.volley = Math.min(2, v.lbR); v.lbR -= v.volley; v.vt = 0; v.vIdx = 0; v.vSnd = true; DF.rkT = 0.35;
+  if (v.lbR <= 0 && v.lbM > 0){ v.lbM--; DF.rkT = 6; v.lbR = 7; } }
 // the Apache's front seat when no player is in it: short bursts at whatever is closest to the barricade
 function apGunnerAI(v, dt){
   if (v.crew && v.crew.gun !== undefined && v.crew.gun !== NET.me) return;      // a friend has the gun
@@ -4666,7 +4671,7 @@ function airShots(dt){
       else { const want = sh.to.clone().sub(sh.m.position).normalize().multiplyScalar(30); sh.v.lerp(want, Math.min(1, dt*4)); sh.m.lookAt(sh.m.position.clone().add(sh.v)); }
       if (Math.random() < 0.6) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.6);
     } else if (sh.kind === 'rocket' && Math.random() < 0.4) chips(sh.m.position.x, sh.m.position.y, sh.m.position.z, SMOKE, 1, 0.5);
-    if (sh.followDF && DF.on && DF.v){ sh.age = (sh.age || 0) + dt; sh.to.copy(dfBoresight(DF.v)); if (sh.kind === 'rocket' && sh.age > 0.12){ steerVel(sh.v, _trX.copy(sh.to).sub(sh.m.position), GUIDE_RATE.rocket, dt); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v)); } }
+    if (sh.followDF && DF.on && DF.v){ sh.age = (sh.age || 0) + dt; sh.to.copy(dfBoresight(DF.v)); if (sh.kind === 'rocket' && sh.age > 0.12){ steerVel(sh.v, _trX.copy(sh.to).sub(sh.m.position), GUIDE_RATE[sh.followDF] || GUIDE_RATE.rocket, dt); sh.m.lookAt(_trD.copy(sh.m.position).add(sh.v)); } }
     sh.m.position.addScaledVector(sh.v, dt); sh.life -= dt;
     if (sh.life <= 0 && sh.m.position.y > 1.2){ scene.remove(sh.m); P.shots.splice(k, 1); continue; }     // too far: it just goes
     const hit = sh.m.position.y <= 0.4 || sh.m.position.distanceTo(sh.to) < (sh.kind === 'cannon' ? 1.2 : 0.8) || sh.life <= 0;
@@ -6751,12 +6756,12 @@ function hmStart(type = 'apache'){
   } else if (type === 'little'){
     if (HM.heliL && !HM.heliL.model && loadedParts.little?.body){ scene.remove(HM.heliL.g); HM.heliL = null; }
     if (!HM.heliL){ HM.heliL = buildLittle(); HM.heliL.hull.scale.setScalar((HM.heliL.model ? 0.4 : 0.42)*HB); scene.add(HM.heliL.g); }
-    HM.heli = HM.heliL; HM.rkMax = HM.rockets = 7; HM.hellfire = 0; HM.rkMag = true;
+    HM.heli = HM.heliL; HM.rkMax = HM.rockets = 7; HM.hellfire = 0; HM.rkMag = true; HM.mags = 1; HM.magsMax = 1; HM.magT = 30;
   } else {
     if (!HM.heliA){ HM.heliA = buildApache(); HM.heliA.g.scale.setScalar(HM_SCALE*HB); scene.add(HM.heliA.g); }
-    HM.heli = HM.heliA; HM.rkMax = HM.rockets = RK_MAG.apache; HM.rkMag = true;
+    HM.heli = HM.heliA; HM.rkMax = HM.rockets = LO('apache').pri === 'light' ? 12 : RK_MAG.apache; HM.rkMag = true;
   }
-  HM.rkRT = 0;
+  HM.rkRT = 0; if (type !== 'little'){ delete HM.mags; delete HM.magsMax; }
   if (HM.vm) HM.vm.g.visible = false;
   HM.heli.g.visible = true;
   { const g = HM.heli.g; g.position.set(0, 0, 0); g.rotation.set(0, 0, 0); g.updateMatrixWorld(true); const bb = new THREE.Box3();
@@ -6974,7 +6979,7 @@ function hmGunnerAGM(){
   hmFireAGM(P, to); toast('AGM away', '#c8ffd0');
 }
 function hmFireHellfire(){
-  if (HM.type === 'little'){ if (HM.seat === 'pilot' && HM.rockets > 0 && HM.hfCd <= 0 && !HM.volley && state === 'play'){ HM.volley = Math.min(7, HM.rockets); HM.volleyT = 0; HM.vIdx = 0; HM.hfCd = 0.9; } return; }
+  if (HM.type === 'little'){ if (HM.seat === 'pilot' && HM.rockets > 0 && HM.hfCd <= 0 && !HM.volley && state === 'play'){ HM.volley = Math.min(2, HM.rockets); HM.volleyT = 0; HM.vIdx = 0; HM.hfCd = 0.35; HM.volleySnd = false; } return; }
   if (HM.seat !== 'pilot'){ if (HM.type === 'apache') hmGunnerAGM(); return; }
   if (HM.hellfire <= 0 || HM.hfCd > 0 || state !== 'play') return;
   HM.hellfire--; HM.hfCd = 0.9;
@@ -7153,7 +7158,7 @@ function hfBuild(){
 // rebuilt when what's on the map changes (a model finished loading, an AA site appeared or died); checked twice a second
 function hfTick(dt){ HF.chk -= dt; if (HF.chk > 0 && HF.h) return; HF.chk = 0.5; const sg = hfSig(); if (sg !== HF.sig){ HF.sig = sg; const t0 = performance.now(); hfBuild(); if (location.search.includes('debug')) console.log('height field', sg, (performance.now() - t0).toFixed(0) + ' ms'); } }
 function hfAt(x, z){ let y = 0; if (HF.h){ const i = Math.floor((x - HF.x0)/HF.cell), j = Math.floor((z - HF.z0)/HF.cell); if (i >= 0 && j >= 0 && i < HF.nx && j < HF.nz) y = HF.h[j*HF.nx + i]; }
-  for (const a of AA.list) if (a.model && Math.abs(a.x - x) < 2.6 && Math.abs(a.z - z) < 2.6) y = Math.max(y, 3.2); return y; }
+  for (const a of AA.list) if (a.model && Math.abs(a.x - x) < 0.9 && Math.abs(a.z - z) < 0.9) y = Math.max(y, 0.9); return y; }
 // the helicopter's plan footprint: centre, nose, tail and both sides
 function hfFoot(x, z, fx, fz){ const a = 1.7*HB, b = 1.1*HB; return Math.max(hfAt(x, z), hfAt(x + fx*a, z + fz*a), hfAt(x - fx*a, z - fz*a), hfAt(x - fz*b, z + fx*b), hfAt(x + fz*b, z - fx*b)); }
 // clear line between two points (nothing in the height field pokes above it)
@@ -7168,25 +7173,32 @@ function aaModel(k){
   if (!m && SKIN_LOAD.load){ AA.M[k.id] = 'loading'; SKIN_LOAD.load(k.url).then(g => { AA.M[k.id] = g.scene; }).catch(() => { AA.M[k.id] = null; }); }
   return null;
 }
+// V112: each site is a cluster of 3-4 quarter-size vehicles spread over the old footprint. Every one launches missiles and runs two
+// tracer miniguns, but the whole cluster together only puts out 20% more than the single big vehicle did
+const AA_K = 0.25, AA_OUT = 1.2;
 function aaSpawn(){
   const k = AA.kinds[(Math.random()*AA.kinds.length)|0];
   let x = 0, z = 0;
-  const pads = LOC.cur === 'airfield' && LOC.sets.airfield && LOC.sets.airfield.bases, free = pads ? pads.filter(b => AA.list.every(a => a.hp <= 0 || Math.hypot(a.x - b.x, a.z - b.z) > 4)) : [];
+  const pads = LOC.cur === 'airfield' && LOC.sets.airfield && LOC.sets.airfield.bases, free = pads ? pads.filter(b => AA.list.every(a => a.hp <= 0 || Math.hypot(a.cx - b.x, a.cz - b.z) > 4)) : [];
   if (free.length){ const b = free[(Math.random()*free.length)|0]; x = b.x + rnd(-1.5, 1.5); z = b.z + rnd(-1.5, 1.5); }
-  else for (let tries = 0; tries < 20; tries++){ x = (Math.random() < 0.5 ? -1 : 1)*rnd(14, 62); z = rnd(FAR - 70, FAR - 22); if (AA.list.every(a => Math.hypot(a.x - x, a.z - z) > 16)) break; }
-  const g = new THREE.Group(); g.position.set(x, LOC.cur !== 'pier' ? 0 : -0.3, z); g.rotation.y = Math.atan2(x, z - 10) + rnd(-0.4, 0.4); scene.add(g);
-  const a = {k, name: k.name, g, x, z, hp: k.hp*(1 + 0.15*Math.max(0, wave - 2)), max: 0, lk: 0, missCd: rnd(4, 8), fireT: rnd(1, 3), burst: 0, dead: 0, model: false};
-  a.max = a.hp; AA.list.push(a); aaAttach(a);
-  toast('AA site spotted: ' + k.name, '#ffb35a');
+  else for (let tries = 0; tries < 20; tries++){ x = (Math.random() < 0.5 ? -1 : 1)*rnd(14, 62); z = rnd(FAR - 70, FAR - 22); if (AA.list.every(a => Math.hypot(a.cx - x, a.cz - z) > 16)) break; }
+  const n = Math.random() < 0.5 ? 3 : 4, yaw0 = Math.atan2(x, z - 10) + rnd(-0.4, 0.4), site = ++AA.sites || (AA.sites = 1);
+  for (let j = 0; j < n; j++){
+    const ang = j/n*6.283 + rnd(-0.3, 0.3), r = rnd(1.4, 2.3), ux = x + Math.cos(ang)*r, uz = z + Math.sin(ang)*r;
+    const g = new THREE.Group(); g.position.set(ux, LOC.cur !== 'pier' ? 0 : -0.3, uz); g.rotation.y = yaw0 + rnd(-0.5, 0.5); scene.add(g);
+    const a = {k, name: k.name, g, x: ux, z: uz, cx: x, cz: z, site, n, hp: k.hp*1.3/n*(1 + 0.15*Math.max(0, wave - 2)), max: 0, lk: rnd(0, 1.5), missCd: rnd(4, 9), fireT: rnd(0.5, 3), guns: [{t: rnd(0.5, 3), b: 0}, {t: rnd(0.5, 3), b: 0}], dead: 0, model: false};
+    a.max = a.hp; AA.list.push(a); aaAttach(a);
+  }
+  toast('AA site spotted: ' + n + ' × ' + k.name, '#ffb35a');
 }
 function aaAttach(a){
   if (a.model) return; const M = aaModel(a.k); if (!M) return;
-  const o = vehToon(M.clone(true), 1.1, 0x9a8f6a); o.scale.setScalar(1);     /* V105: real size */
+  const o = vehToon(M.clone(true), 1.1, 0x9a8f6a); o.scale.setScalar(AA_K);     /* V112: a quarter of the V105 size */
   o.traverse(m => { if (m.isMesh) m.castShadow = true; }); a.g.add(o); a.model = true;
 }
 function aaHurt(a, d){
-  if (a.hp <= 0) return; a.hp -= d*vehDmgK(); hitMark(a.hp <= 0); chips(a.x, 2, a.z, SPARK, 3, 3);
-  if (a.hp <= 0){ a.dead = 0.001; HM.score += 300; kills++; coins += 25; explode(a.x, a.z, 4, 0); chips(a.x, 2, a.z, ORANGE, 40, 7); chips(a.x, 2, a.z, SMOKE, 30, 5); sfx('bigboom'); toast('AA site destroyed  +300', '#ffe28a');
+  if (a.hp <= 0) return; a.hp -= d*vehDmgK(); hitMark(a.hp <= 0); chips(a.x, 0.7, a.z, SPARK, 3, 3);
+  if (a.hp <= 0){ a.dead = 0.001; HM.score += Math.round(300/a.n); kills++; coins += Math.round(25/a.n) + 2; explode(a.x, a.z, 2.5, 0); chips(a.x, 0.8, a.z, ORANGE, 25, 6); chips(a.x, 0.8, a.z, SMOKE, 18, 4); sfx('bigboom'); toast(AA.list.some(b => b !== a && b.site === a.site && b.hp > 0) ? a.name + ' down' : 'AA site destroyed', '#ffe28a');
     a.g.traverse(m => { if (m.isMesh && m.material && m.material.color){ m.material = m.material.clone(); m.material.color.multiplyScalar(0.25); } }); a.g.rotation.z = rnd(-0.12, 0.12); }
 }
 function aaBlast(x, z, r, dmg){ if (r < 2.2) return;     // V104: guns (miniguns, the 30 mm) don't hurt them; rockets and missiles do
@@ -7197,26 +7209,27 @@ function aaTick(dt){
   for (let k = AA.list.length - 1; k >= 0; k--){
     const a = AA.list[k];
     if (!a.model) aaAttach(a);
-    if (a.hp <= 0){ a.dead += dt; if (Math.random() < dt*12) chips(a.x + rnd(-1, 1), 2.5, a.z + rnd(-1, 1), SMOKE, 1, 1.4); if (Math.random() < dt*5 && a.dead < 6) chips(a.x, 1.8, a.z, ORANGE, 1, 1.5); if (a.dead > 14){ scene.remove(a.g); AA.list.splice(k, 1); } continue; }
+    if (a.hp <= 0){ a.dead += dt; if (Math.random() < dt*8) chips(a.x + rnd(-0.4, 0.4), 0.9, a.z + rnd(-0.4, 0.4), SMOKE, 1, 1.2); if (Math.random() < dt*4 && a.dead < 6) chips(a.x, 0.6, a.z, ORANGE, 1, 1.2); if (a.dead > 14){ scene.remove(a.g); AA.list.splice(k, 1); } continue; }
     if (state !== 'play' || P.hull <= 0) continue;
     const dx = P.pos.x - a.x, dz = P.pos.z - a.z, dist = Math.hypot(dx, dz, P.pos.y);
-    a.losT = (a.losT || 0) - dt; if (a.losT <= 0){ a.losT = 0.25; a.los = hfClear(_hmL.set(a.x, 4.6, a.z), P.pos); }
+    a.losT = (a.losT || 0) - dt; if (a.losT <= 0){ a.losT = 0.25; a.los = hfClear(_hmL.set(a.x, 1.4, a.z), P.pos); }
     const see = dist < 110 && P.pos.y > 2.5 && a.los, radar = see && !hmLow(P);     // V106: under the radar the missiles can't lock, the guns still shoot
     a.lk = radar ? a.lk + dt : Math.max(0, a.lk - dt*(see ? 1.5 : 0.8)); a.missCd -= dt;
     if (a.lk >= 6 && a.missCd <= 0){     // V104: they take longer to lock than the helicopters
       a.lk = 0; a.missCd = rnd(10, 15);
-      const m = missileObj(toon(0xff6b5b)); m.scale.setScalar(1.3); m.position.set(a.x, 4, a.z); scene.add(m);
-      P.emiss.push({m, v: new THREE.Vector3(dx*0.1, 14, dz*0.1), life: 8, missile: true, big: 18});
-      sfx('hellfire', 0.7); chips(a.x, 3, a.z, SMOKE, 10, 2);
+      const m = missileObj(toon(0xff6b5b)); m.scale.setScalar(0.8); m.position.set(a.x, 1.1, a.z); scene.add(m);
+      P.emiss.push({m, v: new THREE.Vector3(dx*0.1, 14, dz*0.1), life: 8, missile: true, big: 18*AA_OUT/a.n});
+      sfx('hellfire', 0.55); chips(a.x, 1, a.z, SMOKE, 6, 1.5);
     }
-    if (a.k.gun && dist < 70 && see){
-      a.fireT -= dt;
-      if (a.fireT <= 0){
-        if (a.burst <= 0) a.burst = 8; a.burst--; a.fireT = a.burst > 0 ? 0.09 : rnd(2, 3);
-        const from = new THREE.Vector3(a.x, 4.5, a.z), dir = P.pos.clone().sub(from), dd = dir.length(); dir.normalize(); dir.x += rnd(-0.07, 0.07); dir.y += rnd(-0.05, 0.05); dir.z += rnd(-0.07, 0.07);
-        const m = new THREE.Mesh(shotGeo, new THREE.MeshBasicMaterial({color: 0xffb05a})); m.position.copy(from); scene.add(m);
-        P.emiss.push({m, v: dir.multiplyScalar(70), life: dd/70 + 0.4, bullet: true, dmg: 1.6}); sfxAt('enemyGun', a.x, 2, a.z, 0.7, 30);
-      }
+    if (dist < 70 && see){
+      // old Type 625 gun: 8 x 1.6 every ~2.7 s; spread over n vehicles x 2 guns, 10-round bursts every ~3.1 s
+      const dmg = 1.6*8/2.7*AA_OUT/(2*a.n)*3.1/10;
+      for (let gi = 0; gi < 2; gi++){ const G = a.guns[gi]; G.t -= dt; if (G.t > 0) continue;
+        if (G.b <= 0) G.b = 10; G.b--; G.t = G.b > 0 ? 0.06 : rnd(2.5, 3.5);
+        const s2 = gi ? 0.35 : -0.35, from = new THREE.Vector3(a.x + Math.cos(a.g.rotation.y)*s2, 1.05, a.z - Math.sin(a.g.rotation.y)*s2), dir = P.pos.clone().sub(from), dd = dir.length(); dir.normalize(); dir.x += rnd(-0.07, 0.07); dir.y += rnd(-0.05, 0.05); dir.z += rnd(-0.07, 0.07);
+        const m = tracerObj(1.6, 0.05); m.position.copy(from); m.lookAt(_trD.copy(from).sub(dir)); scene.add(m);
+        P.emiss.push({m, v: dir.multiplyScalar(80), life: dd/80 + 0.4, bullet: true, dmg});
+        if (G.b === 9) sfxAt('enemyGun', a.x, 1, a.z, 0.55, 30); }
     }
   }
 }
@@ -7409,7 +7422,10 @@ function hmUpdate(dt){
   if (P.flPairs > 0){ P.flT -= dt; while (P.flT <= 0 && P.flPairs > 0){ P.flT += 0.35; P.flPairs--; hmFlarePair(); } }
   if (P.hfHold && P.hfCd <= 0 && P.wsel === 'sec') hmFireHellfire();
   // rocket pods reload on their own; Hellfires trickle back slowly
-  if (P.rkMag){ if (P.rockets <= 0){ P.rkRT = (P.rkRT || RK_MAG.reload) - dt*(P.quick || 1); if (P.rkRT <= 0){ P.rkRT = 0; P.rockets = P.rkMax; } } }
+  if (P.rkMag){
+    // V112: the Little Bird carries two magazines; a used one comes back after 30 s
+    if (P.mags !== undefined && P.mags < P.magsMax){ P.magT = (P.magT || 30) - dt*(P.quick || 1); if (P.magT <= 0){ P.magT = 30; P.mags++; } }
+    if (P.rockets <= 0 && (P.mags === undefined || P.mags > 0)){ P.rkRT = (P.rkRT || RK_MAG.reload) - dt*(P.quick || 1); if (P.rkRT <= 0){ P.rkRT = 0; P.rockets = P.rkMax; if (P.mags !== undefined) P.mags--; } } }
   else { P.rkReload = (P.rkReload || 0) + dt*(P.firing && P.seat === 'pilot' ? 1.6 : 3.2)*(P.quick || 1); while (P.rkReload >= 1){ P.rkReload--; if (P.rockets < P.rkMax) P.rockets++; } }
   P.hfReload = (P.hfReload || 0) + dt/14*(P.quick || 1); if (P.hfReload >= 1){ P.hfReload = 0; if (P.hellfire < 8) P.hellfire++; }
   $('hmHint').style.opacity = P.hintT > 0 ? 1 : 0;
@@ -7451,12 +7467,31 @@ function hmUpdate(dt){
   const right = new THREE.Vector3(-f.z, 0, f.x), dap = P.type === 'dap', little = P.type === 'little';
   P.fireT -= dt; P.gunT = (P.gunT || 0) - dt;
   if (P.seat === 'pilot'){
-    if (P.firing && P.fireT <= 0 && P.rockets > 0 && !little){
+    const apPri = !dap && !little ? LO('apache').pri : '';
+    if (apPri === 'light'){
+      // V112: Little Bird rockets on the Apache: a pair per press (holding keeps the pairs coming), magazines of 12
+      if (P.firing && P.fireT <= 0 && P.rockets > 0 && !P.apPair){ P.apPair = Math.min(2, P.rockets); P.apPT = 0; P.fireT = 0.42; }
+      if (P.apPair > 0){ P.apPT -= dt;
+        while (P.apPT <= 0 && P.apPair > 0 && P.rockets > 0){ P.apPT += 0.07; P.apPair--; P.rockets--;
+          const side = right.clone().multiplyScalar((P.rockets % 2 ? 1 : -1)*1.5*HB), from = P.pos.clone().add(side); from.y -= 0.7*HB;
+          const tgt = heliSim() ? hmAimPoint(new THREE.Vector3()) : hmBoresight(new THREE.Vector3()); tgt.x += rnd(-1.4, 1.4); tgt.z += rnd(-1.4, 1.4);
+          hmShoot('rocket', from, tgt.sub(from), 93, {aoeK: loRkt('little').aoeK});
+          if (!hsShot('ap', hmPersp(), 'rkt', 0.85, 0)) sfx('rocket', 0.7, P.rockets % 2 ? 0.4 : -0.4, true); } }
+    }
+    else if (P.firing && P.fireT <= 0 && P.rockets > 0 && !little){
       const RK = loRkt(P.type), rx = {dmgK: RK.dmgK*(dap ? 1.35 : 1), aoeK: RK.aoeK*(dap ? 1.6 : 1)};
+      if (apPri === 'gmsl'){
+        // V112: the Apache's guided missile: fired one at a time, flies wherever you keep the reticle (like the TOW, but fast and sharp)
+        P.rockets--; P.fireT = 0.5; const side = right.clone().multiplyScalar((P.rockets % 2 ? 1 : -1)*1.5*HB), from = P.pos.clone().add(side); from.y -= 0.7*HB;
+        hmShoot('rocket', from, heliSim() ? hmNoseDir(new THREE.Vector3()) : hmBoresight(new THREE.Vector3()).sub(from), 80, Object.assign(heliSim() ? {follow: 'msl'} : {}, rx, {dmgK: rx.dmgK*1.6, aoeK: rx.aoeK*1.15}));
+        if (!hsShot('ap', hmPersp(), 'rkt', 0.9, 0)) sfx('hellfire', 0.6, 0, true);
+      } else {
       P.rockets--; P.fireT = 0.115*RK.rateK; const side = right.clone().multiplyScalar((P.rockets % 2 ? 1 : -1)*(dap ? 1.2 : 1.5)*HB); const from = P.pos.clone().add(side); from.y -= (dap ? 0.2 : 0.7)*HB;
       if (heliSim()){ const tgt = hmAimPoint(new THREE.Vector3()); tgt.x += rnd(-0.6, 0.6); tgt.z += rnd(-0.6, 0.6); if (gPri(P.type)) hmShoot('rocket', from, hmNoseDir(new THREE.Vector3()), 63, Object.assign({follow: 'rocket'}, rx)); else hmShoot('rocket', from, tgt.sub(from), 63, rx); }
       else { const aim = hmBoresight(new THREE.Vector3()); aim.x += rnd(-1.2, 1.2); aim.z += rnd(-1.2, 1.2); hmShoot('rocket', from, aim.sub(from), 63, rx); }
       if (!hsShot('ap', hmPersp(), 'rkt', 0.9, 0)) sfx('rocket', 0.8, P.rockets % 2 ? 0.4 : -0.4, true);     // V85: the DAP uses the Apache's rocket recording
+
+      }
     }
     // Little Bird: the two fixed M134s are the pilot's (on the DAP the crew works every minigun)
     if (little && P.firing){
@@ -7482,8 +7517,7 @@ function hmUpdate(dt){
           const from = P.heli.pods[P.volley & 1].getWorldPosition(new THREE.Vector3()), tgt = heliSim() ? hmAimPoint(new THREE.Vector3()) : hmBoresight(new THREE.Vector3());
           tgt.x += rnd(-1.4, 1.4); tgt.z += rnd(-1.4, 1.4); if (heliSim() && gSec('little')) hmShoot('rocket', from, hmNoseDir(new THREE.Vector3()), 93, {follow: 'volley', aoeK: loRkt('little').aoeK}); else hmShoot('rocket', from, tgt.clone().sub(from), 93, {aoeK: loRkt('little').aoeK});
           // the recorded 7-rocket ripple covers the whole volley; the synth one per rocket until it has loaded
-          if (P.vIdx === 1) P.volleySnd = hsShot('lb', hmPersp(), 'volley', 0.6);
-          if (!P.volleySnd) sfx('rocket', 0.65, P.volley & 1 ? 0.4 : -0.4, true); } } }
+          if (!hsShot('lb', hmPersp(), 'rkt', 0.6)) sfx('rocket', 0.65, P.volley & 1 ? 0.4 : -0.4, true); } } }
   } else if (!dap){
     // Apache 30mm: keeps reloading even when you let go of the trigger
     if (P.firing || P.reload > 0 || P.mag < CANNON.mag){
@@ -7514,7 +7548,7 @@ function hmUpdate(dt){
     if (sh.kind === 'hellfire'){
       let tgt = null;
       if (sh.heli && sh.heli.hp > 0) tgt = sh.heli.pos.clone();
-      else if (sh.aa && sh.aa.hp > 0) tgt = new THREE.Vector3(sh.aa.x, 1.6, sh.aa.z);
+      else if (sh.aa && sh.aa.hp > 0) tgt = new THREE.Vector3(sh.aa.x, 0.5, sh.aa.z);
       else if (sh.boss && sh.boss.hp > 0) tgt = new THREE.Vector3(sh.boss.x, 2.5, sh.boss.z);
       else if (sh.id){ for (let i = 0; i < en; i++) if (eid[i] === sh.id && eh[i] > 0){ tgt = new THREE.Vector3(ex[i], 1.2, ez[i]); break; } }
       if (tgt) sh.to = tgt;
@@ -7789,7 +7823,7 @@ function hmCamera(dt){
   // lock box
   const lt = P.seat === 'pilot' && P.hellfire ? hmLockTarget() : null;
   if (lt){
-    const v = lt.heli ? lt.heli.pos.clone() : lt.aa ? new THREE.Vector3(lt.aa.x, 1.6, lt.aa.z) : lt.boss ? new THREE.Vector3(lt.boss.x, 2.5, lt.boss.z) : (() => { for (let i = 0; i < en; i++) if (eid[i] === lt.id) return new THREE.Vector3(ex[i], 1.2, ez[i]); return null; })();
+    const v = lt.heli ? lt.heli.pos.clone() : lt.aa ? new THREE.Vector3(lt.aa.x, 0.5, lt.aa.z) : lt.boss ? new THREE.Vector3(lt.boss.x, 2.5, lt.boss.z) : (() => { for (let i = 0; i < en; i++) if (eid[i] === lt.id) return new THREE.Vector3(ex[i], 1.2, ez[i]); return null; })();
     const air = !!(lt.heli || lt.aa), ok = !air || (P.lk && P.lk.ok);
     lockEl.classList.toggle('acq', air && !ok); lockEl.classList.toggle('ok', air && ok);
     if (v){ v.project(camera); if (v.z < 1){ lockEl.style.display = 'block'; lockEl.style.left = ((v.x + 1)/2*100) + '%'; lockEl.style.top = ((1 - v.y)/2*100) + '%'; if (!air && P.lockT !== (lt.id || 'b')){ P.lockT = lt.id || 'b'; sfx('lock'); } } else lockEl.style.display = 'none'; }
@@ -7797,7 +7831,7 @@ function hmCamera(dt){
   // enemy heli health tags
   let tags = '';
   for (const e of P.enemies){ if (e.hp <= 0) continue; const v = e.pos.clone(); v.y += 2.5*HB; v.project(camera); if (v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1) tags += `<span class="hmh foe" style="left:${(v.x + 1)/2*100}%;top:${(1 - v.y)/2*100}%">${e.kind === 'bh' ? 'SEAHAWK' : e.kind === 'lb' ? 'LITTLE BIRD' : 'APACHE'}</span>`; }
-  for (const a of AA.list){ if (a.hp <= 0) continue; const v = _hmL.set(a.x, 4.5, a.z); v.project(camera); if (v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1) tags += `<span class="hmh foe" style="left:${(v.x + 1)/2*100}%;top:${(1 - v.y)/2*100}%">${a.name}</span>`; }
+  for (const a of AA.list){ if (a.hp <= 0) continue; const v = _hmL.set(a.x, 1.5, a.z); v.project(camera); if (v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1) tags += `<span class="hmh foe" style="left:${(v.x + 1)/2*100}%;top:${(1 - v.y)/2*100}%">${a.name}</span>`; }
   $('hmTags').innerHTML = tags;
   hmThreatUi(P, dt);
   // numbers
@@ -9623,18 +9657,20 @@ function seatHudTick(){
 const LO_OPTS = {
   pri: {hydra: {name: 'Hydra rockets', desc: 'Unguided. Fly straight to where the reticle was when you fired.'},
         grkt: {name: 'Guided rockets', desc: 'Leave forward of the nose, then turn toward the reticle at a set rate. Too fast or too sharp and they miss.'},
+        gmsl: {name: 'Guided missiles', desc: 'Wire-guided like the TOW, but much faster and sharper: they fly wherever you keep the reticle.'},
+        light: {name: 'Light rockets', desc: 'The Little Bird’s rockets: each press fires a pair, one right after the other. Magazines of 12.'},
         m134: {name: 'Twin M134', desc: 'Two fixed miniguns on the skids.'}},
   sec: {hellfire: {name: 'Hellfire', desc: 'Unguided against the ground: straight to the reticle spot. Locks enemy helicopters.'},
         ghf: {name: 'TOW', desc: 'Wire-guided: leaves forward, then flies wherever you keep the reticle. Turns slower than a rocket.'},
-        volley: {name: 'Rocket volley', desc: '7 rockets (pair, pair, pair, single), straight to the reticle spot, then a reload.'},
-        gvolley: {name: 'Guided volley', desc: '7 rockets (pair, pair, pair, single) that curve toward the reticle.'}},
+        volley: {name: 'Rocket pairs', desc: 'Each press fires a pair, one right after the other: pair, pair, pair, then a single. Two magazines of 7.'},
+        gvolley: {name: 'Guided pairs', desc: 'Pairs that curve toward the reticle: pair, pair, pair, then a single. Two magazines of 7.'}},
   cm: {flares: {name: 'Flares', desc: 'Six pairs over 1.75 seconds. Missiles go for the newest pair.'}},
   up: {none: {name: 'None', desc: 'Stock aircraft.'},
        armor: {name: 'Armor plating', desc: 'Takes 25% less damage, handles 6% slower.'},
        reload: {name: 'Quick reload', desc: 'Rockets and missiles come back 40% faster.'},
        flaresx: {name: 'Extra flares', desc: '+50% flare charges.'}},
 };
-const LO_SLOTS = {apache: {pri: ['hydra', 'grkt'], sec: ['hellfire', 'ghf'], cm: ['flares'], up: ['none', 'armor', 'reload', 'flaresx']},
+const LO_SLOTS = {apache: {pri: ['gmsl', 'light', 'hydra', 'grkt'], sec: ['hellfire', 'ghf'], cm: ['flares'], up: ['none', 'armor', 'reload', 'flaresx']},
   dap: {pri: ['hydra', 'grkt'], sec: ['hellfire', 'ghf'], cm: ['flares'], up: ['none', 'armor', 'reload', 'flaresx']},
   little: {pri: ['m134'], sec: ['volley', 'gvolley'], cm: ['flares'], up: ['none', 'armor', 'reload', 'flaresx']}};
 const LO_SLOT_NAME = {pri: 'Primary', sec: 'Secondary', cm: 'Countermeasure', up: 'Upgrade', gun: 'Primary', main: 'Main gun', coax: 'Coax gun', door: 'Door guns', cannon: 'Remote weapon'};
@@ -9642,7 +9678,7 @@ const LO_SLOT_NAME = {pri: 'Primary', sec: 'Secondary', cm: 'Countermeasure', up
 Object.assign(LO_OPTS.pri, {
   heavy: {name: 'Heavy rockets', sub: '127mm FFAR', desc: 'Unguided. Smaller volleys, but each rocket hits much harder with a bigger blast.'},
   gau19: {name: 'Heavy rotary MG', sub: '.50 cal rotary', desc: 'Two .50 cal rotary guns: slower than the M134, but every round hits far harder.'}});
-LO_OPTS.pri.hydra.sub = '70mm FFAR'; LO_OPTS.pri.grkt.sub = '70mm PGM'; LO_OPTS.pri.m134.sub = '7.62mm minigun';
+LO_OPTS.pri.hydra.sub = '70mm FFAR'; LO_OPTS.pri.gmsl.sub = 'Wire-guided'; LO_OPTS.pri.light.sub = '70mm FFAR pairs'; LO_OPTS.pri.grkt.sub = '70mm PGM'; LO_OPTS.pri.m134.sub = '7.62mm minigun';
 LO_OPTS.sec.hellfire.sub = 'AGM-114'; LO_OPTS.sec.ghf.sub = 'BGM-71, wire-guided'; LO_OPTS.sec.volley.sub = '70mm FFAR'; LO_OPTS.sec.gvolley.sub = '70mm PGM';
 Object.assign(LO_OPTS.up, {
   warheads: {name: 'Heavy warheads', desc: 'Bigger rocket blasts. The aircraft is slightly less agile.'},
@@ -9679,6 +9715,7 @@ if (!SETTINGS.v94tech){ SETTINGS.v94tech = true; SETTINGS.loadout.technical = Ob
 if (!SETTINGS.v85dap){ SETTINGS.v85dap = true; SETTINGS.loadout.dap = Object.assign({}, SETTINGS.loadout.dap || {}, {sec: 'ghf'}); }   // V85: the DAP carries TOWs
 for (const [t, sl] of Object.entries(LO_SLOTS)){ SETTINGS.loadout[t] = Object.assign({}, ...Object.entries(sl).map(([k, o]) => ({[k]: o[0]})), SETTINGS.loadout[t] || {});
   for (const k in sl) if (!sl[k].includes(SETTINGS.loadout[t][k])) SETTINGS.loadout[t][k] = sl[k][0]; }
+if (!SETTINGS.v112ap){ SETTINGS.v112ap = true; SETTINGS.loadout.apache.pri = 'gmsl'; }     // V112: the Apache's primary is the guided missile now
 if (SETTINGS.guided){ for (const t of ['apache', 'dap']){ SETTINGS.loadout[t].pri = 'grkt'; SETTINGS.loadout[t].sec = 'ghf'; } SETTINGS.loadout.little.sec = 'gvolley'; delete SETTINGS.guided; }
 const LO = t => SETTINGS.loadout[t] || SETTINGS.loadout.apache;
 const gPri = t => LO(t).pri === 'grkt', gSec = t => LO(t).sec === 'ghf' || LO(t).sec === 'gvolley';
@@ -9689,7 +9726,7 @@ function steerVel(v, to, rate, dt){
   const ang = Math.acos(clamp(_stA.dot(_stB), -1, 1)); if (ang < 1e-4) return;
   _stA.lerp(_stB, Math.min(1, rate*dt/ang)).normalize(); v.copy(_stA).multiplyScalar(sp);
 }
-const GUIDE_RATE = {rocket: 0.85, hellfire: 0.6, volley: 1.0};
+const GUIDE_RATE = {rocket: 0.85, hellfire: 0.6, volley: 1.0, msl: 2.6};
 let LOT = 'apache';
 function loRender(){
   const t = LOT, cur = LO(t);
@@ -10218,6 +10255,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V112', ['AA sites are clusters now: 3 or 4 quarter-size vehicles where the one big one stood. Each launches missiles and runs two tracer miniguns, but a whole cluster only hits 20% harder than the old single vehicle', 'Little Bird rockets: each press fires a pair, one right after the other (pair, pair, pair, then a single), with two magazines of 7. A used magazine comes back after 30 s', 'Apache primary: guided missiles by default, steered wherever you keep the reticle like the TOW, but much faster and sharper. Or pick Light rockets in Loadouts: the Little Bird’s pairs, in magazines of 12']],
   ['V111', ['Little Bird in first person: its rotor is louder and the radio in your headset is turned up too (the rotor more than the radio)', 'Settings → Location lists the Ruined city block']],
   ['V110', ['Rockets fly 1.5× faster: the Apache and DAP rocket pods and the Little Bird’s rocket volley, in gunship mode and wave mode. TOWs and Hellfires are unchanged']],
   ['V109', ['Helicopter damage sounds are another 20% louder', 'When your helicopter is badly hurt the radio fades down, like turning the music off to focus, and comes back as you heal', 'Bass rounds (waves 26 and 30): every drop brings 8 bosses at once and 8 more every 22 s while the beat runs, with the horde throughout. They’re lighter, and any still standing when the music goes quiet burn out, so the breaks stay clear', 'Settings → Graphics: Potato mode. About 240 pixels across, no shadows, short draw distance, fewer particles, a lighter crowd and no hangar: for the oldest, slowest devices', 'First person: the radio no longer plays through the headset and the open speakers at once']],

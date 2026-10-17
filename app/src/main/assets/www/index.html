@@ -1300,7 +1300,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V117';
+const GAME_VERSION = 'V118';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -1321,21 +1321,21 @@ setInterval(() => {
   if (c.currentTime !== AUW.ct){ AUW.ct = c.currentTime; AUW.t = now; }
 }, 500);
 // V117: Potato mode sounds like an old arcade cabinet too: everything (music included) goes through a crusher that holds each
-// sample for several frames (about 8 kHz) and keeps only 6 bits, then a tinny speaker band
+// sample for 3 frames (about 16 kHz) and keeps ~7 bits on a mu-law curve (V118: so quiet sounds survive), then a tinny speaker band
 const LOFI = {on: false, nodes: null, wk: null};
 const LOFI_SRC = `class Crush extends AudioWorkletProcessor{ constructor(){ super(); this.h = [0, 0]; this.n = 0; }
-  process(i, o){ const a = i[0], b = o[0]; if (!a || !a.length) return true; const step = 6, q = 32;
+  process(i, o){ const a = i[0], b = o[0]; if (!a || !a.length) return true; const step = 3, q = 40, M = 255, LM = Math.log(1 + M);
     for (let ch = 0; ch < b.length; ch++){ const x = a[ch] || a[0], y = b[ch]; let n = this.n, h = this.h[ch] || 0;
-      for (let k = 0; k < y.length; k++){ if (n % step === 0) h = Math.round(x[k]*q)/q; y[k] = h; n++; } this.h[ch] = h; if (ch === b.length - 1) this.n = n; }
+      for (let k = 0; k < y.length; k++){ if (n % step === 0){ const v = x[k], m = Math.round(Math.sign(v)*Math.log(1 + M*Math.min(1, Math.abs(v)))/LM*q)/q; h = Math.sign(m)*(Math.pow(1 + M, Math.abs(m)) - 1)/M; } y[k] = h; n++; } this.h[ch] = h; if (ch === b.length - 1) this.n = n; }
     return true; } }
 registerProcessor('adl-crush', Crush);`;
 async function lofiBuild(){
   const c = AU.ctx; if (LOFI.nodes || LOFI.busy) return; LOFI.busy = true;
-  const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 140; const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3600; lp.Q.value = 0.8;
+  const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 140; const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 5500; lp.Q.value = 0.7;
   const pk = c.createBiquadFilter(); pk.type = 'peaking'; pk.frequency.value = 1500; pk.Q.value = 1; pk.gain.value = 4; const g = c.createGain(); g.gain.value = 1.1;
   let crush = null;
   try { if (c.audioWorklet){ const url = URL.createObjectURL(new Blob([LOFI_SRC], {type: 'application/javascript'})); await c.audioWorklet.addModule(url); crush = new AudioWorkletNode(c, 'adl-crush', {outputChannelCount: [2]}); } } catch(e){ crush = null; }
-  if (!crush){ crush = c.createWaveShaper(); const n = 4096, cv = new Float32Array(n); for (let i = 0; i < n; i++){ const x = i/(n - 1)*2 - 1; cv[i] = Math.round(x*32)/32; } crush.curve = cv; }
+  if (!crush){ crush = c.createWaveShaper(); const n = 4096, cv = new Float32Array(n); for (let i = 0; i < n; i++){ const x = i/(n - 1)*2 - 1; const m = Math.round(Math.sign(x)*Math.log(1 + 255*Math.abs(x))/Math.log(256)*40)/40; cv[i] = Math.sign(m)*(Math.pow(256, Math.abs(m)) - 1)/255; } crush.curve = cv; }
   crush.connect(hp); hp.connect(pk); pk.connect(lp); lp.connect(g); g.connect(c.destination);
   LOFI.nodes = {in: crush}; LOFI.busy = false; lofiApply();
 }
@@ -10410,6 +10410,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V118', ['Potato mode audio is crunchy but clearly audible now: about 16 kHz, 8-bit style on a mu-law curve so quiet sounds and the music come through']],
   ['V117', ['Potato mode sounds the part: all audio, music and radio included, comes out crushed and low-fi like an old arcade cabinet']],
   ['V116', ['Controller defaults: Y swaps primary and secondary, View (select) changes the camera; LB and RB are free', 'Controller aim assist in the gunner seats: aim near an enemy and the sight slowly drifts onto it. Strength is in Settings → Sensitivity → Controller (0 turns it off)']],
   ['V115', ['The controller test picture is a clean outline now (no glow)', 'Tablets are detected and get the PC layout: the wide menus, the PC HUD arrangement and sharper rendering, while keeping the touch controls. Settings → Graphics → PC mode also has a Tablet option to switch it by hand']],

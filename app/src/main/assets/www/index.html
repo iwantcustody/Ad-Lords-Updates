@@ -1127,7 +1127,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V95';
+const GAME_VERSION = 'V96';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -3558,6 +3558,8 @@ function farImpact(x, z, cosmetic){
   fx(wet ? 'white' : 'dust', x, 0.35, z, k*rnd(0.8, 1.25));
   if (!cosmetic && Math.random() < 0.35) fx(wet ? 'white' : 'dust', x + rnd(-0.5, 0.5), 0.5, z + rnd(-0.5, 0.5), k*rnd(1.1, 1.6));
   if (!cosmetic && d < 90 && Math.random() < 0.4) chips(x, 0.4, z, surfAt(x, z) === 'imWood' ? WOOD : SPARK, 2, 3.5);
+  // V96 (BF reference): up close the rounds kick up dark dirt and a low grey-brown haze that hangs over the strike line
+  if (!cosmetic && d < 55){ if (Math.random() < 0.55) chips(x, 0.3, z, DEBRIS, 2, 4.5); if (Math.random() < 0.18) fx('smoke', x + rnd(-0.3, 0.3), 0.35, z + rnd(-0.3, 0.3), k*rnd(0.5, 0.8)); if (Math.random() < 0.25) fx('fire', x, 0.3, z, 0.25); }
   if (!cosmetic) impactSfx(x, z);
 }
 function nearestEnemy(x, z, maxZ = 2){
@@ -4209,7 +4211,7 @@ function dfFlyWeapons(v, dt, lv){
     const firing = m.fire && !m.sec;
     if (m.fire && m.sec){ m.fire = false; dfVolley(v); }
     const gau = LO('little').pri === 'gau19';
-    if (firing){ v.fireT -= dt; while (v.fireT <= 0){ v.fireT += M134_STEP/rateMul*(gau ? 1.8 : 1); v.gs = (v.gs || 0) ^ 1; gunFire(v.guns[v.gs], 60, (gau ? 2.1 : 1.15)*lv, gau ? 2 : 1, 0.015); } }
+    if (firing){ v.fireT -= dt; while (v.fireT <= 0){ v.fireT += M134_STEP/rateMul*(gau ? 1.8 : 1); v.gs = (v.gs || 0) ^ 1; const gg = v.guns[v.gs]; gg.own = true; gunFire(gg, 60, (gau ? 2.1 : 1.15)*lv, gau ? 2 : 1, 0.015); gg.own = false; } }
     else v.fireT = Math.max(0, v.fireT);
     for (const gun of v.guns){ gun.spinV += ((firing ? 1 : 0) - gun.spinV)*Math.min(1, dt*(firing ? 6 : 1.2)); gunTick(gun, dt); }
     if (firing){ v.guns[0].muzzle.getWorldPosition(_gq); if (!gunVoice('lb' + v.uid, 'fire', 0, 1.1, persp === '1p' ? {bank: 'lb_1p_mg'} : {pos: _gq, bank: 'lb_3p_mg'})) sfx('heliGun', 0.6); }
@@ -4306,7 +4308,12 @@ function dfCamera(){
     const bp = dfBoresight(v).project(camera), lt = v.type === 'apache' ? 'apache' : 'dap', g = gPri(lt) ? 'GUID ' : '';
     const lines = v.type === 'blackhawk' ? ['DOOR GUNS AUTO'] : v.type === 'little' ? [(DF.sec ? '  ' : '▸ ') + 'M134 x2', (DF.sec ? '▸ ' : '  ') + 'RKT ' + (v.volley ? 'FIRING' : DF.rkT > 0 ? 'CDN' : 'RDY')]
       : [(DF.sec ? '  ' : '▸ ') + g + 'RKT RDY', (DF.sec ? '▸ ' : '  ') + (gSec(lt) ? 'GUID ' : '') + 'AT MSL ' + (DF.hf > 0 && DF.hfCd <= 0 ? 'RDY' : 'CDN')].concat(v.type === 'apache' ? [(v.crew && v.crew.gun !== undefined ? 'GUNNER ' + netName(v.crew.gun).toUpperCase() : 'GUNNER AI') + ' 30MM'] : []);
-    bfHud({cockpit: !!ck, aim: bp.z < 1 && Math.abs(bp.x) < 1.3 && Math.abs(bp.y) < 1.3 ? bp : null, msl: !!DF.sec, hdg: P.yaw*57.2958, alt: P.pos.y*3.3, kts: P.vel.length()*4.86, pitch: hudAtt(P).p, bank: hudAtt(P).b, flr: '—', lines});
+    { const kd = HUD_KIND[v.type] || 'dap', wpn = v.type === 'blackhawk' ? 'none' : v.type === 'little' ? (DF.sec ? 'rkt' : 'mg') : DF.sec ? 'tow' : 'rkt';
+      const bore = _hudB.copy(P.pos).addScaledVector(simNose(P, _hudN, ROCKET_DEP), 200).project(camera), rk = v.volley ? 'FIRING' : DF.rkT > 0 ? 'RLD' : 'RDY';
+      const L = v.type === 'little' ? [(DF.sec ? '  ' : '▸ ') + 'MINIGN RDY', (DF.sec ? '▸ ' : '  ') + 'LT RKT ' + rk] : v.type === 'blackhawk' ? [] : [(DF.sec ? '  ' : '▸ ') + g + 'RKT RDY', (DF.sec ? '▸ ' : '  ') + 'AT AIM MSL ' + (DF.hf > 0 && DF.hfCd <= 0 ? 'RDY' : 'RLD')];
+      bfHud({cockpit: !!ck, kind: kd, wpn, aim: bp, bore, hdg: P.yaw*57.2958, alt: P.pos.y*3.3, kts: P.vel.length()*4.86, pitch: hudAtt(P).p, bank: hudAtt(P).b, slip: clamp(-(P.wy || 0), -1, 1), flr: 'RDY',
+        left3: kd === 'lb' ? 'SMK LNCHR RDY' : 'EMRG RPR DSBL', lines: L, name: VEHICLES[v.type] ? VEHICLES[v.type].name : 'Helicopter', seats: (VEH_INFO[v.type] || {}).seats, seat: 0,
+        wname: wpn === 'mg' ? 'M134 MINIGUN' : wpn === 'rkt' ? 'HYDRA 70' : wpn === 'tow' ? 'AT MISSILE' : '', ammo: wpn === 'mg' ? '∞' : wpn === 'rkt' ? (v.type === 'little' ? (DF.rkT > 0 || v.volley ? '0' : '7') + '/7' : '∞') : String(DF.hf)}); }
     return true;
   }
   const fx = -Math.sin(v.yaw), fz = -Math.cos(v.yaw), far = camera.aspect < 1 ? 1.35 : 1;
@@ -4360,9 +4367,11 @@ function airShots(dt){
     if (hit){
       const x = sh.m.position.x, z = sh.m.position.z, before = kills;
       const gm = sh.ghost ? 0 : 1;
+      HIT_OWN = gm;
       if (sh.kind === 'cannon') explode(x, z, cannonR(), CANNON.dmg*dmgMul*gm, true);
       else if (sh.kind === 'rocket') explode(x, z, sh.aoe || 2.8, (sh.dmg || 24)*dmgMul*gm, true);
       else { explode(x, z, 4.4, 150*dmgMul*gm); }
+      HIT_OWN = 0;
       if (P.on) P.kills += kills - before;
       scene.remove(sh.m); P.shots.splice(k, 1);
     }
@@ -4707,9 +4716,11 @@ function spawnEnemy(role, z, x){
   eh[i] = ehpMax[i] = R.hp*hpScale(); ehit[i] = 0; eid[i] = nextId++; killBy[i] = 0; elunge[i] = 0; ebuff[i] = 0; estag[i] = 0; ecmd[i] = SPAWN_CMD;
   return true;
 }
+let HIT_OWN = 0;
 function hurtEnemy(i, d){
   if (eh[i] <= 0 || NET.ghost) return;
   if (NET.mirror){ if (d > 0){ NET.hitQ.push([eid[i], +d.toFixed(2)]); eh[i] -= d; ehit[i] = 1; if (eh[i] > 0) sfx('hit', 0.5); else { killBy[i] = 1; sfx('pop', 0.8, ex[i]/8); } } return; }
+  if (HIT_OWN && d > 0){ hudDmg(Math.min(d, eh[i])*10); hitMark(eh[i] - d <= 0); }   // V96: BF hit brackets and damage count for your own rounds
   eh[i] -= d; ehit[i] = 1;
   if (eh[i] > 0) sfx('hit', 0.5);
   if (eh[i] <= 0){ kills++; killBy[i] = 1; sfx('pop', 0.8, ex[i]/8); coins += ROLES[ROLE_ORDER[er[i]]].coin*(1 + 0.03*wave)*(1 + PERK.coins)*netCoinK(); }
@@ -5753,7 +5764,7 @@ function update(dt){
           const dx = x0 + sx*tt - ex[j], dz = z0 + sz*tt - ez[j];
           if (dx*dx + dz*dz < r*r){
             const before = eh[j];
-            hurtEnemy(j, ud[i]); if (uo[i]) hitMark(eh[j] <= 0);
+            HIT_OWN = uo[i]; hurtEnemy(j, ud[i]); HIT_OWN = 0;
             { const kl = (shopLv.knock || 0)*0.5, heavy = (er[j] === RI.tank ? 0.25 : 1)*(um[i] === 0 ? (KB_W[uk[i]] ?? 1) : 1)*(1 + PERK.knock);   // stopping power: bigger shove and a short stagger, scaled per weapon
               ez[j] -= Math.min(0.3*(1 + 0.45*kl), ud[i]*0.03*(1 + 0.6*kl))*heavy; if (kl) estag[j] = Math.max(estag[j], (0.08 + 0.06*kl)*Math.min(1.6, heavy)); }
             chips(ex[j], 0.75, ez[j] + 0.2, SPARK, 1, 2.5);
@@ -6602,7 +6613,7 @@ function hmUpdate(dt){
         const from = P.pos.clone().addScaledVector(right, (P.tc & 1 ? 1 : -1)*(little ? 0.5 : 0.8)*HB); from.y -= (little ? 0.25 : 0.1)*HB;
         if (little){ const gg = P.heli.guns[P.tc & 1]; gg.flash.visible = true; gg.flashT = 0.035; }
         { const rr = Math.min(from.distanceTo(aim)*0.012, 2.2)*Math.sqrt(Math.random()), ra = Math.random()*6.2832, ax = aim.x + Math.cos(ra)*rr, az = aim.z + Math.sin(ra)*rr;
-          SHOT_FAR = 1; shoot(from.x, from.y, from.z, ax, az, 170, gau ? 2.9 : 1.6, gau ? 2 : 1, 5, 2.4, 0, P.tc & 2 ? 3 : 2, aim.y < 0.6 ? -0.05 : aim.y); SHOT_FAR = 0; }
+          SHOT_FAR = 1; SHOT_OWN = 1; shoot(from.x, from.y, from.z, ax, az, 170, gau ? 2.9 : 1.6, gau ? 2 : 1, 5, 2.4, 0, P.tc & 2 ? 3 : 2, aim.y < 0.6 ? -0.05 : aim.y); SHOT_FAR = 0; SHOT_OWN = 0; }
         if ((P.tc & 3) === 0 && P.enemies.length){ const d = (heliSim() ? hmNoseDir(_gd) : _gd.copy(aim).sub(from)).normalize();
           for (const e of P.enemies){ if (e.hp <= 0) continue; const rel = _gq.copy(e.pos).sub(from), along = rel.dot(d); if (along > 0 && along < 90 && rel.addScaledVector(d, -along).length() < 2.2){ hmHitHelis(e.pos, 0, 2.4); break; } } }
       }
@@ -6677,10 +6688,12 @@ function hmUpdate(dt){
       const before = kills, cm = sh.cosmetic ? 0 : 1;
       if (p.y < 6 && sh.cosmetic) explode(p.x, p.z, sh.kind === 'cannon' ? CANNON.r : 3, 0, true);
       else if (p.y < 6){
+        HIT_OWN = sh.cosmetic ? 0 : 1;
         if (sh.kind === 'cannon') explode(p.x, p.z, cannonR(), CANNON.dmg*1.1*dmgMul, true);
         else if (sh.kind === 'rocket') explode(p.x, p.z, 3.0*(sh.aoeK || 1), 27*(sh.dmgK || 1)*dmgMul, true);
         else if (sh.kind === 'agm'){ explode(p.x, p.z, AGM.r, AGM.dmg*dmgMul); explode(p.x + rnd(-2, 2), p.z + rnd(-2, 2), AGM.r*0.6, 0, true); shake = Math.max(shake, 0.5); }
         else explode(p.x, p.z, 4.4, 150*dmgMul);
+        HIT_OWN = 0;
       }
       P.score += (kills - before)*10;
       scene.remove(sh.m); P.shots.splice(k, 1);
@@ -6963,10 +6976,13 @@ function hmCamera(dt){
     const lb0 = P.type === 'little', ap = (heliSim() ? (lb0 || P.wsel === 'sec' || gPri(P.type) ? hmAimPoint(_hmV) : hmRocketImpact(_hmV)) : hmBoresight(_hmV)).project(camera), lb = lb0, hs = P.vel ? Math.hypot(P.vel.x, P.vel.z) : Math.abs(P.speed || 0);
     { const k = 1 - Math.exp(-dt*22); if (!P.apS || Math.abs(ap.x - P.apS.x) > 0.5 || Math.abs(ap.y - P.apS.y) > 0.5) P.apS = {x: ap.x, y: ap.y}; else { P.apS.x += (ap.x - P.apS.x)*k; P.apS.y += (ap.y - P.apS.y)*k; } ap.x = P.apS.x; ap.y = P.apS.y; }
     const msl = P.wsel === 'sec' && !lb, rk = P.rockets > 0 ? 'RDY' : 'RLD', g = gPri(P.type) && heliSim() ? 'GUID ' : '', g2 = gSec(P.type) && heliSim() ? 'GUID ' : '';
-    bfHud({cockpit: P.view === 'cockpit', frame: P.view === 'cockpit' && lb, aim: ap.z < 1 && Math.abs(ap.x) < 1.3 && Math.abs(ap.y) < 1.3 ? ap : null, msl,
-      hdg: P.yaw*57.2958, alt: P.pos.y*3.3, kts: P.vel ? P.vel.length()*4.86 : hs*4.86, pitch: hudAtt(P).p, bank: hudAtt(P).b, flr: P.flares > 0 && P.flCd <= 0 ? 'RDY' : 'CDN',
-      lines: lb ? [(P.wsel !== 'sec' ? '▸ ' : '  ') + 'M134 RDY', (P.wsel === 'sec' ? '▸ ' : '  ') + g2 + 'RKT VOLLEY ' + (P.rockets > 0 && P.hfCd <= 0 ? 'RDY' : 'RLD')]
-        : [(msl ? '  ' : '▸ ') + g + 'RKT ' + rk, (msl ? '▸ ' : '  ') + g2 + 'AT MSL ' + (P.hellfire > 0 && P.hfCd <= 0 ? 'RDY' : 'CDN')]});
+    const wpn = lb ? (P.wsel === 'sec' ? 'rkt' : 'mg') : P.type === 'blackhawk' ? 'none' : msl ? 'tow' : 'rkt', bore = _hudB.copy(P.pos).addScaledVector(hmNoseDir(_hudN), 200).project(camera);
+    bfHud({cockpit: P.view === 'cockpit', frame: P.view === 'cockpit' && lb && !(loadedParts.little && loadedParts.little.body), kind: HUD_KIND[P.type] || 'ap', wpn, aim: ap, bore,
+      hdg: P.yaw*57.2958, alt: P.pos.y*3.3, kts: P.vel ? P.vel.length()*4.86 : hs*4.86, pitch: hudAtt(P).p, bank: hudAtt(P).b, slip: clamp(-(P.wy || 0), -1, 1), flr: P.flares > 0 && P.flCd <= 0 ? 'RDY' : 'CDN',
+      left3: lb ? 'SMK LNCHR RDY' : 'EMRG RPR DSBL', name: VEHICLES[P.type] ? VEHICLES[P.type].name : 'Helicopter', seats: (VEH_INFO[P.type] || {}).seats, seat: 0,
+      wname: wpn === 'mg' ? 'M134 MINIGUN' : wpn === 'rkt' ? (lb ? 'HYDRA 70' : g ? 'GUIDED RKT' : 'HYDRA 70') : 'AT MISSILE', ammo: wpn === 'mg' ? '∞' : wpn === 'rkt' ? P.rockets + '/' + (lb ? 7 : RK_MAG[P.type] || 7) : String(P.hellfire),
+      lines: lb ? [(P.wsel !== 'sec' ? '▸ ' : '  ') + 'MINIGN RDY', (P.wsel === 'sec' ? '▸ ' : '  ') + g2 + 'LT RKT ' + (P.volley > 0 ? 'FIRING' : P.rockets > 0 && P.hfCd <= 0 ? 'RDY' : 'RLD')]
+        : [(msl ? '  ' : '▸ ') + g + 'RKT ' + rk, (msl ? '▸ ' : '  ') + 'AT AIM MSL ' + (P.hellfire > 0 && P.hfCd <= 0 ? 'RDY' : 'RLD')]});
   }
   return true;
 }
@@ -8315,69 +8331,143 @@ $('gyInvY').addEventListener('change', e => { SETTINGS.gyro.invY = e.target.chec
 // rockets/guns: the "I" — its bottom bar is the impact point; missiles: corner brackets with a centre dot
 const BH = {cv: $('bfHud'), x: null, t: 0, on: false, w: 0, h: 0, d: 1};
 function bfHudHide(){ if (BH.on){ BH.on = false; BH.cv.classList.remove('on'); } }
+// V96: Battlefield 6 helicopter HUD, rebuilt from the player's reference clips (Apache, Little Bird, Black Hawk cockpits).
+// o: {cockpit, frame, kind: 'ap'|'lb'|'bh'|'dap', wpn: 'mg'|'rkt'|'tow'|'none', aim (impact point, NDC), bore (nose, NDC),
+//     hdg, alt, kts, pitch, bank, slip, flr, left3, lines, name, seats, seat, wname, ammo}
+const HUD_KIND = {little: 'lb', apache: 'ap', blackhawk: 'bh', dap: 'dap'}, _hudB = new THREE.Vector3(), _hudN = new THREE.Vector3();
+const BHX = {lag: {x: 0, y: 0}, q: null, tPrev: 0, dmg: 0, dmgT: -9, hz: new THREE.Vector3(), hz2: new THREE.Vector3(), f: new THREE.Vector3()};
+function hudDmg(d){ if (!(d > 0)) return; const now = performance.now(); if (now - BHX.dmgT > 1600) BHX.dmg = 0; BHX.dmg += d; BHX.dmgT = now; }
 function bfHud(o){
   const c = BH.cv; if (!BH.x) BH.x = c.getContext('2d');
   const d = Math.min(2, devicePixelRatio || 1), W = c.clientWidth || innerWidth, H = c.clientHeight || innerHeight;
   if (!BH.on){ BH.on = true; c.classList.add('on'); }
   if (BH.w !== W || BH.h !== H || BH.d !== d){ BH.w = W; BH.h = H; BH.d = d; c.width = Math.round(W*d); c.height = Math.round(H*d); }
-  BH.t = performance.now();
-  const x = BH.x, s = clamp(Math.min(W, H)/430, 0.72, 1.5), cx = W/2;
+  const now = performance.now(), dt = clamp((now - (BHX.tPrev || now))/1000, 0, 0.1); BHX.tPrev = now; BH.t = now;
+  const x = BH.x, s = clamp(Math.min(W, H)/430, 0.72, 1.6), cx = W/2, cy = H/2;
   x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, W, H);
-  if (o.frame){   // Little Bird bubble: thin pillars and a low dash
+  if (o.frame){   // Little Bird bubble: thin pillars and a low dash (only when there's no 3D cockpit)
     x.shadowBlur = 0; x.fillStyle = '#1a1f24';
     x.beginPath(); x.moveTo(0, 0); x.lineTo(W*0.05, 0); x.lineTo(W*0.15, H*0.72); x.lineTo(W*0.11, H); x.lineTo(0, H); x.fill();
     x.beginPath(); x.moveTo(W, 0); x.lineTo(W*0.95, 0); x.lineTo(W*0.85, H*0.72); x.lineTo(W*0.89, H); x.lineTo(W, H); x.fill();
     x.fillRect(0, 0, W, H*0.035);
     x.beginPath(); x.moveTo(0, H); x.lineTo(0, H*0.9); x.quadraticCurveTo(cx, H*0.8, W, H*0.9); x.lineTo(W, H); x.fill();
   }
-  const col = 'rgba(238,240,196,0.95)';
-  x.strokeStyle = col; x.fillStyle = col; x.lineWidth = 1.6; x.shadowColor = 'rgba(0,0,0,.65)'; x.shadowBlur = 2.5;
-  x.font = `600 ${Math.round(12*s)}px Consolas, "DejaVu Sans Mono", ui-monospace, monospace`; x.textBaseline = 'middle';
-  if (o.aim){
-    const ax = (o.aim.x + 1)/2*W, ay = (1 - o.aim.y)/2*H;
-    x.beginPath();
-    if (o.msl){
-      const b = 34*s, e = 10*s;
-      for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ x.moveTo(ax + sx*b, ay + sy*(b - e)); x.lineTo(ax + sx*b, ay + sy*b); x.lineTo(ax + sx*(b - e), ay + sy*b); }
-      x.stroke(); x.beginPath(); x.arc(ax, ay, 1.6*s, 0, 6.29); x.fill();
-    } else {
-      const w = 10*s, h = 25*s, t = 6*s, m = ay - h/2;
-      x.moveTo(ax - w, ay); x.lineTo(ax + w, ay); x.moveTo(ax - w, ay - h); x.lineTo(ax + w, ay - h); x.moveTo(ax, ay); x.lineTo(ax, ay - h);
-      x.moveTo(ax - w - t, m); x.lineTo(ax - w + 3*s, m); x.moveTo(ax + w - 3*s, m); x.lineTo(ax + w + t, m);
-      x.stroke();
+  const col = 'rgba(240,238,196,0.96)', dim = 'rgba(240,238,196,0.42)', mono = n => `600 ${Math.round(n*s)}px Consolas, "DejaVu Sans Mono", ui-monospace, monospace`;
+  x.strokeStyle = col; x.fillStyle = col; x.lineWidth = Math.max(1.2, 0.9*s); x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 2;
+  x.font = mono(11); x.textBaseline = 'middle';
+  const P2 = v => ({x: (v.x + 1)/2*W, y: (1 - v.y)/2*H});
+  // ---- artificial horizon (first person only): the real horizon, a long dashed line; rolls and slides with the airframe, yaw doesn't move it
+  if (o.cockpit){
+    camera.getWorldDirection(BHX.f); BHX.f.y = 0;
+    if (BHX.f.lengthSq() > 1e-6){ BHX.f.normalize();
+      const a = Math.atan2(BHX.f.x, BHX.f.z), R = LOC.cur === 'airfield' ? 250 : 200, p = camera.position;   // the edge of the sea / desert floor you actually see
+      BHX.hz.set(p.x + Math.sin(a - 0.5)*R, 0, p.z + Math.cos(a - 0.5)*R).project(camera); BHX.hz2.set(p.x + Math.sin(a + 0.5)*R, 0, p.z + Math.cos(a + 0.5)*R).project(camera);   // where the ground meets the sky
+      if (BHX.hz.z < 1 && BHX.hz2.z < 1){
+        const A = P2(BHX.hz), B = P2(BHX.hz2), ang = Math.atan2(B.y - A.y, B.x - A.x), mx = (A.x + B.x)/2, my = (A.y + B.y)/2, half = W*0.36;
+        if (my > -H*0.2 && my < H*1.2){ x.save(); x.translate(mx, my); x.rotate(ang); x.setLineDash([14*s, 9*s]); x.beginPath(); x.moveTo(-half, 0); x.lineTo(half, 0); x.stroke(); x.restore(); x.setLineDash([]); }
+      }
     }
   }
+  // ---- reticles
+  const bore = o.bore && o.bore.z < 1 ? P2(o.bore) : {x: cx, y: cy}, aim = o.aim && o.aim.z < 1 && Math.abs(o.aim.x) < 1.3 && Math.abs(o.aim.y) < 1.3 ? P2(o.aim) : null;
+  // the big minigun cross trails the nose: it rides with the world for a moment and springs back to the small one
+  { const q = camera.quaternion;
+    if (BHX.q){ BHX.f.set(0, 0, -1).applyQuaternion(BHX.q).multiplyScalar(500).add(camera.position).project(camera);
+      if (BHX.f.z < 1){ const pp = P2(BHX.f); BHX.lag.x += pp.x - cx; BHX.lag.y += pp.y - cy; } }
+    else BHX.q = new THREE.Quaternion();
+    BHX.q.copy(q);
+    const k = Math.exp(-dt*7); BHX.lag.x *= k; BHX.lag.y *= k;
+    const L = Math.hypot(BHX.lag.x, BHX.lag.y), mx = 30*s; if (L > mx){ BHX.lag.x *= mx/L; BHX.lag.y *= mx/L; } }
+  const hitAge = now - HITM.t, hitOn = hitAge < 260, hitCol = HITM.kill ? 'rgba(232,64,52,0.95)' : col;
+  const smallCross = (px, py) => { const g = 3*s, l = 5*s; x.beginPath(); x.moveTo(px - g - l, py); x.lineTo(px - g, py); x.moveTo(px + g, py); x.lineTo(px + g + l, py); x.moveTo(px, py - g - l); x.lineTo(px, py - g); x.moveTo(px, py + g); x.lineTo(px, py + g + l); x.stroke(); x.beginPath(); x.arc(px, py, 1.1*s, 0, 6.29); x.fill(); };
+  const hitBrackets = (px, py, r) => { if (!hitOn) return; x.save(); x.strokeStyle = hitCol; x.lineWidth = Math.max(1.4, 1.2*s); const e = 4*s; x.beginPath();
+    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ x.moveTo(px + sx*r, py + sy*(r - e)); x.lineTo(px + sx*r, py + sy*r); x.lineTo(px + sx*(r - e), py + sy*r); } x.stroke(); x.restore(); };
+  const dmgNum = (px, py) => { if (now - BHX.dmgT > 1600 || BHX.dmg <= 0) return; x.save(); x.font = mono(12); x.textAlign = 'right'; x.globalAlpha = clamp((1600 - (now - BHX.dmgT))/400, 0, 1); x.fillText(String(Math.min(999, Math.round(BHX.dmg))), px - 42*s, py); x.restore(); };
+  if (o.wpn === 'mg'){
+    const ax = aim ? aim.x : bore.x, ay = aim ? aim.y : bore.y;
+    smallCross(ax, ay);
+    const lx = ax + BHX.lag.x, ly = ay + BHX.lag.y, r = 11*s, l = 5*s;
+    x.beginPath(); x.moveTo(lx - r - l, ly); x.lineTo(lx - r, ly); x.moveTo(lx + r, ly); x.lineTo(lx + r + l, ly); x.moveTo(lx, ly - r - l); x.lineTo(lx, ly - r); x.moveTo(lx, ly + r); x.lineTo(lx, ly + r + l); x.stroke();
+    hitBrackets(ax, ay, 9*s); dmgNum(ax, ay);
+  } else if (o.wpn === 'rkt'){
+    smallCross(bore.x, bore.y);
+    if (aim){ const w = 6*s, h = 16*s, ax = aim.x, ay = aim.y + h/2 + 4*s;   // the I-beam: where the rockets come down
+      x.beginPath(); x.moveTo(ax - w, ay - h/2); x.lineTo(ax + w, ay - h/2); x.moveTo(ax - w, ay + h/2); x.lineTo(ax + w, ay + h/2); x.moveTo(ax, ay - h/2); x.lineTo(ax, ay + h/2); x.stroke();
+      hitBrackets(aim.x, aim.y, 12*s); dmgNum(ax - 4*s, ay); }
+  } else if (o.wpn === 'tow'){
+    const b = 38*s, bh = 22*s, e = 7*s, px = aim ? aim.x : bore.x, py = aim ? aim.y : bore.y;
+    x.beginPath(); for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ x.moveTo(px + sx*b, py + sy*(bh - e)); x.lineTo(px + sx*b, py + sy*bh); x.lineTo(px + sx*(b - e), py + sy*bh); } x.stroke();
+    x.beginPath(); x.arc(px, py, 1.1*s, 0, 6.29); x.fill(); dmgNum(px - b + 30*s, py);
+  } else if (o.cockpit) smallCross(bore.x, bore.y);
   if (o.cockpit){
-    // heading tape
-    const tw = Math.min(W*0.5, 520*s), ty = H*0.2, hd = ((o.hdg % 360) + 360) % 360, span = 50;
+    // ---- heading tape
+    const tw = Math.min(W*0.5, 300*s), ty = H*0.13, hd = ((o.hdg % 360) + 360) % 360, span = 60;
     x.beginPath(); x.moveTo(cx - tw/2, ty); x.lineTo(cx + tw/2, ty);
     for (let a = Math.ceil((hd - span)/5)*5; a <= hd + span; a += 5){
       const px = cx + (a - hd)/span*tw/2; if (Math.abs(px - cx) > tw/2) continue;
-      const big = a % 10 === 0; x.moveTo(px, ty); x.lineTo(px, ty + (big ? 7 : 4)*s);
+      const big = a % 10 === 0; x.moveTo(px, ty); x.lineTo(px, ty + (big ? 5 : 3)*s);
     }
-    x.stroke(); x.textAlign = 'center';
-    for (let a = Math.ceil((hd - span)/30)*30; a <= hd + span; a += 30){ const px = cx + (a - hd)/span*tw/2; if (Math.abs(px - cx) > tw/2 - 8) continue; x.fillText(String(((a % 360) + 360) % 360), px, ty + 18*s); }
-    x.beginPath(); x.moveTo(cx - 6*s, ty - 9*s); x.lineTo(cx + 6*s, ty - 9*s); x.lineTo(cx, ty - 3*s); x.fill();
-    for (let px = cx - tw/2; px <= cx + tw/2; px += 9*s) x.fillRect(px, ty + 28*s, 1.4, 1.4);
-    // altitude tape (right of centre): pointer and readout ride up the scale
-    const lx = cx + tw*0.47, y0 = H*0.78, y1 = H*0.34, amax = 120;
-    x.beginPath(); x.moveTo(lx, y1); x.lineTo(lx, y0);
-    for (let k = 0; k <= 12; k++){ const py = y0 + (y1 - y0)*k/12, big = k % 4 === 0; x.moveTo(lx - (big ? 9 : 5)*s, py); x.lineTo(lx, py); }
-    x.moveTo(lx - 9*s, y1); x.lineTo(lx + 9*s, y1); x.moveTo(lx - 9*s, y0); x.lineTo(lx + 9*s, y0); x.stroke();
-    const pa = y0 + (y1 - y0)*clamp(o.alt/amax, 0, 1);
-    x.beginPath(); x.moveTo(lx - 22*s, pa - 6*s); x.lineTo(lx - 12*s, pa); x.lineTo(lx - 22*s, pa + 6*s); x.fill();
-    x.strokeRect(lx + 14*s, pa - 9*s, 50*s, 18*s); x.textAlign = 'center'; x.fillText(String(Math.round(o.alt)), lx + 39*s, pa + 1);
+    x.stroke(); x.textAlign = 'center'; x.font = mono(10);
+    for (let a = Math.ceil((hd - span)/30)*30; a <= hd + span; a += 30){ const px = cx + (a - hd)/span*tw/2; if (Math.abs(px - cx) > tw/2 - 4) continue; x.fillText(String(((a % 360) + 360) % 360), px, ty + 13*s); }
+    x.beginPath(); x.moveTo(cx - 4*s, ty - 7*s); x.lineTo(cx + 4*s, ty - 7*s); x.lineTo(cx, ty - 2.5*s); x.fill();
+    for (let px = cx - tw/2; px <= cx + tw/2; px += 6*s) x.fillRect(px, ty + 21*s, 1.2, 1.2);
+    // ---- altitude: a ladder right of centre. Apache / Black Hawk: solid scale, pointer and box ride it. Little Bird: dashed ticks,
+    // the readout sits at the foot of the ladder with an I and a caret
+    const lx = cx + tw*0.5 + 6*s, y1 = H*0.27, y0 = H*0.64, amax = 120;
+    x.font = mono(11);
+    if (o.kind === 'lb'){
+      x.beginPath(); for (let k = 0; k <= 16; k++){ const py = y1 + (y0 - y1)*k/16; x.moveTo(lx - 3*s, py); x.lineTo(lx + 3*s, py); } x.stroke();
+      const fy = y0 + 14*s; x.textAlign = 'right'; x.fillText(String(Math.round(o.alt)), lx - 10*s, fy - 3*s);
+      x.beginPath(); x.moveTo(lx, fy - 6*s); x.lineTo(lx, fy + 6*s); x.moveTo(lx - 3*s, fy - 6*s); x.lineTo(lx + 3*s, fy - 6*s); x.moveTo(lx - 3*s, fy + 6*s); x.lineTo(lx + 3*s, fy + 6*s);
+      x.moveTo(lx + 16*s, fy - 6*s); x.lineTo(lx + 11*s, fy - 2*s); x.lineTo(lx + 16*s, fy + 2*s); x.stroke();
+    } else {
+      x.beginPath(); x.moveTo(lx, y1); x.lineTo(lx, y0);
+      for (let k = 0; k <= 12; k++){ const py = y0 + (y1 - y0)*k/12, big = k % 4 === 0; x.moveTo(lx - (big ? 6 : 3)*s, py); x.lineTo(lx + (big ? 6 : 0), py); }
+      x.moveTo(lx - 6*s, y1); x.lineTo(lx + 6*s, y1); x.moveTo(lx - 6*s, y0); x.lineTo(lx + 6*s, y0); x.stroke();
+      const pa = y0 + (y1 - y0)*clamp(o.alt/amax, 0, 1);
+      x.beginPath(); x.moveTo(lx - 15*s, pa - 4*s); x.lineTo(lx - 9*s, pa); x.lineTo(lx - 15*s, pa + 4*s); x.fill();
+      x.strokeRect(lx + 10*s, pa - 6*s, 34*s, 12*s); x.textAlign = 'center'; x.fillText(String(Math.round(o.alt)), lx + 27*s, pa + 1);
+    }
   }
-  // attitude box, bottom centre: the small box drifts with roll and pitch
-  { const by = H - (PC.on ? 84 : 62) - 22*s, bw = 108*s, bh = 26*s, ix = clamp(-o.bank*30*s, -bw/2 + 18*s, bw/2 - 18*s), iy = clamp(o.pitch*16*s, -bh/2 + 6*s, bh/2 - 6*s);
-    x.strokeRect(cx - bw/2, by - bh/2, bw, bh); x.beginPath(); x.moveTo(cx, by - bh/2 - 6*s); x.lineTo(cx, by - bh/2); x.moveTo(cx, by + bh/2); x.lineTo(cx, by + bh/2 + 4*s);
-    x.moveTo(cx - bw/2, by); x.lineTo(cx - bw/2 + 5*s, by); x.moveTo(cx + bw/2 - 5*s, by); x.lineTo(cx + bw/2, by); x.stroke();
-    x.strokeRect(cx + ix - 16*s, by + iy - 5.5*s, 32*s, 11*s); x.beginPath(); x.arc(cx + ix, by + iy, 3*s, 0, 6.29); x.fill();
+  // ---- attitude box (bottom centre): the inner box drifts with roll and pitch, the ball on top with yaw / sideslip
+  { const by = H*0.72, bw = 66*s, bh = 18*s, ix = clamp(-o.bank*20*s, -bw/2 + 11*s, bw/2 - 11*s), iy = clamp(o.pitch*10*s, -bh/2 + 4*s, bh/2 - 4*s);
+    x.font = mono(9);
+    x.strokeRect(cx - bw/2, by - bh/2, bw, bh); x.beginPath(); x.moveTo(cx - bw/2, by); x.lineTo(cx - bw/2 + 3*s, by); x.moveTo(cx + bw/2 - 3*s, by); x.lineTo(cx + bw/2, by);
+    x.moveTo(cx - 4*s, by - bh/2); x.lineTo(cx - 4*s, by - bh/2 - 5*s); x.moveTo(cx + 4*s, by - bh/2); x.lineTo(cx + 4*s, by - bh/2 - 5*s); x.stroke();
+    x.strokeRect(cx + ix - 10*s, by + iy - 3.5*s, 20*s, 7*s); x.beginPath(); x.arc(cx + ix, by + iy, 2*s, 0, 6.29); x.fill();
+    const bx = cx + clamp((o.slip || 0)*18*s, -bw/2 + 4*s, bw/2 - 4*s); x.beginPath(); x.arc(bx, by - bh/2 - 3*s, 2.4*s, 0, 6.29); x.fill();
+    x.textAlign = 'right'; x.fillText('A1.5', cx - bw/2 - 4*s, by - bh/2 - 4*s);
     // status text either side
-    const lh = 16*s; x.textAlign = 'right';
-    x.fillText(Math.round(o.kts) + ' KTS', cx - bw/2 - 24*s, by - lh/2); x.fillText('FLRS ' + o.flr, cx - bw/2 - 24*s, by + lh/2);
-    x.textAlign = 'left';
-    o.lines.forEach((l, i) => x.fillText(l, cx + bw/2 + 24*s, by - lh/2 + i*lh));
+    const lh = 11*s, tx = cx - bw/2 - 34*s, ty0 = by - lh*0.6;
+    x.textAlign = 'right';
+    x.fillText(Math.round(o.kts) + ' KTS', tx, ty0); x.fillText('FLRS ' + o.flr, tx, ty0 + lh);
+    if (o.left3){ x.save(); if (/DSBL/.test(o.left3)) x.fillStyle = dim; x.fillText(o.left3, tx, ty0 + 2*lh); x.restore(); }
+    x.textAlign = 'left'; const rx = cx + bw/2 + 34*s;
+    (o.lines || []).forEach((l, i) => { const sel = l.startsWith('▸'); if (sel){ x.beginPath(); x.moveTo(rx - 9*s, ty0 + i*lh - 3*s); x.lineTo(rx - 4*s, ty0 + i*lh); x.lineTo(rx - 9*s, ty0 + i*lh + 3*s); x.fill(); }
+      x.fillText(l.replace(/^[▸ ]+/, ''), rx, ty0 + i*lh); });
+  }
+  // ---- bottom cluster (PC): aircraft name in brackets, crew seats, free look / camera / exit, weapon box
+  if (PC.on){
+    x.shadowBlur = 3; const by = H*0.83, kb = (t, px, py, al) => { x.save(); x.font = `700 ${Math.round(8*s)}px Inter, system-ui, sans-serif`; const w = x.measureText(t).width + 6*s;
+      const X0 = al === 'right' ? px - w : px; x.fillStyle = 'rgba(225,228,230,0.92)'; x.shadowBlur = 0; x.fillRect(X0, py - 5.5*s, w, 11*s); x.fillStyle = '#1b1f22'; x.textAlign = 'center'; x.fillText(t, X0 + w/2, py + 0.5); x.restore(); return w; };
+    x.font = mono(8); x.textAlign = 'center'; x.fillStyle = dim; x.strokeStyle = dim;
+    const nm = '[ ' + (o.name || 'HELICOPTER').toUpperCase() + ' ]'; x.fillText(nm, cx, by - 12*s);
+    // crew seats: a top-down airframe with numbered seats; yours is filled
+    { const n = o.seats || 1, sc = 1.5*s; x.strokeStyle = 'rgba(235,238,240,0.85)'; x.lineWidth = Math.max(1.2, 1.1*s);
+      x.beginPath(); x.moveTo(cx - 9*sc, by - 2*sc); x.lineTo(cx + 9*sc, by + 6*sc); x.moveTo(cx + 9*sc, by - 2*sc); x.lineTo(cx - 9*sc, by + 6*sc);
+      x.moveTo(cx, by + 6*sc); x.lineTo(cx, by + 14*sc); x.moveTo(cx - 3*sc, by + 14*sc); x.lineTo(cx + 3*sc, by + 14*sc); x.stroke();
+      const pos = n <= 1 ? [[0, 0]] : n === 2 ? [[0, -1.6], [0, 2.4]] : n === 3 ? [[0, -1.6], [-3, 2.4], [3, 2.4]] : [[-3, -1.4], [3, -1.4], [-3, 3], [3, 3]];
+      pos.forEach(([px, py], i) => { const X = cx + px*sc, Y = by + 1.5*sc + py*sc, me = i === (o.seat || 0); x.beginPath(); x.arc(X, Y, 2.3*s, 0, 6.29);
+        x.fillStyle = me ? 'rgba(214,245,170,0.95)' : 'rgba(40,46,50,0.85)'; x.fill(); x.stroke(); x.fillStyle = me ? '#1b1f22' : 'rgba(235,238,240,0.9)'; x.font = `700 ${Math.round(6*s)}px Inter, system-ui, sans-serif`; x.fillText(String(i + 1), X, Y + 0.5); }); }
+    x.font = `600 ${Math.round(9.5*s)}px Inter, system-ui, sans-serif`; x.fillStyle = 'rgba(240,242,244,0.95)';
+    const B = bindsGet(), kn = a => keyName((B[a] || [''])[0]).toUpperCase();
+    const fl = kn('hFree'), lyL = by + 3*s; x.textAlign = 'right'; const w0 = kb(fl, cx - 44*s, lyL, 'right'); x.fillStyle = 'rgba(240,242,244,0.95)'; x.fillText('FREE LOOK', cx - 47*s - w0, lyL);
+    x.textAlign = 'left'; const w1 = kb(kn('hView'), cx + 44*s, by - 3*s, 'left'); x.fillStyle = 'rgba(240,242,244,0.95)'; x.fillText('CAMERA', cx + 47*s + w1, by - 3*s);
+    const w2 = kb(kn('pause'), cx + 44*s, by + 9*s, 'left'); x.fillStyle = 'rgba(240,242,244,0.95)'; x.fillText('EXIT', cx + 47*s + w2, by + 9*s);
+    if (o.wname){ const bw = 92*s, bh = 26*s, X = W - bw - 18*s, Y = H - bh - 18*s; x.strokeStyle = 'rgba(240,242,244,0.85)'; x.lineWidth = 1.4;
+      x.beginPath(); x.moveTo(X + 5*s, Y); x.lineTo(X, Y); x.lineTo(X, Y + bh); x.lineTo(X + 5*s, Y + bh); x.moveTo(X + bw - 5*s, Y); x.lineTo(X + bw, Y); x.lineTo(X + bw, Y + bh); x.lineTo(X + bw - 5*s, Y + bh); x.stroke();
+      x.fillStyle = 'rgba(240,242,244,0.95)'; x.textAlign = 'left'; x.font = `700 ${Math.round(8*s)}px Inter, system-ui, sans-serif`; x.fillText(o.wname, X + 6*s, Y + bh/2);
+      x.textAlign = 'right'; x.font = `700 ${Math.round(13*s)}px Inter, system-ui, sans-serif`; x.fillText(o.ammo || '∞', X + bw - 6*s, Y + bh/2 + 0.5); }
   }
 }
 
@@ -9008,6 +9098,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V96', ['Helicopter HUD rebuilt from your Battlefield 6 clips: minigun reticle (small cross + a big cross that trails the nose and springs back), rocket I-beam under the nose cross, TOW corner box', 'Hit brackets on the reticle (red on a kill) and a running damage number beside it', 'Heading tape, altitude ladder (Little Bird: dashed ladder with the readout at its foot), A1.5 attitude box with slip ball, BF status lines (MINIGN RDY, LT RKT RLD, GUID RKT, AT AIM MSL, FLRS, SMK LNCHR / EMRG RPR)', 'Artificial horizon: a long dashed line on the real horizon, first person only', 'PC: aircraft name, crew seats, FREE LOOK / CAMERA / EXIT keys and a weapon + ammo box along the bottom', 'Minigun strikes up close throw dark dirt, a low haze and sparks']],
   ['V95', ['Little Bird in wave mode: the cockpit view works (view button / V), with the real cockpit around you', 'Little Bird in wave mode: both miniguns now converge on the HUD marker, so close-in fire no longer goes high']],
   ['V94', ['New call-ins: M2 Bradley (25mm bursts + a TOW for the boss) and an F/A-18 strike (a 20mm gun run, then bombs)', 'The Technical is now a pickup with a DShK 12.7mm in the bed (the old built-in truck is gone)', 'Airfield (PC High/Ultra): two Super Hornets parked off the strip', 'Wave Commander: commanders keep earning while the defenders shop', 'Wave Commander: the host picks the unit spawn delay in the lobby (off, short, normal, long, very long)', 'Call-ins that aren\'t on your hotbar take an empty slot (or one you have none of) when you get them']],
   ['V93', ['New horde look: Zombies (Loadouts > Appearance, or Settings). Soldiers, runners, packs, bloaters, lungers and an alpha, all shambling with your Mixamo zombie walks']],

@@ -112,6 +112,8 @@ body.pc #fab{display:none!important}
 /* PC: keyboard and mouse only. Touch sticks, on-screen buttons, pen and gyro settings go away; the weapon tiles stay as read-outs */
 body.pc #hm .tools,body.pc #hm .alt,body.pc #df .alt,body.pc #hmStick,body.pc #dfStick,body.pc #lookStick,body.pc #tiltBtn,body.pc #ts,body.pc #tsEdit,body.pc .landBtn,body.pc .tsEditBtn,body.pc #dfView,body.pc #dfExit,body.pc .touchOnly,body.pc #bfTabs [data-tab=gyro]{display:none!important}
 body.pc #hm .act,body.pc #df .act{pointer-events:none}
+body.pad #ts,body.pad #hmStick,body.pad #hm .alt,body.pad #hm .act,body.pad #dfStick,body.pad #lookStick,body.pad .tsEditBtn,body.pad #df .act{display:none!important}
+#hm .act.ovl{display:block;position:static}#hm .act.ovl button{position:fixed;border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important;color:transparent!important;min-width:0!important;min-height:0!important;padding:0!important;border-radius:6px}#hm .act.ovl button:active{background:rgba(255,255,255,.12)!important}
 body:not(.pc) .pcOnly{display:none!important}
 body.pc #pos{max-width:620px;margin:0 auto;width:100%}
 canvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -921,7 +923,10 @@ body.pc .titleFs{display:none}
         <button class="btn soft" id="bindReset" type="button">Reset keys</button>
         <h3 class="subh">Controller</h3>
         <p class="fine" id="padInfo"></p>
-        <p class="fine padMap">Left stick move or steer · Right stick aim · RT fire · LB/RB weapons (descend/climb in a gunship) · A missile or door gun seat · B flares or leave seat · X call-in or swap seat · Y view · Back fly the DAP · Start pause. In menus: d-pad moves, A selects, B goes back.</p>
+        <p class="fine">Flying (gunship mode and the aircraft you fly in wave mode). Tap a button slot, then press the controller button.</p>
+        <div id="padMap"></div>
+        <button class="btn soft" id="padReset" type="button">Reset controller</button>
+        <p class="fine padMap">On foot: left stick move or steer · Right stick aim · RT fire · LB/RB weapons · A missile or door gun seat · B flares or leave seat · X call-in or swap seat · Y view · Back fly the DAP · Start pause. In menus: d-pad moves, A selects, B goes back.</p>
       </section>
       </div>
     </div>
@@ -1266,7 +1271,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V112';
+const GAME_VERSION = 'V113';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -5546,6 +5551,14 @@ try { const b = SETTINGS.binds; if (b && b.hSeat1 && b.hSeat1[0] === 'F1' && !b.
 try { const b = SETTINGS.binds; if (b && b.hPitchUp && b.hPitchDown && b.hPitchUp[0] === 'KeyW' && b.hPitchDown[0] === 'KeyS'){ const t = b.hPitchUp; b.hPitchUp = b.hPitchDown; b.hPitchDown = t; saveSettings(); } } catch(e) {}
 function bindsRebuild(){ INPUT.map = {}; const b = bindsGet(); for (const a in b) for (const c of b[a]) if (c) (INPUT.map[c] = INPUT.map[c] || []).push(a); }
 const act = a => !!(INPUT.held[a] || INPUT.gp.held[a]);
+// V113: controller layout for flying (customisable in Settings > Controls): left stick collective + yaw, right stick pitch + roll,
+// RT fires, LT aims (zoom), RB missiles, D-pad right flares, X seat, Y view; LB is free
+const PAD_DEF = {axes: {yaw: 0, coll: 1, roll: 2, pitch: 3}, inv: {yaw: false, coll: true, roll: false, pitch: false}, btn: {fire: 7, aim: 6, missile: 5, flare: 15, seat: 2, view: 3, lb: -1}};
+const PAD_BTN = {0: 'A', 1: 'B', 2: 'X', 3: 'Y', 4: 'LB', 5: 'RB', 6: 'LT', 7: 'RT', 8: 'BACK', 9: 'START', 10: 'LS', 11: 'RS', 12: 'D↑', 13: 'D↓', 14: 'D←', 15: 'D→'};
+const PAD_AX = ['Left stick ↔', 'Left stick ↕', 'Right stick ↔', 'Right stick ↕'];
+const padCfg = () => { const P = SETTINGS.pad || (SETTINGS.pad = {}); P.axes = Object.assign({}, PAD_DEF.axes, P.axes); P.inv = Object.assign({}, PAD_DEF.inv, P.inv); P.btn = Object.assign({}, PAD_DEF.btn, P.btn); return P; };
+const padOn = () => !!INPUT.gp.name;
+const padAx = k => { const P = padCfg(), v = gpAx(P.axes[k]); return P.inv[k] ? -v : v; };
 const gpAx = i => { const v = INPUT.gp.ax[i] || 0; return Math.abs(v) < 0.18 ? 0 : (v - Math.sign(v)*0.18)/0.82; };
 const keyName = c => !c ? '—' : c.startsWith('Key') ? c.slice(3) : c.startsWith('Digit') ? c.slice(5) : c.startsWith('Numpad') ? 'Num ' + c.slice(6)
   : ({ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', Space: 'Space', Escape: 'Esc', ShiftLeft: 'L Shift', ShiftRight: 'R Shift', ControlLeft: 'L Ctrl', ControlRight: 'R Ctrl',
@@ -5653,7 +5666,7 @@ cv.addEventListener('wheel', e => {
   for (const a of list){ if (MODE === 'heli' && HM.on && (a === 'prevW' || a === 'nextW')){ HM.climb = a === 'nextW' ? 1 : -1; clearTimeout(INPUT.wT); INPUT.wT = setTimeout(() => { HM.climb = 0; }, 180); } else actPress(a); }
 }, {passive: false});
 // gunship (classic flight): the mouse is captured and flies the helicopter
-const heliSim = () => { const m = SETTINGS.heliFlight || 'auto'; return m === 'classic' || (m === 'auto' && (PC.on || tsTwin())); };
+const heliSim = () => { const m = SETTINGS.heliFlight || 'auto'; return m === 'classic' || (m === 'auto' && (PC.on || tsTwin() || padOn())); };
 // ---- twin touch sticks: full flight model on phones and tablets, every part customisable ----
 const TS_DEF = {mode: 'twin', layout: 'mode2', size: 62, op: 0.7, sens: 1, yaw: 1, dead: 0.08, expo: 1.4, float: true, sticky: false, inv: false, pos: {L: [0.15, 0.68], R: [0.65, 0.66]}};
 SETTINGS.sticks = Object.assign({}, TS_DEF, SETTINGS.sticks || {}); SETTINGS.sticks.pos = Object.assign({}, TS_DEF.pos, SETTINGS.sticks.pos || {});
@@ -5981,25 +5994,28 @@ function gpPoll(dt){
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
   let p = null; for (const g of pads) if (g && g.connected){ p = g; break; }
   const G = INPUT.gp;
+  if (document.body.classList.contains('pad') !== !!p) document.body.classList.toggle('pad', !!p);     // V113: on-screen sticks and buttons go away while a controller is connected
   if (!p){ G.ax = [0, 0, 0, 0]; return; }
   const btn = i => !!(p.buttons[i] && (p.buttons[i].pressed || p.buttons[i].value > 0.5));
   const now = p.buttons.map((_, i) => btn(i)), was = G.prev; G.prev = now;
   const down = i => now[i] && !was[i];
+  if (INPUT.padBind){ const i = now.findIndex((x, j) => x && !was[j]); if (i >= 0){ const P = padCfg(); for (const k in P.btn) if (P.btn[k] === i) P.btn[k] = -1; P.btn[INPUT.padBind] = i; INPUT.padBind = null; saveSettings(); renderPadMap(); G.prev = now; return; } }
   G.ax = [p.axes[0] || 0, p.axes[1] || 0, p.axes[2] || 0, p.axes[3] || 0];
   if (now.some(x => x) || G.ax.some(v => Math.abs(v) > 0.3)) G.used = true;
   const inPlay = state === 'play' && $('settings').hidden;
   if (down(9)) actPress('pause');
   if (!inPlay){ gpMenu(down, now, dt); return; }
   const H = G.held, heli = MODE === 'heli' && HM.on;
-  // fire on the right trigger
-  if (now[7] !== !!H.fire){ H.fire = now[7]; if (now[7]) actPress('fire'); else actRelease('fire'); }
+  // fire on the right trigger (or wherever you put it)
+  const PB = padCfg().btn, fly = heli || DF.on, fb = fly ? PB.fire : 7, bt = i => i >= 0 && now[i], dn = i => i >= 0 && down(i);
+  if (bt(fb) !== !!H.fire){ H.fire = bt(fb); if (H.fire) actPress('fire'); else actRelease('fire'); }
   H.up = now[12]; H.down = now[13]; H.left = now[14]; H.right = now[15];
-  H.prevW = heli && now[4]; H.nextW = heli && now[5];
+  H.prevW = H.nextW = false;      // V113: collective is on the left stick now
+  if (fly && bt(PB.aim) !== !!H.aim){ H.aim = bt(PB.aim); HM.zoom = H.aim; }
   if (heli){
-    if (down(0)) hmFireHellfire(); if (down(1)) hmFlares(); if (down(2)) hmSwapSeat(); if (down(3)) hmSwapView();
-    if (down(6)) hmFlares();
+    if (dn(PB.missile)) hmFireHellfire(); if (dn(PB.flare)) hmFlares(); if (dn(PB.seat)) hmSwapSeat(); if (dn(PB.view)) hmSwapView();
   } else if (DF.on){
-    if (down(0)) dfHellfire(); if (down(1)) dfEnd();
+    if (dn(PB.missile)) dfHellfire(); if (dn(PB.view)) dfSwapView(); if (down(1)) dfEnd();
   } else if (DG.on){
     if (down(1)) dgEnd();
   } else if (GS_.on && GS_.phase === 'gun'){
@@ -6095,6 +6111,18 @@ function renderBinds(){
     box.appendChild(row);
   }
 }
+const PAD_ACTS = [['fire', 'Fire guns / rockets'], ['aim', 'Aim (zoom)'], ['missile', 'Missiles'], ['flare', 'Flares'], ['seat', 'Swap seat'], ['view', 'Camera'], ['lb', 'Unassigned (LB)']];
+const PAD_AXN = [['coll', 'Collective'], ['yaw', 'Yaw'], ['pitch', 'Pitch'], ['roll', 'Roll']];
+function renderPadMap(){
+  const el = $('padMap'); if (!el) return; const P = padCfg();
+  el.innerHTML = PAD_AXN.map(([k, n]) => `<div class="set"><label>${n}</label><span><select data-ax="${k}">${PAD_AX.map((a, i) => `<option value="${i}"${P.axes[k] === i ? ' selected' : ''}>${a}</option>`).join('')}</select> <label style="font-size:12px"><input type="checkbox" data-inv="${k}"${P.inv[k] ? ' checked' : ''}> invert</label></span></div>`).join('') +
+    PAD_ACTS.map(([k, n]) => `<div class="set"><label>${n}</label><button type="button" class="btn small" data-pb="${k}">${INPUT.padBind === k ? 'Press a button…' : P.btn[k] >= 0 ? PAD_BTN[P.btn[k]] || 'Button ' + P.btn[k] : '—'}</button></div>`).join('');
+  for (const sel of el.querySelectorAll('select[data-ax]')) sel.onchange = () => { padCfg().axes[sel.dataset.ax] = +sel.value; saveSettings(); };
+  for (const cb of el.querySelectorAll('input[data-inv]')) cb.onchange = () => { padCfg().inv[cb.dataset.inv] = cb.checked; saveSettings(); };
+  for (const b of el.querySelectorAll('button[data-pb]')) b.onclick = () => { INPUT.padBind = INPUT.padBind === b.dataset.pb ? null : b.dataset.pb; renderPadMap(); };
+}
+$('padReset').onclick = () => { SETTINGS.pad = null; padCfg(); saveSettings(); INPUT.padBind = null; renderPadMap(); };
+renderPadMap();
 function refreshPadInfo(){ const el = $('padInfo'); if (el) el.textContent = INPUT.gp.name ? 'Connected: ' + INPUT.gp.name.replace(/\s*\(.*$/, '').slice(0, 48) : 'No controller found. Connect one and press any button.'; }
 bindsRebuild();
 $('bindReset').onclick = () => { SETTINGS.binds = null; saveSettings(); bindsRebuild(); renderBinds(); renderHotbarSet(); buildStreaks(); };
@@ -6768,7 +6796,7 @@ function hmStart(type = 'apache'){
     g.traverse(o => { if (o.isMesh && o.visible && !(o.material && o.material.transparent)) bb.expandByObject(o); }); HM.gy = isFinite(bb.min.y) ? Math.max(1.2, -bb.min.y + 0.05) : 2.2*HB; }
   if (!GS_.gunCam) GS_.gunCam = new THREE.PerspectiveCamera(38, 1, 0.3, 400);
   $('hm').hidden = false; hmSeatUI();
-  $('hmHint').innerHTML = tsTwin() ? 'Two sticks fly it: ' + ({mode2: 'left = collective &amp; yaw · right = pitch &amp; roll', mode1: 'left = pitch &amp; yaw · right = collective &amp; roll', swap: 'left = pitch &amp; roll · right = collective &amp; yaw'})[SETTINGS.sticks.layout] + ' · ✥ arranges them' : heliSim() ? 'Click to capture the mouse · mouse rolls &amp; pitches · W nose down / S flare · A/D yaw · Shift/Ctrl throttle · F switch weapon · 3 flares · C camera · V freelook · Esc releases' : penSeen ? 'Pen: hover to steer or aim · FIRE button with your finger · pen tap: ' + (PEN_OPTS[SETTINGS.penTap[(HM.type || 'apache') + '_pilot']] || 'Flares').toLowerCase() : 'Left thumb: drag to fly · ▲▼ altitude · hold FIRE';
+  $('hmHint').innerHTML = padOn() ? 'Controller: left stick collective &amp; yaw · right stick pitch &amp; roll · RT fire · RB missiles · LT aim · D-pad → flares' : tsTwin() ? 'Two sticks fly it: ' + ({mode2: 'left = collective &amp; yaw · right = pitch &amp; roll', mode1: 'left = pitch &amp; yaw · right = collective &amp; roll', swap: 'left = pitch &amp; roll · right = collective &amp; yaw'})[SETTINGS.sticks.layout] + ' · ✥ arranges them' : heliSim() ? 'Click to capture the mouse · mouse rolls &amp; pitches · W nose down / S flare · A/D yaw · Shift/Ctrl throttle · F switch weapon · 3 flares · C camera · V freelook · Esc releases' : penSeen ? 'Pen: hover to steer or aim · FIRE button with your finger · pen tap: ' + (PEN_OPTS[SETTINGS.penTap[(HM.type || 'apache') + '_pilot']] || 'Flares').toLowerCase() : 'Left thumb: drag to fly · ▲▼ altitude · hold FIRE';
   startWave();
 }
 function hmStop(){
@@ -7311,14 +7339,14 @@ function hmSimFlight(P, f, dt){
   else if (ax || ay){ P.lookYaw = clamp((P.lookYaw || 0) + ax*2*dt, -LY, LY); P.lookPitch = clamp((P.lookPitch || 0) + ay*1.4*dt, LP0, LP1); }
   else { P.lookYaw = (P.lookYaw || 0)*Math.max(0, 1 - dt*4); P.lookPitch = (P.lookPitch || 0)*Math.max(0, 1 - dt*4); }
   const kp = (act('hPitchDown') ? 1 : 0) - (act('hPitchUp') ? 1 : 0);
-  const ky = (act('hYawR') ? 1 : 0) - (act('hYawL') ? 1 : 0) + gpAx(2) + TS.ax.yaw;
-  const kc = clamp((act('hThrUp') || act('nextW') ? 1 : 0) - (act('hThrDown') || (act('prevW') && !RADIO.open) ? 1 : 0) + TS.ax.coll, -1, 1);
+  const ky = (act('hYawR') ? 1 : 0) - (act('hYawL') ? 1 : 0) + padAx('yaw') + TS.ax.yaw;
+  const kc = clamp(padAx('coll') + (act('hThrUp') || act('nextW') ? 1 : 0) - (act('hThrDown') || (act('prevW') && !RADIO.open) ? 1 : 0) + TS.ax.coll, -1, 1);
   // mouse gives the airframe a nudge of angular speed that dies away (BF-like inertia), instead of setting the angle directly:
   // a 300 px swipe ends up ~18 deg of roll, reached over about half a second
   const AG = heliAgi(P.type);
   P.wr = (P.wr || 0) - mdx*SIM.mouseK*sens*AG.rate*SIM.rollK; P.wp = (P.wp || 0) - mdy*SIM.mouseK*sens*inv*AG.rate;
   // W/S spin the nose up like the mouse does (builds over ~0.4 s, tops out ~30 deg/s), A/D add a touch of roll into the yaw
-  P.wp += (kp - gpAx(1) + TS.ax.pitch + GF.pitch)*SIM.keyPitchAcc*AG.rate*dt; P.wr -= ky*SIM.yawRoll*dt;
+  P.wp += (kp - padAx('pitch') + TS.ax.pitch + GF.pitch)*SIM.keyPitchAcc*AG.rate*dt; P.wr -= ky*SIM.yawRoll*dt;
   P.wr -= P.wr*Math.min(1, SIM.mouseDamp*dt); P.wp -= P.wp*Math.min(1, SIM.mouseDamp*dt);
   // roll clip: flat-out mouse in BF takes ~5.5 s for a full barrel roll, so roll rate tops out ~65 deg/s (pitch ~50 deg/s)
   P.wr = clamp(P.wr, -SIM.maxRoll*AG.rate*0.95, SIM.maxRoll*AG.rate*0.95); P.wp = clamp(P.wp, -SIM.maxPitch*AG.rate, SIM.maxPitch*AG.rate);
@@ -7326,9 +7354,9 @@ function hmSimFlight(P, f, dt){
   P.pitch = wrapPi(P.pitch + P.wp*dt);
   // no roll limit: you can go all the way over (it takes a while). Upside down the rotor pulls you toward the ground,
   // and collective down only cuts that pull to zero, so you still fall
-  P.bank = P.bank + P.wr*dt - (gpAx(0) + TS.ax.roll + GF.roll)*1.6*SIM.rollK*AG.rate*dt; if (P.bank > Math.PI) P.bank -= 2*Math.PI; else if (P.bank < -Math.PI) P.bank += 2*Math.PI;
+  P.bank = P.bank + P.wr*dt - (padAx('roll') + TS.ax.roll + GF.roll)*1.6*SIM.rollK*AG.rate*dt; if (P.bank > Math.PI) P.bank -= 2*Math.PI; else if (P.bank < -Math.PI) P.bank += 2*Math.PI;
   const mouseBusy = Math.abs(P.wp) > 0.05 || kp !== 0;
-  if (!mdy && !mouseBusy && !kp && !gpAx(1) && !TS.ax.pitch && !GF.pitch){
+  if (!mdy && !mouseBusy && !kp && !padAx('pitch') && !TS.ax.pitch && !GF.pitch){
     if (P.onGround){ P.pq = 0; P.pitch *= 1 - Math.min(1, dt*4); }
     else if (Math.abs(P.pitch) > 1.2) P.pq = 0;     // mid-loop: no creep, she keeps the attitude you left her in
     else {
@@ -9422,7 +9450,7 @@ function bfHud(o){
   }
   // ---- V97: everything below the reticle laid out from the player's Battlefield 6 UI pack (assets/hud/<aircraft>/, 2048x857 reference)
   const set = o.kind === 'lb' ? 'littlebird' : o.kind === 'ap' ? 'apache' : 'blackhawk', LY = HUDL[set];
-  const K = clamp(H/857, PC.on ? 0.55 : 0.8, 2.4), RIGHT = 1500;
+  const K = clamp(H/857, 0.55, 2.4), RIGHT = 1500;
   const RX = e => e[0] >= RIGHT ? W - (2048 - e[0])*K : cx + (e[0] - 1024)*K, RY = e => H - (857 - e[1])*K;
   const img = (n, a = 1, e = LY[n]) => { if (!e) return; const im = hudImg(set, e[4]); if (!im) return; x.save(); x.shadowBlur = 0; x.globalAlpha = a; x.drawImage(im, RX(e), RY(e), e[2]*K, e[3]*K); x.restore(); };
   const txt = (n, t, al = 'left', c2 = col, sz = 0.92, e = LY[n]) => { if (!e) return; x.save(); x.fillStyle = c2; x.textAlign = al; x.textBaseline = 'middle';
@@ -9450,21 +9478,22 @@ function bfHud(o){
     o.lines.forEach((l, i) => { if (!rows[i]) return; txt(rows[i], l.replace(/^[▸ ]+/, ''), 'left');
       if (l.startsWith('▸')){ const a = LY.weapon_selection_arrow, r = LY[rows[i]]; img('weapon_selection_arrow', 1, [a[0], r[1] + 1.5, a[2], a[3], a[4]]); } });
   }
-  if (PC.on){
+  { // V113: the full panel on phones too; key caps show the keyboard on PC, controller buttons with a pad, nothing for touch
+    const pad = padOn() && !PC.on, PB = padCfg().btn, padKey = { hFree: '', hView: PB.view, pause: 9, hEq1: PB.flare, hSwitch: '' };
     // aircraft name between the brackets (where Battlefield says ASSIST OFF)
     img('assist_off_bracket_left'); img('assist_off_bracket_right');
     { const e = LY.assist_off_label; if (e){ x.save(); x.shadowBlur = 0; x.fillStyle = 'rgba(150,165,172,0.95)'; x.textAlign = 'center'; x.textBaseline = 'middle';
       x.font = `700 ${Math.max(7, e[3]*K*0.95)}px Inter, system-ui, sans-serif`; x.fillText((o.name || 'HELICOPTER').toUpperCase(), cx + (e[0] + e[2]/2 - 1024)*K, RY(e) + e[3]*K/2); x.restore(); } }
     img('helicopter_seat_map');
-    const B = bindsGet(), kn = a => keyName((B[a] || [''])[0]).toUpperCase();
-    img('free_look_label'); key('free_look_key', kn('hFree'));
-    img('camera_label'); key('camera_key', kn('hView'));
-    { const w = key('exit_key', kn('pause')), ek = LY.exit_key, e = LY.exit_label; if (e && ek) img('exit_label', 1, [ek[0] + w/K + 5, e[1], e[2], e[3], e[4]]); }
+    const B = bindsGet(), kn = a => PC.on ? keyName((B[a] || [''])[0]).toUpperCase() : pad ? (padKey[a] === '' || padKey[a] < 0 ? '' : PAD_BTN[padKey[a]] || '') : '';
+    if (kn('hFree')){ img('free_look_label'); key('free_look_key', kn('hFree')); }
+    if (kn('hView')){ img('camera_label'); key('camera_key', kn('hView')); }
+    if (kn('pause')){ const w = key('exit_key', kn('pause')), ek = LY.exit_key, e = LY.exit_label; if (e && ek) img('exit_label', 1, [ek[0] + w/K + 5, e[1], e[2], e[3], e[4]]); }
     // airframe health: the segmented bar under the seat map
     { const e = LY.vehicle_health_bar; if (e){ const n = set === 'blackhawk' ? 16 : 4, X = RX(e), Y = RY(e) + e[3]*K*0.3, w = e[2]*K, g = (set === 'blackhawk' ? 3 : 4)*K, sw = (w - g*(n - 1))/n, lit = Math.ceil(clamp(o.health ?? 1, 0, 1)*n);
       x.save(); x.shadowBlur = 0; for (let i = 0; i < n; i++){ x.fillStyle = i < lit ? 'rgba(205,218,226,0.95)' : 'rgba(205,218,226,0.25)'; x.fillRect(X + i*(sw + g), Y, sw, Math.max(2, 3*K)); } x.restore(); } }
     // countermeasure and second equipment tiles
-    img('countermeasure_tile', 0.85); img('countermeasure_icon', o.flrOk === false ? 0.35 : 1); key('countermeasure_key', kn('hEq1'));
+    img('countermeasure_tile', 0.85); img('countermeasure_icon', o.flrOk === false ? 0.35 : 1); if (kn('hEq1')) key('countermeasure_key', kn('hEq1'));
     if (LY.secondary_equipment_tile){ img('secondary_equipment_tile', 0.85); img(LY.stabilizer_icon ? 'stabilizer_icon' : 'repair_icon', 0.9); img(LY.stabilizer_key ? 'stabilizer_key' : 'repair_key'); }
     // weapon box: the live weapon big, the other one small underneath
     if (LY.primary_weapon_icon && o.wpn !== 'none'){
@@ -9477,8 +9506,15 @@ function bfHud(o){
         if (o.ammoCap){ const c2 = LY.primary_ammo_capacity || e; x.font = `600 ${Math.max(7, c2[3]*K*0.8)}px Inter, system-ui, sans-serif`; x.textAlign = 'left'; x.fillText('/' + o.ammoCap, RX(c2) + 2*K, RY(c2) + c2[3]*K/2); }
         const s2 = LY.secondary_ammo_count; if (s2 && o.ammo2){ x.font = `700 ${Math.max(7, s2[3]*K*0.85)}px Inter, system-ui, sans-serif`; x.textAlign = 'right'; x.fillText(o.ammo2, RX(s2) + s2[2]*K, RY(s2) + s2[3]*K/2); }
         x.restore(); }
-      key('weapon_switch_key', kn('hSwitch'));
+      if (kn('hSwitch')) key('weapon_switch_key', kn('hSwitch'));
     }
+    // touch: the action buttons sit invisibly on top of the panel's own tiles (weapon box, second weapon, flares)
+    if (!PC.on && !pad){ const R = n => { const e = LY[n]; return e ? [RX(e), RY(e), e[2]*K, e[3]*K] : null; }, pr = R('primary_weapon_icon'), sr = R('secondary_weapon_icon'), cr = R('countermeasure_tile');
+      const sig = [pr, sr, cr].map(r => r ? r.map(v => v|0).join(',') : '').join('|') + '|' + o.wpn;
+      if (BH.ovl !== sig){ BH.ovl = sig; const act = document.querySelector('#hm .act'); act.classList.add('ovl'); const cb = c.getBoundingClientRect();
+        const put = (id, r, pad2, mh = 48) => { const b = $(id); if (!r){ b.style.display = 'none'; return; } const w = Math.max(56, r[2] + pad2*2), h = Math.max(mh, r[3] + pad2*2);
+          b.style.display = ''; b.style.left = (cb.left + r[0] + r[2]/2 - w/2) + 'px'; b.style.top = (cb.top + r[1] + r[3]/2 - h/2) + 'px'; b.style.width = w + 'px'; b.style.height = h + 'px'; };
+        put('hmFire', pr, 10); put('hmMissile', sr, 4, 30); put('hmFlare', cr, 6); } }
     // upgrades column, with your loadout's upgrade named underneath
     img('upgrade_hatched_tile_small', 0.6); img('upgrade_armor_icon', 0.75); img('upgrade_waves_icon', 0.85); img('upgrade_hatched_tile_large', 0.6); img('upgrade_optics_icon', 0.85); img('upgrade_missile_icon', 0.9); img('upgrade_level_bar', 0.9);
     if (o.upName && LY.upgrade_name){ const e = LY.upgrade_name; x.save(); x.shadowBlur = 0; x.font = `600 ${Math.max(7, e[3]*K*0.58)}px Inter, system-ui, sans-serif`;
@@ -10255,6 +10291,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V113', ['Controller flying: left stick collective and yaw, right stick pitch and roll, RT fires, LT aims (zoom), RB missiles, D-pad right flares, X seat, Y camera (LB is free). Change any of it in Settings → Controls', 'With a controller connected the on-screen sticks and buttons disappear, flying switches to the full flight model, and the HUD shows the controller buttons', 'Phones get the full Battlefield-style helicopter HUD: the weapon box with the rocket pods, flares, seat map and health bar. The touch buttons now sit right on those tiles']],
   ['V112', ['AA sites are clusters now: 3 or 4 quarter-size vehicles where the one big one stood. Each launches missiles and runs two tracer miniguns, but a whole cluster only hits 20% harder than the old single vehicle', 'Little Bird rockets: each press fires a pair, one right after the other (pair, pair, pair, then a single), with two magazines of 7. A used magazine comes back after 30 s', 'Apache primary: guided missiles by default, steered wherever you keep the reticle like the TOW, but much faster and sharper. Or pick Light rockets in Loadouts: the Little Bird’s pairs, in magazines of 12']],
   ['V111', ['Little Bird in first person: its rotor is louder and the radio in your headset is turned up too (the rotor more than the radio)', 'Settings → Location lists the Ruined city block']],
   ['V110', ['Rockets fly 1.5× faster: the Apache and DAP rocket pods and the Little Bird’s rocket volley, in gunship mode and wave mode. TOWs and Hellfires are unchanged']],

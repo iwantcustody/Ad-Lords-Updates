@@ -1191,6 +1191,8 @@ const PIER = {stages: null, stage: 0, t: -1, hold: false, mode: 'slide', narrow:
 const ECAP = 600, BUCAP = 2600, PCAP = 900, DCAP = 120;
 const NEAR_Z = -14, FRAMES = 8, MODEL_H = 1.2, BODY = 0.82;
 const SIZE = 2.1, GS = 1.3;   // enemy size multiplier, gunner size multiplier
+// V107: on the city block the horde (bosses too) is drawn and hit 2.5x bigger, to suit the set's scale; speeds are unchanged
+const ESK = () => LOC.cur === 'city' ? 2.5 : 1;
 const rnd = (a,b) => a + Math.random()*(b-a);
 const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
 const fmt = n => Math.max(0,Math.round(n)).toLocaleString('en-US');
@@ -1262,7 +1264,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V106';
+const GAME_VERSION = 'V107';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -2689,7 +2691,7 @@ const GATE4_Z = [-11, -19.5];
 function gate4Sync(){
   const want = 2 + Math.min(2, shopLv.gate4 || 0);
   while (gates.length > want){ const g = gates.pop(); scene.remove(g.g); }
-  while (gates.length < want){ const k = gates.length - 2, g = makeGate('×4', 1.8, GATE4_Z[k], k ? 1.35 : 0.8); g.base = gates[0].base || 70; g.max = g.base; g.hp = g.max; gates.push(g); }
+  while (gates.length < want){ const k = gates.length - 2, g = makeGate('×2', 1.8, GATE4_Z[k], k ? 1.35 : 0.8); g.base = gates[0].base || 70; g.max = g.base; g.hp = g.max; gates.push(g); }
 }
 const GATE_REACH_Z = -28;      // how far a round that went through no gate can travel
 function breakGate(g){
@@ -2888,7 +2890,7 @@ function jetUpdate(v, dt, lv){
   for (let k = (v.hits || []).length - 1; k >= 0; k--){ const H = v.hits[k]; H.t -= dt; if (H.t > 0) continue; v.hits.splice(k, 1);
     if (NET.ghost) continue;
     for (let j = 0; j < en; j++) if (eh[j] > 0 && Math.abs(ex[j] - H.x) < 1 && Math.abs(ez[j] - H.z) < 1) hurtEnemy(j, 7*lv*dmgMul);
-    for (const b of bosses) if (Math.hypot(b.x - H.x, b.z - H.z) < 2.4){ b.hp -= 5*lv*dmgMul; b.dirty = true; b.hit = 0.1; }
+    for (const b of bosses) if (Math.hypot(b.x - H.x, b.z - H.z) < 2.4*ESK()){ b.hp -= 5*lv*dmgMul; b.dirty = true; b.hit = 0.1; }
     if (Math.random() < 0.3) checkBoss(); }
   if (v.pass === 1){                                   // bombs released ~31 ahead so they fall onto the target
     const gbu = L.sec === 'gbu', at = gbu ? [31] : [34, 30];
@@ -3789,7 +3791,7 @@ function explode(x, z, r, dmg, quiet){
     if (d < r + roleR(i)){ hurtEnemy(i, dmg*(1 - 0.5*d/r)); if (eh[i] > 0) ez[i] -= 0.4; }
   }
   { const air = DF.on || GS_.on; for (const b of barrels.slice()){ if (Math.hypot(b.x - x, b.z - z) < r + (air ? 1.3 : 0.7)){ b.hp -= dmg*(air ? 3.5 : 1); b.dirty = true; if (b.hp <= 0) breakBarrel(b); } } }
-  if (bosses.length){ for (const b of bosses) if (Math.hypot(b.x - x, b.z - z) < r + 2.2){ b.hp -= dmg; b.dirty = true; b.hit = 0.1; } checkBoss(); }
+  if (bosses.length){ for (const b of bosses) if (Math.hypot(b.x - x, b.z - z) < r + 2.2*ESK()){ b.hp -= dmg; b.dirty = true; b.hit = 0.1; } checkBoss(); }
   let bm = booms.find(o => o.t >= 1);
   if (!bm){ bm = {m: new THREE.Mesh(boomGeo, new THREE.MeshBasicMaterial({color: 0xffb347, transparent: true, depthWrite: false})), t: 1}; scene.add(bm.m); booms.push(bm); }
   bm.t = 0; bm.r = quiet ? r*0.45 : r; bm.m.position.set(x, 0.4, z); bm.m.visible = true;
@@ -5258,7 +5260,7 @@ const cardQueue = [];
 const GX = 34, GZ = 80, X0 = -17, Z0 = FAR - 10;
 const head = new Int32Array(GX*GZ), nxt = new Int32Array(ECAP);
 const RED = new THREE.Color(0xff6b5b), CREAM = new THREE.Color(0xfff4e4), TEAL = new THREE.Color(0x6fd3e0), BLUEC = new THREE.Color(0x2f8fe0), GOLD = new THREE.Color(0xf6c21c), PURPLE = new THREE.Color(0xa65cff), WOOD = new THREE.Color(0xb57a45), GREEN = new THREE.Color(0x6bff7a), SPARK = new THREE.Color(0xffd166), SMOKE = new THREE.Color(0x8a96a6), DUST = new THREE.Color(0xd9c9a3), DEBRIS = new THREE.Color(0x4a3a2c), ORANGE = new THREE.Color(0xff8a1f);
-const roleR = i => ROLES[ROLE_ORDER[er[i]]].r*1.45;
+const roleR = i => ROLES[ROLE_ORDER[er[i]]].r*1.45*ESK();
 
 function chips(x, y, z, col, n, sp = 4){
   const ca = chipMesh.instanceColor.array;
@@ -5337,7 +5339,7 @@ function checkBoss(){
 function unlockedRoles(){ return ROLE_ORDER.slice(0, Math.min(ROLE_ORDER.length, wave)); }
 function startWave(){
   wave++; waveT = 0; spawned = 0; spawnAcc = 0;
-  { const tgt = MODE === 'def' ? stageFor(wave === 26 && ev26Wanted() ? 25 : wave) : 0;     // V101: wave 26 widens on the song's first drop
+  { const tgt = MODE === 'def' ? stageFor(evWave(wave) && ev26Wanted() ? 25 : wave) : 0;     // V101: wave 26 widens on the song's first drop
     if (tgt > PIER.stage){ if (tgt - PIER.stage > 1) pierSet(tgt - 1); PIER.stage = tgt; PIER.t = 0; PIER.hold = true; setTimeout(() => toast(LOC.cur === 'city' ? (tgt > 1 ? 'Dozers: pushing the barriers out again' : 'Dozers: clearing the street') : PIER.mode === 'unroll' ? (tgt > 1 ? 'Ground crew: widening again' : 'Ground crew: widening the taxiway') : (tgt > 1 ? 'More tugboats incoming' : 'Tugboats incoming'), '#c6ecff'), 900); } }
   if (MODE === 'def' && wave >= 13) setTimeout(() => toast(wave === 13 ? 'Late game: guns hold more, pickups give more' : 'Ammo capacity up · Minigun holds ' + fmt(wMax('minigun')), '#ffe6a0'), 1800);
   budget = 120*Math.pow(1.38, wave - 1);
@@ -5351,7 +5353,7 @@ function startWave(){
   if (bossPending && !seen.has('boss')) cardQueue.push('boss');
   toast('Wave ' + wave, '#fff'); sfx('wave');
   state = 'play';
-  if (wave === 26 && ev26Wanted()) ev26Start();
+  if (evWave(wave) && ev26Wanted()) ev26Start();
   showNextCard();
 }
 function showNextCard(){
@@ -5391,7 +5393,7 @@ const SHOP = [
   {sec: 'Upgrades', id: 'pierce', name: 'AP rounds', desc: '+1 penetration: every bullet passes through one more of the horde', cost: l => Math.round(120*Math.pow(2.0, l)), max: 4, buy(){}},
   {sec: 'Upgrades', id: 'gunner', name: 'Hire a gunner', desc: '+1 gunner, up to 5', cost: l => Math.round(80*Math.pow(1.8, l)), max: 4, ok: () => gunners.length < 5, buy(){ addGunner(); }},
   {sec: 'Upgrades', id: 'repair', name: 'Repair barricade', desc: '+35 barricade health', cost: () => 30 + wave*4, ok: () => wall < 100, buy(){ wall = Math.min(100, wall + 35); }},
-  {sec: 'Upgrades', id: 'gate4', name: '×4 gate', desc: 'A narrow gate that turns every round through it into four. Stays for this run; it can be smashed and rebuilds.', cost: () => 15000, max: 2, hide: () => wave < 15, buy(){ shopLv.gate4 = (shopLv.gate4 || 0); setTimeout(gate4Sync, 0); toast('×4 gate built', '#e6d4ff'); }},
+  {sec: 'Upgrades', id: 'gate4', name: 'Extra ×2 gate', desc: 'A narrow gate that doubles every round through it. Stays for this run; it can be smashed and rebuilds.', cost: () => 15000, max: 2, hide: () => wave < 15, buy(){ shopLv.gate4 = (shopLv.gate4 || 0); setTimeout(gate4Sync, 0); toast('×2 gate built', '#e6d4ff'); }},
   {sec: 'Upgrades', id: 'gates', name: 'Reinforce gates', desc: 'Rebuild now, +40% gate health', cost: l => Math.round(50*Math.pow(1.5, l)), max: 6, buy(){ for (const g of gates){ g.base = (g.base || 70)*1.4; g.max = g.base; g.hp = g.max; g.broken = false; g.g.visible = true; g.dirty = true; } }},
   ...WKEYS.filter(k => k !== 'pistol').map(k => ({sec: 'Weapons', id: 'w_' + k, name: WEAPONS[k].name, desc: () => owned[k] ? (ammo[k] < wMax(k) ? '+' + fmt(Math.min(wGive(k), wMax(k) - ammo[k])) + ' ammo (holds ' + fmt(wMax(k)) + ')' : 'Ammo full') : 'Unlock with ' + fmt(wGive(k)) + ' ammo', cost: () => WEAPONS[k].price, ok: () => !(owned[k] && ammo[k] >= wMax(k)), buy(){ giveWeapon(k, true); }})),
   ...WKEYS.filter(k => k !== 'pistol').map(k => ({sec: 'Weapon upgrades', id: 'u_' + k, get name(){ return WEAPONS[k].name + ' <small>Lv ' + wlv[k] + '/' + WMAXLV(k) + '</small>'; },
@@ -6276,7 +6278,7 @@ function update(dt){
         for (let j = head[cxk + czk*GX]; j !== -1; j = nxt[j]){ if (eh[j] > 0 && Math.hypot(ex[j] - p.x, ez[j] - p.z) < roleR(j) + 0.2){ boom = true; break outer; } }
       }
       for (const b of barrels) if (Math.abs(b.x - p.x) < 0.9 && Math.abs(b.z - p.z) < 0.8) boom = true;
-      if (bosses.some(b => Math.hypot(b.x - p.x, b.z - p.z) < 2.4)) boom = true;
+      if (bosses.some(b => Math.hypot(b.x - p.x, b.z - p.z) < 2.4*ESK())) boom = true;
     }
     p.m.position.set(p.x, Math.max(0.1, p.y), p.z);
     if (boom){ explode(p.x, p.z, p.aoe, p.dmg, p.quiet); scene.remove(p.m); projs.splice(k, 1); }
@@ -6349,7 +6351,7 @@ function update(dt){
     }
     if (bosses.length && ul[i] > 0) for (const boss of bosses){
       const dx = boss.x - x1, dz = boss.z - z1;
-      if (dx*dx + dz*dz < 5.5){
+      if (dx*dx + dz*dz < 5.5*ESK()*ESK()){
         boss.hp -= ud[i]; boss.hit = 0.08; boss.dirty = true; chips(x1, 1.4, z1, SPARK, 1, 3);
         if (upi[i] > 0 && ulast[i] !== -999){ upi[i]--; ulast[i] = -999; } else ul[i] = 0;
         checkBoss(); break;
@@ -6451,7 +6453,7 @@ function sync(dt){
     const role = ROLE_ORDER[er[i]], R = ROLES[role], C = CROWD[role]; if (!C) continue;
     const gait = elunge[i] ? 'run' : R.gait, frames = C.gaits[gait];
     const f = ((Math.floor(eph[i]/(Math.PI*2)*FRAMES) % FRAMES) + FRAMES) % FRAMES;
-    const s = R.scale*BODY*SIZE, bob = frozen ? 0 : Math.abs(Math.cos(eph[i]))*0.04*s;
+    const s = R.scale*BODY*SIZE*ESK(), bob = frozen ? 0 : Math.abs(Math.cos(eph[i]))*0.04*s;
     const near = ez[i] > nearZ;
     const h = ehit[i]*0.8;
     let cr = 1 + h, cg = 1 + h, cb = 1 + h;
@@ -6462,7 +6464,7 @@ function sync(dt){
   }
   // extra bosses (beyond the lead skeleton) ride the tank's near-LOD instancer at boss size
   if (bosses.length > 1 && CROWD.tank){
-    const R = ROLES.tank, frames = CROWD.tank.gaits[R.gait], s = 2.3*BODY*SIZE;
+    const R = ROLES.tank, frames = CROWD.tank.gaits[R.gait], s = 2.3*BODY*SIZE*ESK();
     for (let k = 1; k < bosses.length; k++){
       const b = bosses[k], f = ((Math.floor(b.ph/(Math.PI*2)*FRAMES) % FRAMES) + FRAMES) % FRAMES, h = b.hit ? 0.6 : 0;
       putInst(frames[f].near, b.x, 0, b.z, s*(b.hit ? 1.04 : 1), 0, 0, 0.95 + h, 0.82 + h, 0.82 + h);
@@ -6471,7 +6473,7 @@ function sync(dt){
   }
   for (let i = 0; i < dn; i++){
     const role = ROLE_ORDER[dr_[i]], R = ROLES[role], C = CROWD[role]; if (!C) continue;
-    const k = dt_[i], tip = Math.min(1, k/0.3), s = R.scale*BODY*SIZE*(k < 0.5 ? 1 : 1 - (k - 0.5)/0.3*0.9);
+    const k = dt_[i], tip = Math.min(1, k/0.3), s = R.scale*BODY*SIZE*ESK()*(k < 0.5 ? 1 : 1 - (k - 0.5)/0.3*0.9);
     putInst(C.gaits[R.gait][0].near, dx_[i], -Math.max(0, k - 0.4)*0.6, dz_[i] - tip*0.5, s, dyaw[i], -tip*1.35, 1 + (1 - tip)*0.6, 1 + (1 - tip)*0.6, 1 + (1 - tip)*0.6);
     if (bn < ECAP + DCAP) setMY(ba, bn++, dx_[i], 0.02, dz_[i], s*0.75, 1, s*0.75, 0);
   }
@@ -6531,7 +6533,7 @@ function sync(dt){
   if (BOSS.holder) BOSS.holder.visible = bosses.length > 0;
   bossBars.forEach((o, k) => { o.sp.visible = k < bosses.length; });
   bosses.forEach((boss, k) => {
-    const s = 2.3*BODY*SIZE, o = bossBarFor(k);
+    const s = 2.3*BODY*SIZE*ESK(), o = bossBarFor(k);
     if (k === 0 && BOSS.holder){
       BOSS.holder.position.set(boss.x, 0, boss.z); BOSS.holder.scale.setScalar(s*(boss.hit ? 1.04 : 1));
       if (!frozen){ BOSS.ph = (BOSS.ph || 0) + dt*2.6; poseRig(BOSS.rig, 'shuffle', BOSS.ph); }
@@ -7521,8 +7523,8 @@ function hmUpdate(dt){
     let hit = p.y <= 0.35 || sh.life <= 0 || (p.y < hfAt(p.x, p.z) && !sh.cosmetic) || ((sh.kind === 'hellfire' || sh.kind === 'agm') && sh.to && p.distanceTo(sh.to) < 1.2);
     if (!hit && !sh.cosmetic) hit = hmHitHelis(p, sh.kind === 'cannon' ? 0.6 : 0.5, sh.kind === 'cannon' ? 6 : sh.kind === 'rocket' ? 18*(sh.dmgK || 1) : 110);
     if (!hit && sh.cosmetic) for (const e of HM.enemies) if (!e.remote && e.hp > 0 && e.pos.distanceTo(p) < 2.4*HB){ hit = true; break; }
-    if (!hit && p.y < 6 && bosses.some(b => Math.hypot(b.x - p.x, b.z - p.z) < 2.4)) hit = true;
-    if (!hit && p.y < 3){ for (let i = 0; i < en; i++){ if (eh[i] > 0 && Math.abs(ex[i] - p.x) < 0.7 && Math.abs(ez[i] - p.z) < 0.7){ hit = true; break; } } }
+    if (!hit && p.y < 6*ESK() && bosses.some(b => Math.hypot(b.x - p.x, b.z - p.z) < 2.4*ESK())) hit = true;
+    if (!hit && p.y < 3*ESK()){ const er_ = 0.7*ESK(); for (let i = 0; i < en; i++){ if (eh[i] > 0 && Math.abs(ex[i] - p.x) < er_ && Math.abs(ez[i] - p.z) < er_){ hit = true; break; } } }
     if (hit){
       const before = kills, cm = sh.cosmetic ? 0 : 1;
       if (p.y < 6 && sh.cosmetic) explode(p.x, p.z, sh.kind === 'cannon' ? CANNON.r : 3, 0, true);
@@ -10197,6 +10199,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V107', ['Wave 30 is a second bass round: the same song and boss drops as wave 26', 'Ruined city block: the horde and its bosses are 2.5× bigger (and that much easier to hit), same speed', 'The extra gates from the wave-15 shop are ×2 now instead of ×4']],
   ['V106', ['New map: Ruined city block. Hold the crossroads of a quarantined street while the horde pours out of the walled outpost; dozers push the concrete barriers out when the street widens',
            'Gunship mode: buildings and everything else on the map are solid. Fly into a wall and you stop (and take damage); come down on a roof and you can land on it. Bullets and missiles stop on them too, so you can hide behind cover',
            'Fly low (under about 6 m over whatever is below you) and you are UNDER RADAR: nothing can lock a missile on you, and a missile already chasing you loses you. Guns can still hit you',
@@ -10548,6 +10551,8 @@ $('radioBtn').classList.toggle('on', !!RADIO.cur); $('rb2').classList.toggle('on
 const EV26 = {widen: 41, drops: [[120, 3], [269, 4], [451, 5]], menus: [[190, 269], [372, 451]], last: 540,
   rate: [[0, 0.03], [41, 0.06], [88, 0], [120, 0.08], [163, 0], [269, 0.1], [345, 0], [451, 0.12], [540, 0]]};     // share of a normal wave 26's spawn rate
 const EV = {on: false, t: 0, au: null, g: null, B: 0, cues: new Set(), menu: false, menuEnd: 0, noAudio: false, music: false};
+// V107: wave 30 is a second bass round, the same song and script as wave 26
+const EV_WAVES = [26, 30], evWave = w => EV_WAVES.includes(w);
 const ev26Wanted = () => MODE === 'def' && !(NET.on && NET.started);
 function ev26Rate(){ let r = 0; for (const [t0, v] of EV26.rate) if (EV.t >= t0) r = v; return r; }
 function ev26Level(){ return clamp(SETTINGS.sound ? (SETTINGS.master ?? 0.8)*Math.max(0.35, SETTINGS.radioVol ?? 0.6)*1.1 : 0, 0, 1); }
@@ -10560,7 +10565,7 @@ function ev26Start(){
     EV.au.addEventListener('ended', () => { EV.music = false; }); }
   if (!EV.g && AU.ctx){ try { const s = AU.ctx.createMediaElementSource(EV.au); EV.g = AU.ctx.createGain(); s.connect(EV.g); EV.g.connect(AU.ctx.destination); EV.au.volume = 1; } catch(e){ EV.g = null; } }
   EV.au.currentTime = 0; ev26Vol(); EV.au.play().catch(() => { EV.noAudio = true; });
-  toast('Wave 26 · turn it up', '#f0eec4');
+  toast('Wave ' + wave + ' · turn it up', '#f0eec4');
 }
 function ev26Vol(){ if (!EV.au) return; const v = ev26Level(); if (EV.g) EV.g.gain.setTargetAtTime(v, AU.ctx.currentTime, 0.05); else EV.au.volume = v; }
 function ev26Stop(){ EV.on = false; EV.menu = false; EV.music = false; if (EV.au){ EV.au.pause(); } }
@@ -10575,7 +10580,7 @@ function ev26CloseMenu(){ if (!EV.menu) return; EV.menu = false; $('shop').hidde
 // once per frame from update(), and on a timer so the shop and pause keep in step with the music
 function ev26Tick(dt){
   if (!EV.on && !EV.music) return;
-  if (wave !== 26 || MODE !== 'def' || state === 'over' || state === 'title'){ ev26Stop(); return; }
+  if (!evWave(wave) || MODE !== 'def' || state === 'over' || state === 'title'){ ev26Stop(); return; }
   const live = state === 'play' || state === 'dying' || state === 'card' || (state === 'shop' && EV.menu) || state === 'choice';
   if (EV.au && EV.music){ if (live && EV.au.paused && !EV.noAudio) EV.au.play().catch(() => { EV.noAudio = true; }); else if (!live && !EV.au.paused) EV.au.pause(); }
   if (EV.au && !EV.noAudio && EV.au.currentTime > 0) EV.t = EV.au.currentTime; else if (live && dt) EV.t += dt;     // no audio: keep time ourselves

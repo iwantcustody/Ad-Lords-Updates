@@ -1300,7 +1300,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V116';
+const GAME_VERSION = 'V117';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -1320,13 +1320,39 @@ setInterval(() => {
   if (c.currentTime === AUW.ct && now - AUW.t > 900){ AUW.t = now; c.suspend().then(() => c.resume()).catch(() => {}); return; }
   if (c.currentTime !== AUW.ct){ AUW.ct = c.currentTime; AUW.t = now; }
 }, 500);
+// V117: Potato mode sounds like an old arcade cabinet too: everything (music included) goes through a crusher that holds each
+// sample for several frames (about 8 kHz) and keeps only 6 bits, then a tinny speaker band
+const LOFI = {on: false, nodes: null, wk: null};
+const LOFI_SRC = `class Crush extends AudioWorkletProcessor{ constructor(){ super(); this.h = [0, 0]; this.n = 0; }
+  process(i, o){ const a = i[0], b = o[0]; if (!a || !a.length) return true; const step = 6, q = 32;
+    for (let ch = 0; ch < b.length; ch++){ const x = a[ch] || a[0], y = b[ch]; let n = this.n, h = this.h[ch] || 0;
+      for (let k = 0; k < y.length; k++){ if (n % step === 0) h = Math.round(x[k]*q)/q; y[k] = h; n++; } this.h[ch] = h; if (ch === b.length - 1) this.n = n; }
+    return true; } }
+registerProcessor('adl-crush', Crush);`;
+async function lofiBuild(){
+  const c = AU.ctx; if (LOFI.nodes || LOFI.busy) return; LOFI.busy = true;
+  const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 140; const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3600; lp.Q.value = 0.8;
+  const pk = c.createBiquadFilter(); pk.type = 'peaking'; pk.frequency.value = 1500; pk.Q.value = 1; pk.gain.value = 4; const g = c.createGain(); g.gain.value = 1.1;
+  let crush = null;
+  try { if (c.audioWorklet){ const url = URL.createObjectURL(new Blob([LOFI_SRC], {type: 'application/javascript'})); await c.audioWorklet.addModule(url); crush = new AudioWorkletNode(c, 'adl-crush', {outputChannelCount: [2]}); } } catch(e){ crush = null; }
+  if (!crush){ crush = c.createWaveShaper(); const n = 4096, cv = new Float32Array(n); for (let i = 0; i < n; i++){ const x = i/(n - 1)*2 - 1; cv[i] = Math.round(x*32)/32; } crush.curve = cv; }
+  crush.connect(hp); hp.connect(pk); pk.connect(lp); lp.connect(g); g.connect(c.destination);
+  LOFI.nodes = {in: crush}; LOFI.busy = false; lofiApply();
+}
+function lofiApply(){
+  if (!AU.ctx || !AU.out) return; const want = POTATO();
+  if (want && !LOFI.nodes){ lofiBuild(); return; }
+  if (want === LOFI.on) return; LOFI.on = want;
+  try { AU.out.disconnect(); } catch(e){}
+  AU.out.connect(want ? LOFI.nodes.in : AU.ctx.destination);
+}
 function audioInit(){
   if (AU.ctx){ if (AU.ctx.state === 'suspended') AU.ctx.resume().catch(() => {}); return; }
   const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
   try { AU.ctx = new AC(); } catch(e){ return; }
   const c = AU.ctx;
   const comp = c.createDynamicsCompressor(); comp.threshold.value = -14; comp.knee.value = 10; comp.ratio.value = 5; comp.attack.value = 0.003; comp.release.value = 0.18;
-  AU.master = c.createGain(); comp.connect(c.destination);
+  AU.master = c.createGain(); AU.out = c.createGain(); AU.out.connect(c.destination); comp.connect(AU.out); lofiApply();
   { // dry path and headset path, crossfaded by earProTick()
     const dry = c.createGain(), fx = c.createGain(); dry.gain.value = 1; fx.gain.value = 0; AU.master.connect(dry); dry.connect(comp);
     const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 260; hp.Q.value = 0.8;
@@ -9343,7 +9369,7 @@ $('sDap').value = SETTINGS.dapLook || 'pods';
 $('sDap').addEventListener('change', e => { SETTINGS.dapLook = e.target.value; saveSettings(); toast('DAP model changes on the next load', '#e8fbff'); });
 $('sShadows').addEventListener('change', e => { SETTINGS.shadows = e.target.checked; applyGraphics(); saveSettings(); });
 $('sMocap').addEventListener('change', e => { SETTINGS.mocap = e.target.checked; saveSettings(); toast('Restart the game to re-bake the crowd', '#e8fbff'); });
-$('sPotato').addEventListener('change', e => { SETTINGS.potato = e.target.checked; saveSettings(); applyQuality(); applyGraphics(); applyLocation(LOC.cur); toast(SETTINGS.potato ? 'Potato mode on' : 'Potato mode off', '#f0eec4'); });
+$('sPotato').addEventListener('change', e => { SETTINGS.potato = e.target.checked; saveSettings(); lofiApply(); applyQuality(); applyGraphics(); applyLocation(LOC.cur); toast(SETTINGS.potato ? 'Potato mode on' : 'Potato mode off', '#f0eec4'); });
 $('sHq').addEventListener('change', e => { SETTINGS.hq = e.target.checked; applyGraphics(); saveSettings(); });
 $('sPc').addEventListener('change', e => { SETTINGS.pcMode = e.target.value; saveSettings(); applyPC(); applyLocation(LOC.cur); });
 $('sQual').value = SETTINGS.gfxQ || 'ultra'; $('sBloom').value = SETTINGS.gfxBloom ?? 0.55; $('sGrade').value = SETTINGS.gfxGrade ?? 0.6;
@@ -10384,6 +10410,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V117', ['Potato mode sounds the part: all audio, music and radio included, comes out crushed and low-fi like an old arcade cabinet']],
   ['V116', ['Controller defaults: Y swaps primary and secondary, View (select) changes the camera; LB and RB are free', 'Controller aim assist in the gunner seats: aim near an enemy and the sight slowly drifts onto it. Strength is in Settings → Sensitivity → Controller (0 turns it off)']],
   ['V115', ['The controller test picture is a clean outline now (no glow)', 'Tablets are detected and get the PC layout: the wide menus, the PC HUD arrangement and sharper rendering, while keeping the touch controls. Settings → Graphics → PC mode also has a Tablet option to switch it by hand']],
   ['V114', ['Controller: RB now swaps between primary and secondary (miniguns and rockets on the Little Bird, primary and secondary missiles on the others) and RT fires whichever is selected', 'Settings → Sensitivity has tabs: Keyboard & mouse, Touch (phones) and Controller. The Controller tab has pitch/roll, yaw, collective and gunner-aim sensitivity, a dead zone for each stick, and a test screen: the controller outline lights up what you press, shows where each stick is against its dead zone, and lets you tap a button to check it reads correctly']],
@@ -10577,7 +10604,7 @@ function radioWire(){
     lp.connect(open); open.connect(g);
     lp.connect(hp); hp.connect(pk); pk.connect(hc); hc.connect(sh); sh.connect(mono);
     mono.connect(l, 0); mono.connect(rx, 0); mono.connect(r, 1); mono.connect(lx, 1); l.connect(mix, 0, 0); lx.connect(mix, 0, 0); r.connect(mix, 0, 1); rx.connect(mix, 0, 1);
-    mix.connect(head); head.connect(g); g.connect(c.destination);
+    mix.connect(head); head.connect(g); g.connect(AU.out || c.destination);
     RADIO.fx = {lp, g, open, head}; RADIO.au.volume = 1; } catch(e){ RADIO.fx = null; }
   return !!RADIO.fx;
 }
@@ -10762,7 +10789,7 @@ function ev26Start(){
   if (!EV.au){ EV.au = new Audio('assets/music/messing_with_sound_stage.mp3'); EV.au.preload = 'auto';
     EV.au.addEventListener('error', () => { EV.noAudio = true; });
     EV.au.addEventListener('ended', () => { EV.music = false; }); }
-  if (!EV.g && AU.ctx){ try { const s = AU.ctx.createMediaElementSource(EV.au); EV.g = AU.ctx.createGain(); s.connect(EV.g); EV.g.connect(AU.ctx.destination); EV.au.volume = 1; } catch(e){ EV.g = null; } }
+  if (!EV.g && AU.ctx){ try { const s = AU.ctx.createMediaElementSource(EV.au); EV.g = AU.ctx.createGain(); s.connect(EV.g); EV.g.connect(AU.out || AU.ctx.destination); EV.au.volume = 1; } catch(e){ EV.g = null; } }
   EV.au.currentTime = 0; ev26Vol(); EV.au.play().catch(() => { EV.noAudio = true; });
   toast('Wave ' + wave + ' · turn it up', '#f0eec4');
 }

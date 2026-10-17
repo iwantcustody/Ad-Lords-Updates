@@ -653,7 +653,7 @@ body.pc .titleFs{display:none}
         <h3 class="subh">World</h3>
         <div class="set">
           <label for="sLoc">Location</label><select id="sLoc"><option value="pier">Seaside pier</option><option value="airfield">Desert airfield</option></select>
-          <label for="sSkin">Enemy look</label><select id="sSkin"><option value="classic">Classic</option><option value="dust">Desert dust</option><option value="ghost">Ghost</option><option value="toxic">Toxic</option><option value="drew">Drew</option></select>
+          <label for="sSkin">Enemy look</label><select id="sSkin"><option value="classic">Classic</option><option value="dust">Desert dust</option><option value="ghost">Ghost</option><option value="toxic">Toxic</option><option value="zombie">Zombies</option><option value="drew">Drew</option></select>
           <label for="sDap">DAP model</label><select id="sDap"><option value="pods">UH-60M with pods</option><option value="light">Light (faster)</option><option value="detailed">Detailed</option></select>
           <label for="sAutoLand">Landscape when you take a seat</label><input class="sw" type="checkbox" id="sAutoLand">
           <label for="sAiSquad">AI runs your squad while you’re in a vehicle</label><input class="sw" type="checkbox" id="sAiSquad">
@@ -673,6 +673,7 @@ body.pc .titleFs{display:none}
         <p class="fine">Little Bird, Black Hawk, Apache and minigun recordings: recorded and cut by the Ad Lords developer</p>
         <p class="fine">Animations: Universal Animation Library by Quaternius (CC0) · Character White rigged with Mixamo</p>
         <p class="fine">Low Poly Airport by pliotcandle and the Kh-38MT missile model, both from Sketchfab, supplied by the player</p>
+        <p class="fine">Zombie models (zombie girl, zombie no. 1) from Sketchfab and zombie animations from Mixamo, supplied by the player</p>
         <p class="fine" id="appVer"></p>
       </section>
       <section class="bfPane" data-pane="ctrl">
@@ -1118,7 +1119,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V92';
+const GAME_VERSION = 'V93';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -2354,14 +2355,38 @@ ENEMY_SKINS.drew = {tint: [1, 1, 1],
     captain: {line: 'Everyone near him moves faster.', tip: 'Snipe him first. His crew slows down once he’s gone.'},
   },
   boss: {name: 'Big Bear Drew', line: 'Woke up from hibernation. Brings friends.', tip: 'Save your RPG and vehicles for him. If he reaches the barricade it takes half its health.'}};
+// V93: zombies. Three of the player's zombie models, animated with the player's Mixamo zombie walks (assets/zual.json, the same
+// format as the animation library, so the same retargeting puts the shambling walk on each model)
+ENEMY_SKINS.zombie = {tint: [1, 1, 1], lib: 'assets/zual.json', gaits: {walk: 'Z_Walk', run: 'Z_Walk', shuffle: 'Z_Shamble'},
+  models: {normal: 'assets/zombie_girl.json', fast: 'assets/zombie_girl.json', swarm: 'assets/zombie_girl.json', tank: 'assets/zombie_zom1.json', charger: 'assets/zombie_zom1.json', captain: 'assets/zombie_zom1.json'},
+  cards: {normal: 'assets/card_zombie_normal.webp', fast: 'assets/card_zombie_fast.webp', swarm: 'assets/card_zombie_swarm.webp', tank: 'assets/card_zombie_tank.webp', charger: 'assets/card_zombie_charger.webp', captain: 'assets/card_zombie_captain.webp'},
+  names: {normal: 'Walker', fast: 'Runner', swarm: 'Pack', tank: 'Bloater', charger: 'Lunger', captain: 'Alpha'},
+  text: {
+    normal: {line: 'Slow, hungry and never alone.', tip: 'Steady fire handles her.'},
+    fast: {line: 'Fast, hungry, and not slowing down.', tip: 'Spread fire works best: SMG, Bailiff or the ×3 gate.'},
+    swarm: {line: 'They come in packs.', tip: 'Grenades and shotguns clear a whole pack.'},
+    tank: {line: 'Swollen, slow and very hard to put down.', tip: 'Sniper, RPG or a vehicle. Don’t waste pistol rounds.'},
+    charger: {line: 'Shambles in, then lunges at the barricade.', tip: 'Kill him before he gets close. He speeds up near the front.'},
+    captain: {line: 'The rest follow him. And move faster for it.', tip: 'Snipe him first. The pack slows down once he’s gone.'}},
+  boss: {name: 'The Big One', line: 'Woke up hungry. Brings the whole street.', tip: 'Save your RPG and vehicles for it. If it reaches the barricade it takes half its health.'}};
 const BASE_CROWD = {}, BASE_BOSS = {}, SKIN_LOAD = {load: null, sets: {}, busy: {}};
+// bake with another animation library (and gait clips) in place of the default one, then put everything back
+function withLib(lib, gaits, fn){
+  const sv = {data: UAL.data, B: UAL.B, idx: UAL.idx, base: UAL.base, rest: UAL.rest, align: UAL.align.clone()}, g0 = {...UAL_GAIT};
+  UAL.data = lib; ualPrep(); Object.assign(UAL_GAIT, gaits || {});
+  try { return fn(); } finally { UAL.data = sv.data; UAL.B = sv.B; UAL.idx = sv.idx; UAL.base = sv.base; UAL.rest = sv.rest; UAL.align.copy(sv.align); for (const k in UAL_GAIT) delete UAL_GAIT[k]; Object.assign(UAL_GAIT, g0); }
+}
 let skinCur = 'classic';
 function loadSkinModels(name){
   const S_ = ENEMY_SKINS[name];
   if (SKIN_LOAD.sets[name] || SKIN_LOAD.busy[name] || !SKIN_LOAD.load) return;
   SKIN_LOAD.busy[name] = true; toast('Loading the new enemies…', '#e8fbff');
   const set = {crowd: {}, boss: {}};
-  Promise.all(Object.entries(S_.models).map(([role, url]) => SKIN_LOAD.load(url).then(g => ualLoad().then(() => g)).then(g => { try { buildRole(role, g, set.crowd, set.boss); } catch(e){ console.warn('skin model failed', role, e); } })))
+  const libP = S_.lib ? fetch(S_.lib).then(r => r.json()).catch(e => { console.warn('skin animations', e); return null; }) : Promise.resolve(null);
+  // a model used by two roles is loaded twice: baking poses the bones, so each role needs its own copy
+  const counts = {}; for (const u of Object.values(S_.models)) counts[u] = (counts[u] || 0) + 1;
+  Promise.all(Object.entries(S_.models).map(([role, url]) => (counts[url] > 1 && SKIN_LOAD.fresh ? SKIN_LOAD.fresh(url) : SKIN_LOAD.load(url)).then(g => Promise.all([ualLoad(), libP]).then(([, lib]) => [g, lib]))
+    .then(([g, lib]) => { try { if (lib) withLib(lib, S_.gaits, () => buildRole(role, g, set.crowd, set.boss)); else buildRole(role, g, set.crowd, set.boss); } catch(e){ console.warn('skin model failed', role, e); } })))
     .then(() => { SKIN_LOAD.sets[name] = set; SKIN_LOAD.busy[name] = false; for (const r in S_.cards || {}){ const im = new Image(); im.src = S_.cards[r]; } if (skinCur === name) applyEnemySkin(name); })
     .catch(e => { SKIN_LOAD.busy[name] = false; console.warn(e); toast('Could not load that enemy look', '#ffd2cc'); });
 }
@@ -3125,7 +3150,7 @@ function ualPrep(){
 // the library skeleton at time t of a clip (null = bind pose): world positions P and rotations Q, already turned to face +z
 function ualPose(clip, t, out){
   const D = UAL.data, B = D.bones, n = B.length;
-  out = out || {P: B.map(() => new THREE.Vector3()), Q: B.map(() => new THREE.Quaternion()), W: B.map(() => new THREE.Matrix4())};
+  if (!out || out.W.length !== B.length) out = {P: B.map(() => new THREE.Vector3()), Q: B.map(() => new THREE.Quaternion()), W: B.map(() => new THREE.Matrix4())};
   let f0 = 0, f1 = 0, u = 0;
   if (clip){ const fr = ((t % clip.dur) + clip.dur) % clip.dur*D.fps; f0 = Math.min(clip.n - 1, Math.floor(fr)); f1 = Math.min(clip.n - 1, f0 + 1); u = fr - f0; }
   for (let i = 0; i < n; i++){
@@ -3239,7 +3264,8 @@ function buildRole(role, gltf, target = CROWD, bossInto = BOSS){
   let sm = null; gltf.scene.traverse(o => { if (o.isSkinnedMesh && !sm) sm = o; });
   const rig = analyzeRig(gltf.scene, sm); rig.root = gltf.scene; rig.allBones = sm.skeleton.bones;
   const tex = sm.material.map; if (tex){ tex.encoding = THREE.LinearEncoding; tex.anisotropy = 8; tex.needsUpdate = true; }
-  const mat = new THREE.MeshToonMaterial({map: tex, gradientMap: gradSoft, side: THREE.DoubleSide, color: new THREE.Color(0.74, 0.74, 0.76)});
+  const at = sm.material.alphaTest || 0;      // cut-out hair and torn cloth keep their holes
+  const mat = new THREE.MeshToonMaterial({map: tex, gradientMap: gradSoft, side: THREE.DoubleSide, color: new THREE.Color(0.74, 0.74, 0.76), alphaTest: at});
   if (target === CROWD) crowdMat[role] = mat;
   // distant girls are only a few pixels tall: a punchier copy of the texture keeps their colors readable
   let farMat = mat;
@@ -3247,7 +3273,7 @@ function buildRole(role, gltf, target = CROWD, bossInto = BOSS){
     const img = tex.image, cvs = document.createElement('canvas'); cvs.width = 512; cvs.height = 512;
     const cx2 = cvs.getContext('2d'); cx2.filter = 'saturate(1.9) contrast(1.15) brightness(0.95)'; cx2.drawImage(img, 0, 0, 512, 512);
     const ft = new THREE.CanvasTexture(cvs); ft.flipY = tex.flipY; ft.anisotropy = 8;
-    farMat = new THREE.MeshToonMaterial({map: ft, gradientMap: gradSoft, side: THREE.DoubleSide, color: new THREE.Color(0.8, 0.8, 0.82)});
+    farMat = new THREE.MeshToonMaterial({map: ft, gradientMap: gradSoft, side: THREE.DoubleSide, color: new THREE.Color(0.8, 0.8, 0.82), alphaTest: at});
   } catch(e) {}
   // normalize: feet on the ground, centered, MODEL_H tall
   for (const b of rig.allBones) b.quaternion.copy(b.userData.q0);
@@ -8821,6 +8847,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V93', ['New horde look: Zombies (Loadouts > Appearance, or Settings). Soldiers, runners, packs, bloaters, lungers and an alpha, all shambling with your Mixamo zombie walks']],
   ['V92', ['Rocket reticle: it still drifts with your momentum, but only about a third as far, and snaps back as soon as you stop or change direction']],
   ['V91', ['Apache 30mm gunner: fixed firing twice as fast as it should (one round every 0.1 s, as measured)',
            'Little Bird: rockets come in loads of 7, fired pair, pair, pair, single, then a reload; pedal turns are quicker at speed']],

@@ -1127,7 +1127,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V96';
+const GAME_VERSION = 'V97';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -4313,7 +4313,9 @@ function dfCamera(){
       const L = v.type === 'little' ? [(DF.sec ? '  ' : '▸ ') + 'MINIGN RDY', (DF.sec ? '▸ ' : '  ') + 'LT RKT ' + rk] : v.type === 'blackhawk' ? [] : [(DF.sec ? '  ' : '▸ ') + g + 'RKT RDY', (DF.sec ? '▸ ' : '  ') + 'AT AIM MSL ' + (DF.hf > 0 && DF.hfCd <= 0 ? 'RDY' : 'RLD')];
       bfHud({cockpit: !!ck, kind: kd, wpn, aim: bp, bore, hdg: P.yaw*57.2958, alt: P.pos.y*3.3, kts: P.vel.length()*4.86, pitch: hudAtt(P).p, bank: hudAtt(P).b, slip: clamp(-(P.wy || 0), -1, 1), flr: 'RDY',
         left3: kd === 'lb' ? 'SMK LNCHR RDY' : 'EMRG RPR DSBL', lines: L, name: VEHICLES[v.type] ? VEHICLES[v.type].name : 'Helicopter', seats: (VEH_INFO[v.type] || {}).seats, seat: 0,
-        wname: wpn === 'mg' ? 'M134 MINIGUN' : wpn === 'rkt' ? 'HYDRA 70' : wpn === 'tow' ? 'AT MISSILE' : '', ammo: wpn === 'mg' ? '∞' : wpn === 'rkt' ? (v.type === 'little' ? (DF.rkT > 0 || v.volley ? '0' : '7') + '/7' : '∞') : String(DF.hf)}); }
+        wsel: DF.sec ? 'sec' : 'pri', health: 1, flrOk: true, upName: hudUpName(v.type),
+        ammo: v.type === 'little' ? (DF.sec ? (DF.rkT > 0 || v.volley ? '0' : '7') : '∞') : DF.sec ? String(DF.hf) : '∞', ammoCap: v.type === 'little' && DF.sec ? 7 : 0,
+        ammo2: v.type === 'little' ? (DF.sec ? '∞' : (DF.rkT > 0 || v.volley ? '0' : '7') + ' /7') : DF.sec ? '∞' : String(DF.hf)}); }
     return true;
   }
   const fx = -Math.sin(v.yaw), fz = -Math.cos(v.yaw), far = camera.aspect < 1 ? 1.35 : 1;
@@ -6980,7 +6982,9 @@ function hmCamera(dt){
     bfHud({cockpit: P.view === 'cockpit', frame: P.view === 'cockpit' && lb && !(loadedParts.little && loadedParts.little.body), kind: HUD_KIND[P.type] || 'ap', wpn, aim: ap, bore,
       hdg: P.yaw*57.2958, alt: P.pos.y*3.3, kts: P.vel ? P.vel.length()*4.86 : hs*4.86, pitch: hudAtt(P).p, bank: hudAtt(P).b, slip: clamp(-(P.wy || 0), -1, 1), flr: P.flares > 0 && P.flCd <= 0 ? 'RDY' : 'CDN',
       left3: lb ? 'SMK LNCHR RDY' : 'EMRG RPR DSBL', name: VEHICLES[P.type] ? VEHICLES[P.type].name : 'Helicopter', seats: (VEH_INFO[P.type] || {}).seats, seat: 0,
-      wname: wpn === 'mg' ? 'M134 MINIGUN' : wpn === 'rkt' ? (lb ? 'HYDRA 70' : g ? 'GUIDED RKT' : 'HYDRA 70') : 'AT MISSILE', ammo: wpn === 'mg' ? '∞' : wpn === 'rkt' ? P.rockets + '/' + (lb ? 7 : RK_MAG[P.type] || 7) : String(P.hellfire),
+      wsel: P.wsel === 'sec' ? 'sec' : 'pri', health: (P.hull ?? 100)/100, flrOk: P.flares > 0 && P.flCd <= 0, upName: hudUpName(P.type),
+      ammo: lb ? (P.wsel === 'sec' ? String(P.rockets) : '∞') : P.wsel === 'sec' ? String(P.hellfire) : String(P.rockets), ammoCap: lb ? (P.wsel === 'sec' ? 7 : 0) : P.wsel === 'sec' ? 0 : (RK_MAG[P.type] || 7),
+      ammo2: lb ? (P.wsel === 'sec' ? '∞' : P.rockets + ' /7') : P.wsel === 'sec' ? P.rockets + ' /' + (RK_MAG[P.type] || 7) : String(P.hellfire),
       lines: lb ? [(P.wsel !== 'sec' ? '▸ ' : '  ') + 'MINIGN RDY', (P.wsel === 'sec' ? '▸ ' : '  ') + g2 + 'LT RKT ' + (P.volley > 0 ? 'FIRING' : P.rockets > 0 && P.hfCd <= 0 ? 'RDY' : 'RLD')]
         : [(msl ? '  ' : '▸ ') + g + 'RKT ' + rk, (msl ? '▸ ' : '  ') + 'AT AIM MSL ' + (P.hellfire > 0 && P.hfCd <= 0 ? 'RDY' : 'RLD')]});
   }
@@ -8335,6 +8339,7 @@ function bfHudHide(){ if (BH.on){ BH.on = false; BH.cv.classList.remove('on'); }
 // o: {cockpit, frame, kind: 'ap'|'lb'|'bh'|'dap', wpn: 'mg'|'rkt'|'tow'|'none', aim (impact point, NDC), bore (nose, NDC),
 //     hdg, alt, kts, pitch, bank, slip, flr, left3, lines, name, seats, seat, wname, ammo}
 const HUD_KIND = {little: 'lb', apache: 'ap', blackhawk: 'bh', dap: 'dap'}, _hudB = new THREE.Vector3(), _hudN = new THREE.Vector3();
+function hudUpName(t){ const u = (SETTINGS.loadout[t] || {}).up; return u && u !== 'none' && LO_OPTS.up[u] ? LO_OPTS.up[u].name : ''; }
 const BHX = {lag: {x: 0, y: 0}, q: null, tPrev: 0, dmg: 0, dmgT: -9, hz: new THREE.Vector3(), hz2: new THREE.Vector3(), f: new THREE.Vector3()};
 function hudDmg(d){ if (!(d > 0)) return; const now = performance.now(); if (now - BHX.dmgT > 1600) BHX.dmg = 0; BHX.dmg += d; BHX.dmgT = now; }
 function bfHud(o){
@@ -8413,11 +8418,11 @@ function bfHud(o){
     for (let px = cx - tw/2; px <= cx + tw/2; px += 6*s) x.fillRect(px, ty + 21*s, 1.2, 1.2);
     // ---- altitude: a ladder right of centre. Apache / Black Hawk: solid scale, pointer and box ride it. Little Bird: dashed ticks,
     // the readout sits at the foot of the ladder with an I and a caret
-    const lx = cx + tw*0.5 + 6*s, y1 = H*0.27, y0 = H*0.64, amax = 120;
+    const lx = cx + tw*0.5 + 6*s, y1 = H*(o.kind === 'lb' ? 0.22 : 0.27), y0 = H*(o.kind === 'lb' ? 0.57 : 0.64), amax = 120;
     x.font = mono(11);
     if (o.kind === 'lb'){
       x.beginPath(); for (let k = 0; k <= 16; k++){ const py = y1 + (y0 - y1)*k/16; x.moveTo(lx - 3*s, py); x.lineTo(lx + 3*s, py); } x.stroke();
-      const fy = y0 + 14*s; x.textAlign = 'right'; x.fillText(String(Math.round(o.alt)), lx - 10*s, fy - 3*s);
+      const fy = y0 + 10*s; x.textAlign = 'right'; x.fillText(String(Math.round(o.alt)), lx - 10*s, fy - 3*s);
       x.beginPath(); x.moveTo(lx, fy - 6*s); x.lineTo(lx, fy + 6*s); x.moveTo(lx - 3*s, fy - 6*s); x.lineTo(lx + 3*s, fy - 6*s); x.moveTo(lx - 3*s, fy + 6*s); x.lineTo(lx + 3*s, fy + 6*s);
       x.moveTo(lx + 16*s, fy - 6*s); x.lineTo(lx + 11*s, fy - 2*s); x.lineTo(lx + 16*s, fy + 2*s); x.stroke();
     } else {
@@ -8429,47 +8434,76 @@ function bfHud(o){
       x.strokeRect(lx + 10*s, pa - 6*s, 34*s, 12*s); x.textAlign = 'center'; x.fillText(String(Math.round(o.alt)), lx + 27*s, pa + 1);
     }
   }
-  // ---- attitude box (bottom centre): the inner box drifts with roll and pitch, the ball on top with yaw / sideslip
-  { const by = H*0.72, bw = 66*s, bh = 18*s, ix = clamp(-o.bank*20*s, -bw/2 + 11*s, bw/2 - 11*s), iy = clamp(o.pitch*10*s, -bh/2 + 4*s, bh/2 - 4*s);
-    x.font = mono(9);
-    x.strokeRect(cx - bw/2, by - bh/2, bw, bh); x.beginPath(); x.moveTo(cx - bw/2, by); x.lineTo(cx - bw/2 + 3*s, by); x.moveTo(cx + bw/2 - 3*s, by); x.lineTo(cx + bw/2, by);
-    x.moveTo(cx - 4*s, by - bh/2); x.lineTo(cx - 4*s, by - bh/2 - 5*s); x.moveTo(cx + 4*s, by - bh/2); x.lineTo(cx + 4*s, by - bh/2 - 5*s); x.stroke();
-    x.strokeRect(cx + ix - 10*s, by + iy - 3.5*s, 20*s, 7*s); x.beginPath(); x.arc(cx + ix, by + iy, 2*s, 0, 6.29); x.fill();
-    const bx = cx + clamp((o.slip || 0)*18*s, -bw/2 + 4*s, bw/2 - 4*s); x.beginPath(); x.arc(bx, by - bh/2 - 3*s, 2.4*s, 0, 6.29); x.fill();
-    x.textAlign = 'right'; x.fillText('A1.5', cx - bw/2 - 4*s, by - bh/2 - 4*s);
-    // status text either side
-    const lh = 11*s, tx = cx - bw/2 - 34*s, ty0 = by - lh*0.6;
-    x.textAlign = 'right';
-    x.fillText(Math.round(o.kts) + ' KTS', tx, ty0); x.fillText('FLRS ' + o.flr, tx, ty0 + lh);
-    if (o.left3){ x.save(); if (/DSBL/.test(o.left3)) x.fillStyle = dim; x.fillText(o.left3, tx, ty0 + 2*lh); x.restore(); }
-    x.textAlign = 'left'; const rx = cx + bw/2 + 34*s;
-    (o.lines || []).forEach((l, i) => { const sel = l.startsWith('▸'); if (sel){ x.beginPath(); x.moveTo(rx - 9*s, ty0 + i*lh - 3*s); x.lineTo(rx - 4*s, ty0 + i*lh); x.lineTo(rx - 9*s, ty0 + i*lh + 3*s); x.fill(); }
-      x.fillText(l.replace(/^[▸ ]+/, ''), rx, ty0 + i*lh); });
+  // ---- V97: everything below the reticle laid out from the player's Battlefield 6 UI pack (assets/hud/<aircraft>/, 2048x857 reference)
+  const set = o.kind === 'lb' ? 'littlebird' : o.kind === 'ap' ? 'apache' : 'blackhawk', LY = HUDL[set];
+  const K = clamp(H/857, PC.on ? 0.55 : 0.8, 2.4), RIGHT = 1500;
+  const RX = e => e[0] >= RIGHT ? W - (2048 - e[0])*K : cx + (e[0] - 1024)*K, RY = e => H - (857 - e[1])*K;
+  const img = (n, a = 1, e = LY[n]) => { if (!e) return; const im = hudImg(set, e[4]); if (!im) return; x.save(); x.shadowBlur = 0; x.globalAlpha = a; x.drawImage(im, RX(e), RY(e), e[2]*K, e[3]*K); x.restore(); };
+  const txt = (n, t, al = 'left', c2 = col, sz = 0.92, e = LY[n]) => { if (!e) return; x.save(); x.fillStyle = c2; x.textAlign = al; x.textBaseline = 'middle';
+    x.font = `600 ${Math.max(7, e[3]*K*sz)}px Consolas, "DejaVu Sans Mono", ui-monospace, monospace`; x.fillText(t, al === 'right' ? RX(e) + e[2]*K : RX(e), RY(e) + e[3]*K/2 + 0.5); x.restore(); };
+  const key = (n, t, e = LY[n]) => { if (!e) return 0; x.save(); x.shadowBlur = 0; x.font = `600 ${Math.max(7, e[3]*K*0.78)}px Consolas, "DejaVu Sans Mono", ui-monospace, monospace`;
+    const w = Math.max(Math.min(e[2], 22)*K, x.measureText(t).width + 7*K), X = RX(e), Y = RY(e); x.fillStyle = 'rgba(190,206,216,0.95)'; x.fillRect(X, Y, w, e[3]*K);
+    x.fillStyle = '#232e38'; x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillText(t, X + 3*K, Y + e[3]*K/2 + 0.5); x.restore(); return w; };
+  // status text either side of the attitude box
+  txt('airspeed', Math.round(o.kts) + ' KTS', 'right');
+  txt('flares_ready', 'FLRS ' + o.flr, 'right');
+  if (o.left3){ const n3 = LY.smoke_launcher_ready ? 'smoke_launcher_ready' : 'repair_status'; txt(n3, o.left3, 'right', /DSBL/.test(o.left3) ? dim : col); }
+  txt('flight_mode', 'A1.5', 'left');
+  // attitude indicator: the inner box drifts with roll and pitch, the ball on its post with yaw / sideslip
+  { const e = LY.attitude_indicator, X = RX(e), Y = RY(e), w = e[2]*K, h = e[3]*K, bx = X + w/2, top = Y + 0.3*h, bot = Y + 0.92*h, bh2 = bot - top;
+    const ix = clamp(-o.bank*0.25*w, -w/2 + 0.16*w, w/2 - 0.16*w), iy = clamp(o.pitch*0.5*bh2, -0.1*bh2, 0.45*bh2), iw = 0.29*w, ih = 0.4*bh2;
+    x.save(); x.lineWidth = Math.max(1.2, 1.6*K); x.strokeRect(X, top, w, bh2);
+    x.beginPath(); x.moveTo(X, top + bh2*0.45); x.lineTo(X + 0.05*w, top + bh2*0.45); x.moveTo(X + w, top + bh2*0.45); x.lineTo(X + 0.95*w, top + bh2*0.45);
+    x.moveTo(bx, bot); x.lineTo(bx, bot - 0.12*bh2); x.stroke();
+    x.strokeRect(bx + ix - iw/2, top + iy, iw, ih); x.beginPath(); x.arc(bx + ix, top + iy + ih*0.95, 0.055*h, 0, 6.29); x.fill();
+    x.beginPath(); x.moveTo(bx + ix - 0.06*w, top + iy); x.lineTo(bx + ix - 0.06*w, top + iy - 0.2*h); x.moveTo(bx + ix + 0.06*w, top + iy); x.lineTo(bx + ix + 0.06*w, top + iy - 0.16*h); x.stroke();
+    const sx = bx + ix - 0.06*w + clamp((o.slip || 0)*0.1*w, -0.12*w, 0.12*w); x.beginPath(); x.arc(sx, Y + 0.07*h, 0.06*h, 0, 6.29); x.fill(); x.restore(); }
+  // weapon lines with the selection arrow on the live one
+  if (o.lines && o.lines.length && LY.weapon_ready_primary){
+    const rows = ['weapon_ready_primary', 'weapon_ready_secondary'];
+    o.lines.forEach((l, i) => { if (!rows[i]) return; txt(rows[i], l.replace(/^[▸ ]+/, ''), 'left');
+      if (l.startsWith('▸')){ const a = LY.weapon_selection_arrow, r = LY[rows[i]]; img('weapon_selection_arrow', 1, [a[0], r[1] + 1.5, a[2], a[3], a[4]]); } });
   }
-  // ---- bottom cluster (PC): aircraft name in brackets, crew seats, free look / camera / exit, weapon box
   if (PC.on){
-    x.shadowBlur = 3; const by = H*0.83, kb = (t, px, py, al) => { x.save(); x.font = `700 ${Math.round(8*s)}px Inter, system-ui, sans-serif`; const w = x.measureText(t).width + 6*s;
-      const X0 = al === 'right' ? px - w : px; x.fillStyle = 'rgba(225,228,230,0.92)'; x.shadowBlur = 0; x.fillRect(X0, py - 5.5*s, w, 11*s); x.fillStyle = '#1b1f22'; x.textAlign = 'center'; x.fillText(t, X0 + w/2, py + 0.5); x.restore(); return w; };
-    x.font = mono(8); x.textAlign = 'center'; x.fillStyle = dim; x.strokeStyle = dim;
-    const nm = '[ ' + (o.name || 'HELICOPTER').toUpperCase() + ' ]'; x.fillText(nm, cx, by - 12*s);
-    // crew seats: a top-down airframe with numbered seats; yours is filled
-    { const n = o.seats || 1, sc = 1.5*s; x.strokeStyle = 'rgba(235,238,240,0.85)'; x.lineWidth = Math.max(1.2, 1.1*s);
-      x.beginPath(); x.moveTo(cx - 9*sc, by - 2*sc); x.lineTo(cx + 9*sc, by + 6*sc); x.moveTo(cx + 9*sc, by - 2*sc); x.lineTo(cx - 9*sc, by + 6*sc);
-      x.moveTo(cx, by + 6*sc); x.lineTo(cx, by + 14*sc); x.moveTo(cx - 3*sc, by + 14*sc); x.lineTo(cx + 3*sc, by + 14*sc); x.stroke();
-      const pos = n <= 1 ? [[0, 0]] : n === 2 ? [[0, -1.6], [0, 2.4]] : n === 3 ? [[0, -1.6], [-3, 2.4], [3, 2.4]] : [[-3, -1.4], [3, -1.4], [-3, 3], [3, 3]];
-      pos.forEach(([px, py], i) => { const X = cx + px*sc, Y = by + 1.5*sc + py*sc, me = i === (o.seat || 0); x.beginPath(); x.arc(X, Y, 2.3*s, 0, 6.29);
-        x.fillStyle = me ? 'rgba(214,245,170,0.95)' : 'rgba(40,46,50,0.85)'; x.fill(); x.stroke(); x.fillStyle = me ? '#1b1f22' : 'rgba(235,238,240,0.9)'; x.font = `700 ${Math.round(6*s)}px Inter, system-ui, sans-serif`; x.fillText(String(i + 1), X, Y + 0.5); }); }
-    x.font = `600 ${Math.round(9.5*s)}px Inter, system-ui, sans-serif`; x.fillStyle = 'rgba(240,242,244,0.95)';
+    // aircraft name between the brackets (where Battlefield says ASSIST OFF)
+    img('assist_off_bracket_left'); img('assist_off_bracket_right');
+    { const e = LY.assist_off_label; if (e){ x.save(); x.shadowBlur = 0; x.fillStyle = 'rgba(150,165,172,0.95)'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.font = `700 ${Math.max(7, e[3]*K*0.95)}px Inter, system-ui, sans-serif`; x.fillText((o.name || 'HELICOPTER').toUpperCase(), cx + (e[0] + e[2]/2 - 1024)*K, RY(e) + e[3]*K/2); x.restore(); } }
+    img('helicopter_seat_map');
     const B = bindsGet(), kn = a => keyName((B[a] || [''])[0]).toUpperCase();
-    const fl = kn('hFree'), lyL = by + 3*s; x.textAlign = 'right'; const w0 = kb(fl, cx - 44*s, lyL, 'right'); x.fillStyle = 'rgba(240,242,244,0.95)'; x.fillText('FREE LOOK', cx - 47*s - w0, lyL);
-    x.textAlign = 'left'; const w1 = kb(kn('hView'), cx + 44*s, by - 3*s, 'left'); x.fillStyle = 'rgba(240,242,244,0.95)'; x.fillText('CAMERA', cx + 47*s + w1, by - 3*s);
-    const w2 = kb(kn('pause'), cx + 44*s, by + 9*s, 'left'); x.fillStyle = 'rgba(240,242,244,0.95)'; x.fillText('EXIT', cx + 47*s + w2, by + 9*s);
-    if (o.wname){ const bw = 92*s, bh = 26*s, X = W - bw - 18*s, Y = H - bh - 18*s; x.strokeStyle = 'rgba(240,242,244,0.85)'; x.lineWidth = 1.4;
-      x.beginPath(); x.moveTo(X + 5*s, Y); x.lineTo(X, Y); x.lineTo(X, Y + bh); x.lineTo(X + 5*s, Y + bh); x.moveTo(X + bw - 5*s, Y); x.lineTo(X + bw, Y); x.lineTo(X + bw, Y + bh); x.lineTo(X + bw - 5*s, Y + bh); x.stroke();
-      x.fillStyle = 'rgba(240,242,244,0.95)'; x.textAlign = 'left'; x.font = `700 ${Math.round(8*s)}px Inter, system-ui, sans-serif`; x.fillText(o.wname, X + 6*s, Y + bh/2);
-      x.textAlign = 'right'; x.font = `700 ${Math.round(13*s)}px Inter, system-ui, sans-serif`; x.fillText(o.ammo || '∞', X + bw - 6*s, Y + bh/2 + 0.5); }
+    img('free_look_label'); key('free_look_key', kn('hFree'));
+    img('camera_label'); key('camera_key', kn('hView'));
+    { const w = key('exit_key', kn('pause')), ek = LY.exit_key, e = LY.exit_label; if (e && ek) img('exit_label', 1, [ek[0] + w/K + 5, e[1], e[2], e[3], e[4]]); }
+    // airframe health: the segmented bar under the seat map
+    { const e = LY.vehicle_health_bar; if (e){ const n = set === 'blackhawk' ? 16 : 4, X = RX(e), Y = RY(e) + e[3]*K*0.3, w = e[2]*K, g = (set === 'blackhawk' ? 3 : 4)*K, sw = (w - g*(n - 1))/n, lit = Math.ceil(clamp(o.health ?? 1, 0, 1)*n);
+      x.save(); x.shadowBlur = 0; for (let i = 0; i < n; i++){ x.fillStyle = i < lit ? 'rgba(205,218,226,0.95)' : 'rgba(205,218,226,0.25)'; x.fillRect(X + i*(sw + g), Y, sw, Math.max(2, 3*K)); } x.restore(); } }
+    // countermeasure and second equipment tiles
+    img('countermeasure_tile', 0.85); img('countermeasure_icon', o.flrOk === false ? 0.35 : 1); key('countermeasure_key', kn('hEq1'));
+    if (LY.secondary_equipment_tile){ img('secondary_equipment_tile', 0.85); img(LY.stabilizer_icon ? 'stabilizer_icon' : 'repair_icon', 0.9); img(LY.stabilizer_key ? 'stabilizer_key' : 'repair_key'); }
+    // weapon box: the live weapon big, the other one small underneath
+    if (LY.primary_weapon_icon && o.wpn !== 'none'){
+      img('weapon_selection_bracket_left'); img('weapon_selection_bracket_right');
+      const secSel = o.wsel === 'sec', big = secSel ? 'secondary_weapon_icon' : 'primary_weapon_icon', small = secSel ? 'primary_weapon_icon' : 'secondary_weapon_icon';
+      img(big, 1, [LY.primary_weapon_icon[0], LY.primary_weapon_icon[1], LY.primary_weapon_icon[2], LY.primary_weapon_icon[3], LY[big][4]]);
+      img(small, 0.85, [LY.secondary_weapon_icon[0], LY.secondary_weapon_icon[1], LY.secondary_weapon_icon[2], LY.secondary_weapon_icon[3], LY[small][4]]);
+      { const e = LY.primary_ammo_count; x.save(); x.shadowBlur = 0; x.fillStyle = 'rgba(205,218,226,0.97)'; x.textAlign = 'right'; x.textBaseline = 'middle';
+        x.font = `700 ${Math.max(9, e[3]*K*0.95)}px Inter, system-ui, sans-serif`; x.fillText(o.ammo || '∞', RX(e) + e[2]*K, RY(e) + e[3]*K/2);
+        if (o.ammoCap){ const c2 = LY.primary_ammo_capacity || e; x.font = `600 ${Math.max(7, c2[3]*K*0.8)}px Inter, system-ui, sans-serif`; x.textAlign = 'left'; x.fillText('/' + o.ammoCap, RX(c2) + 2*K, RY(c2) + c2[3]*K/2); }
+        const s2 = LY.secondary_ammo_count; if (s2 && o.ammo2){ x.font = `700 ${Math.max(7, s2[3]*K*0.85)}px Inter, system-ui, sans-serif`; x.textAlign = 'right'; x.fillText(o.ammo2, RX(s2) + s2[2]*K, RY(s2) + s2[3]*K/2); }
+        x.restore(); }
+      key('weapon_switch_key', kn('hSwitch'));
+    }
+    // upgrades column, with your loadout's upgrade named underneath
+    img('upgrade_hatched_tile_small', 0.6); img('upgrade_armor_icon', 0.75); img('upgrade_waves_icon', 0.85); img('upgrade_hatched_tile_large', 0.6); img('upgrade_optics_icon', 0.85); img('upgrade_missile_icon', 0.9); img('upgrade_level_bar', 0.9);
+    if (o.upName && LY.upgrade_name){ const e = LY.upgrade_name; x.save(); x.shadowBlur = 0; x.font = `600 ${Math.max(7, e[3]*K*0.58)}px Inter, system-ui, sans-serif`;
+      const w = x.measureText(o.upName.toUpperCase()).width + 14*K, X = RX(e) + e[2]*K - w, Y = RY(e); x.fillStyle = 'rgba(205,218,226,0.95)'; x.fillRect(X, Y, w, e[3]*K);
+      x.fillStyle = '#232e38'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(o.upName.toUpperCase(), X + w/2, Y + e[3]*K/2 + 0.5); x.restore(); }
   }
 }
+// the UI pack's sprites, loaded the first time each one is drawn
+const HUD_IMG = {};
+function hudImg(set, f){ const k = set + '/' + f; let im = HUD_IMG[k]; if (!im){ im = HUD_IMG[k] = new Image(); im.src = 'assets/hud/' + k; } return im.complete && im.naturalWidth ? im : null; }
+const HUDL = {"apache":{"free_look_label":[792,757,111.0,18.25,"free_look_label.png"],"free_look_key":[917,757,21.0,19.0,"free_look_key.png"],"camera_label":[1135,739,84.0,18.25,"camera_label.png"],"camera_key":[1108,738,21.0,19.0,"camera_key.png"],"exit_label":[1207,777,46.5,17.75,"exit_label.png"],"exit_key":[1108,776,94.0,19.0,"exit_key.png"],"helicopter_seat_map":[958,700,130.0,124.0,"helicopter_seat_map.png"],"vehicle_health_bar":[915,832,218.0,13.0,"vehicle_health_bar.png"],"airspeed":[714,590,49.25,15.5,"airspeed.png"],"flares_ready":[691,614,76.25,15.5,"flares_ready.png"],"repair_status":[640,638,121.5,15.5,"repair_status.png"],"flight_mode":[869,582,40.25,15.25,"flight_mode.png"],"attitude_indicator":[936,568,176.0,60.0,"attitude_indicator.png"],"weapon_ready_primary":[1267,590,112.5,15.5,"weapon_ready_primary.png"],"weapon_selection_arrow":[1251,590,10.0,12.0,"weapon_selection_arrow.png"],"weapon_ready_secondary":[1267,614,130.5,15.5,"weapon_ready_secondary.png"],"upgrade_armor_icon":[1957,511,46.0,42.0,"upgrade_armor_icon.png"],"upgrade_waves_icon":[1957,545,46.0,42.0,"upgrade_waves_icon.png"],"upgrade_optics_icon":[1934,581,46.0,42.0,"upgrade_optics_icon.png"],"upgrade_missile_icon":[1960,631,46.0,42.0,"upgrade_missile_icon.png"],"upgrade_level_bar":[2005,631,8.0,36.0,"upgrade_level_bar.png"],"upgrade_name":[1870.64,675,144.25,27.0,"upgrade_name.png"],"countermeasure_icon":[1613,757,46.0,42.0,"countermeasure_icon.png"],"countermeasure_key":[1633,809,22.0,19.0,"countermeasure_key.png"],"repair_icon":[1686,757,46.0,42.0,"repair_icon.png"],"repair_key":[1706,809,22.0,19.0,"repair_key.png"],"primary_weapon_icon":[1784,757,118.0,43.0,"primary_weapon_icon.png"],"primary_ammo_count":[1947,756,30.5,31.75,"primary_ammo_count.png"],"primary_ammo_capacity":[1981,762,20.5,18.0,"primary_ammo_capacity.png"],"weapon_switch_key":[1778,809,22.0,19.0,"weapon_switch_key.png"],"secondary_weapon_icon":[1821,807,118.0,43.0,"secondary_weapon_icon.png"],"secondary_ammo_count":[1961,810,35.5,16.5,"secondary_ammo_count.png"],"assist_off_label":[980,685,88.5,14.0,"assist_off_label.png"],"assist_off_bracket_left":[964,681,10.0,20.0,"assist_off_bracket_left.png"],"assist_off_bracket_right":[1076,681,10.0,20.0,"assist_off_bracket_right.png"],"weapon_selection_bracket_left":[1773,751,14.0,56.0,"weapon_selection_bracket_left.png"],"weapon_selection_bracket_right":[2003,751,14.0,56.0,"weapon_selection_bracket_right.png"],"countermeasure_tile":[1607,753,69.0,51.0,"countermeasure_tile.png"],"secondary_equipment_tile":[1680,753,69.0,51.0,"secondary_equipment_tile.png"],"upgrade_hatched_tile_small":[1959,513,44.0,33.0,"upgrade_hatched_tile_small.png"],"upgrade_hatched_tile_large":[1934,581,69.0,51.0,"upgrade_hatched_tile_large.png"]},"littlebird":{"free_look_label":[792,757,111.0,18.25,"free_look_label.png"],"free_look_key":[917,757,21.0,19.0,"free_look_key.png"],"camera_label":[1135,739,84.0,18.25,"camera_label.png"],"camera_key":[1108,738,21.0,19.0,"camera_key.png"],"exit_label":[1207,777,46.5,17.75,"exit_label.png"],"exit_key":[1108,776,94.0,19.0,"exit_key.png"],"helicopter_seat_map":[958,700,130.0,124.0,"helicopter_seat_map.png"],"vehicle_health_bar":[915,832,218.0,13.0,"vehicle_health_bar.png"],"airspeed":[714,590,49.25,15.5,"airspeed.png"],"flares_ready":[691,614,76.25,15.5,"flares_ready.png"],"smoke_launcher_ready":[640,638,121.5,15.5,"smoke_launcher_ready.png"],"flight_mode":[869,582,40.25,15.25,"flight_mode.png"],"attitude_indicator":[936,568,176.0,60.0,"attitude_indicator.png"],"weapon_ready_primary":[1267,590,94.25,15.5,"weapon_ready_primary.png"],"weapon_selection_arrow":[1251,590,10.0,12.0,"weapon_selection_arrow.png"],"weapon_ready_secondary":[1267,614,94.25,15.0,"weapon_ready_secondary.png"],"upgrade_armor_icon":[1957,511,46.0,42.0,"upgrade_armor_icon.png"],"upgrade_waves_icon":[1957,545,46.0,42.0,"upgrade_waves_icon.png"],"upgrade_optics_icon":[1934,581,46.0,42.0,"upgrade_optics_icon.png"],"upgrade_missile_icon":[1960,631,46.0,42.0,"upgrade_missile_icon.png"],"upgrade_level_bar":[2005,631,8.0,36.0,"upgrade_level_bar.png"],"upgrade_name":[1913.24,675,101.75,27.0,"upgrade_name.png"],"countermeasure_icon":[1613,757,46.0,42.0,"countermeasure_icon.png"],"countermeasure_key":[1633,809,22.0,19.0,"countermeasure_key.png"],"stabilizer_icon":[1686,757,46.0,42.0,"stabilizer_icon.png"],"stabilizer_key":[1706,809,22.0,19.0,"stabilizer_key.png"],"primary_weapon_icon":[1784,757,118.0,43.0,"primary_weapon_icon.png"],"primary_ammo_count":[1947,756,35.75,23.25,"primary_ammo_count.png"],"weapon_switch_key":[1778,809,22.0,19.0,"weapon_switch_key.png"],"secondary_weapon_icon":[1821,807,118.0,43.0,"secondary_weapon_icon.png"],"secondary_ammo_count":[1961,810,35.5,16.25,"secondary_ammo_count.png"],"assist_off_label":[980,685,88.5,14.0,"assist_off_label.png"],"assist_off_bracket_left":[964,681,10.0,20.0,"assist_off_bracket_left.png"],"assist_off_bracket_right":[1076,681,10.0,20.0,"assist_off_bracket_right.png"],"weapon_selection_bracket_left":[1773,751,14.0,56.0,"weapon_selection_bracket_left.png"],"weapon_selection_bracket_right":[2003,751,14.0,56.0,"weapon_selection_bracket_right.png"],"countermeasure_tile":[1607,753,69.0,51.0,"countermeasure_tile.png"],"secondary_equipment_tile":[1680,753,69.0,51.0,"secondary_equipment_tile.png"],"upgrade_hatched_tile_small":[1959,513,44.0,33.0,"upgrade_hatched_tile_small.png"],"upgrade_hatched_tile_large":[1934,581,69.0,51.0,"upgrade_hatched_tile_large.png"]},"blackhawk":{"free_look_label":[792,757,111.0,18.25,"free_look_label.png"],"free_look_key":[917,757,21.0,19.0,"free_look_key.png"],"camera_label":[1135,739,84.0,18.25,"camera_label.png"],"camera_key":[1108,738,21.0,19.0,"camera_key.png"],"exit_label":[1207,777,46.5,17.75,"exit_label.png"],"exit_key":[1108,776,94.0,19.0,"exit_key.png"],"helicopter_seat_map":[958,700,130.0,124.0,"helicopter_seat_map.png"],"vehicle_health_bar":[915,832,218.0,13.0,"vehicle_health_bar.png"],"airspeed":[714,590,58.25,15.5,"airspeed.png"],"flares_ready":[691,614,76.25,15.5,"flares_ready.png"],"repair_status":[640,638,121.5,15.5,"repair_status.png"],"flight_mode":[869,582,40.25,15.25,"flight_mode.png"],"attitude_indicator":[936,568,176.0,60.0,"attitude_indicator.png"],"upgrade_armor_icon":[1957,511,46.0,42.0,"upgrade_armor_icon.png"],"upgrade_waves_icon":[1957,545,46.0,42.0,"upgrade_waves_icon.png"],"upgrade_optics_icon":[1934,581,46.0,42.0,"upgrade_optics_icon.png"],"upgrade_missile_icon":[1960,631,46.0,42.0,"upgrade_missile_icon.png"],"upgrade_level_bar":[2005,631,8.0,36.0,"upgrade_level_bar.png"],"upgrade_name":[1862.07,675,153.0,27.0,"upgrade_name.png"],"countermeasure_icon":[1874,757,46.0,42.0,"countermeasure_icon.png"],"countermeasure_key":[1894,809,22.0,19.0,"countermeasure_key.png"],"repair_icon":[1947,757,46.0,42.0,"repair_icon.png"],"repair_key":[1967,809,22.0,19.0,"repair_key.png"],"assist_off_label":[980,685,88.5,14.0,"assist_off_label.png"],"assist_off_bracket_left":[964,681,10.0,20.0,"assist_off_bracket_left.png"],"assist_off_bracket_right":[1076,681,10.0,20.0,"assist_off_bracket_right.png"],"countermeasure_tile":[1868,753,69.0,51.0,"countermeasure_tile.png"],"secondary_equipment_tile":[1941,753,69.0,51.0,"secondary_equipment_tile.png"],"upgrade_hatched_tile_small":[1959,513,44.0,33.0,"upgrade_hatched_tile_small.png"],"upgrade_hatched_tile_large":[1934,581,69.0,51.0,"upgrade_hatched_tile_large.png"]}};
 
 
 // ---- BF door-gun sight: a ring of dots as wide as the bullet cone, a centre dot, corner brackets on hits ----
@@ -9098,6 +9132,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V97', ['Helicopter HUD now uses your Battlefield 6 UI pack (Apache, Little Bird, Black Hawk/DAP): status text, attitude box, weapon lines and arrow placed from its layout', 'PC: aircraft name in the brackets, the real seat maps, FREE LOOK / CAMERA / EXIT with your keys, segmented health bar, flare and equipment tiles, weapon box with the live weapon big and the other small, ammo counts, upgrade icons with your loadout upgrade named']],
   ['V96', ['Helicopter HUD rebuilt from your Battlefield 6 clips: minigun reticle (small cross + a big cross that trails the nose and springs back), rocket I-beam under the nose cross, TOW corner box', 'Hit brackets on the reticle (red on a kill) and a running damage number beside it', 'Heading tape, altitude ladder (Little Bird: dashed ladder with the readout at its foot), A1.5 attitude box with slip ball, BF status lines (MINIGN RDY, LT RKT RLD, GUID RKT, AT AIM MSL, FLRS, SMK LNCHR / EMRG RPR)', 'Artificial horizon: a long dashed line on the real horizon, first person only', 'PC: aircraft name, crew seats, FREE LOOK / CAMERA / EXIT keys and a weapon + ammo box along the bottom', 'Minigun strikes up close throw dark dirt, a low haze and sparks']],
   ['V95', ['Little Bird in wave mode: the cockpit view works (view button / V), with the real cockpit around you', 'Little Bird in wave mode: both miniguns now converge on the HUD marker, so close-in fire no longer goes high']],
   ['V94', ['New call-ins: M2 Bradley (25mm bursts + a TOW for the boss) and an F/A-18 strike (a 20mm gun run, then bombs)', 'The Technical is now a pickup with a DShK 12.7mm in the bed (the old built-in truck is gone)', 'Airfield (PC High/Ultra): two Super Hornets parked off the strip', 'Wave Commander: commanders keep earning while the defenders shop', 'Wave Commander: the host picks the unit spawn delay in the lobby (off, short, normal, long, very long)', 'Call-ins that aren\'t on your hotbar take an empty slot (or one you have none of) when you get them']],

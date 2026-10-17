@@ -871,6 +871,7 @@ body.pc .titleFs{display:none}
           <label for="pdYaw">Yaw</label><input type="range" id="pdYaw" min="0.3" max="2" step="0.05">
           <label for="pdColl">Collective</label><input type="range" id="pdColl" min="0.3" max="2" step="0.05">
           <label for="pdAim">Gunner aim</label><input type="range" id="pdAim" min="0.3" max="3" step="0.05">
+          <label for="pdAssist">Gunner aim assist</label><input type="range" id="pdAssist" min="0" max="1" step="0.05">
           <label for="pdDzL">Left stick dead zone</label><input type="range" id="pdDzL" min="0" max="0.4" step="0.01">
           <label for="pdDzR">Right stick dead zone</label><input type="range" id="pdDzR" min="0" max="0.4" step="0.01">
         </div>
@@ -1299,7 +1300,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V115';
+const GAME_VERSION = 'V116';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -5580,11 +5581,13 @@ try { const b = SETTINGS.binds; if (b && b.hPitchUp && b.hPitchDown && b.hPitchU
 function bindsRebuild(){ INPUT.map = {}; const b = bindsGet(); for (const a in b) for (const c of b[a]) if (c) (INPUT.map[c] = INPUT.map[c] || []).push(a); }
 const act = a => !!(INPUT.held[a] || INPUT.gp.held[a]);
 // V113: controller layout for flying (customisable in Settings > Controls): left stick collective + yaw, right stick pitch + roll,
-// RT fires the selected weapon, LT aims (zoom), RB swaps primary/secondary, D-pad right flares, X seat, Y view; LB is free
-const PAD_DEF = {axes: {yaw: 0, coll: 1, roll: 2, pitch: 3}, inv: {yaw: false, coll: true, roll: false, pitch: false}, btn: {fire: 7, aim: 6, swap: 5, missile: -1, flare: 15, seat: 2, view: 3, lb: -1}, sens: {cyc: 1, yaw: 1, coll: 1, aim: 1}, dz: {l: 0.18, r: 0.18}};
+// RT fires the selected weapon, LT aims (zoom), Y swaps primary/secondary, View (select) changes the camera, D-pad right flares, X seat; LB and RB are free
+const PAD_DEF = {axes: {yaw: 0, coll: 1, roll: 2, pitch: 3}, inv: {yaw: false, coll: true, roll: false, pitch: false}, btn: {fire: 7, aim: 6, swap: 3, missile: -1, flare: 15, seat: 2, view: 8, lb: -1}, assist: 0.5, sens: {cyc: 1, yaw: 1, coll: 1, aim: 1}, dz: {l: 0.18, r: 0.18}};
 const PAD_BTN = {0: 'A', 1: 'B', 2: 'X', 3: 'Y', 4: 'LB', 5: 'RB', 6: 'LT', 7: 'RT', 8: 'BACK', 9: 'START', 10: 'LS', 11: 'RS', 12: 'D↑', 13: 'D↓', 14: 'D←', 15: 'D→'};
 const PAD_AX = ['Left stick ↔', 'Left stick ↕', 'Right stick ↔', 'Right stick ↕'];
-const padCfg = () => { const P = SETTINGS.pad || (SETTINGS.pad = {}); if (!P.v114){ P.v114 = true; if (P.btn && P.btn.missile === 5) P.btn.missile = -1; } for (const k of ['axes', 'inv', 'btn', 'sens', 'dz']) P[k] = Object.assign({}, PAD_DEF[k], P[k]); return P; };
+const padCfg = () => { const P = SETTINGS.pad || (SETTINGS.pad = {}); if (!P.v114){ P.v114 = true; if (P.btn && P.btn.missile === 5) P.btn.missile = -1; }
+  if (!P.v116){ P.v116 = true; if (P.btn){ if (P.btn.swap === 5) P.btn.swap = 3; if (P.btn.view === 3) P.btn.view = 8; } }     /* V116: Y swaps weapons, View/Select changes the camera */
+  for (const k of ['axes', 'inv', 'btn', 'sens', 'dz']) P[k] = Object.assign({}, PAD_DEF[k], P[k]); if (P.assist === undefined) P.assist = PAD_DEF.assist; return P; };
 const padOn = () => !!INPUT.gp.name;
 const padAx = k => { const P = padCfg(), v = gpAx(P.axes[k])*(k === 'yaw' ? P.sens.yaw : k === 'coll' ? P.sens.coll : P.sens.cyc); return clamp(P.inv[k] ? -v : v, -1.6, 1.6); };
 const gpAx = i => { const v = INPUT.gp.ax[i] || 0, D = SETTINGS.pad && SETTINGS.pad.dz ? (i < 2 ? SETTINGS.pad.dz.l : SETTINGS.pad.dz.r) : 0.18; return Math.abs(v) < D ? 0 : (v - Math.sign(v)*D)/(1 - D); };
@@ -6156,6 +6159,7 @@ renderPadMap();
 function senTab(t){ for (const b of $('senTabs').children) b.classList.toggle('on', b.dataset.st === t); for (const p of document.querySelectorAll('.senPane')) p.classList.toggle('on', p.dataset.sp === t); SETTINGS.senTab = t; }
 for (const b of $('senTabs').children) b.onclick = () => { sfx('click'); senTab(b.dataset.st); };
 const senTabInit = () => senTab(padOn() ? 'pad' : SETTINGS.senTab && (SETTINGS.senTab !== 'touch' || !PC.on) ? SETTINGS.senTab : PC.on ? 'kbm' : 'touch');
+{ const el = $('pdAssist'); el.value = padCfg().assist; el.addEventListener('input', () => { padCfg().assist = +el.value; saveSettings(); }); }
 for (const [id, grp, k] of [['pdCyc', 'sens', 'cyc'], ['pdYaw', 'sens', 'yaw'], ['pdColl', 'sens', 'coll'], ['pdAim', 'sens', 'aim'], ['pdDzL', 'dz', 'l'], ['pdDzR', 'dz', 'r']]){
   const el = $(id); el.value = padCfg()[grp][k]; el.addEventListener('input', () => { padCfg()[grp][k] = +el.value; saveSettings(); }); }
 // ---- controller test & calibration: the outline lights up what the pad reports; tap a button on it to check that one ----
@@ -6862,7 +6866,7 @@ function hmStart(type = 'apache'){
     g.traverse(o => { if (o.isMesh && o.visible && !(o.material && o.material.transparent)) bb.expandByObject(o); }); HM.gy = isFinite(bb.min.y) ? Math.max(1.2, -bb.min.y + 0.05) : 2.2*HB; }
   if (!GS_.gunCam) GS_.gunCam = new THREE.PerspectiveCamera(38, 1, 0.3, 400);
   $('hm').hidden = false; hmSeatUI();
-  $('hmHint').innerHTML = padOn() ? 'Controller: left stick collective &amp; yaw · right stick pitch &amp; roll · RT fire · RB swap weapon · LT aim · D-pad → flares' : tsTwin() ? 'Two sticks fly it: ' + ({mode2: 'left = collective &amp; yaw · right = pitch &amp; roll', mode1: 'left = pitch &amp; yaw · right = collective &amp; roll', swap: 'left = pitch &amp; roll · right = collective &amp; yaw'})[SETTINGS.sticks.layout] + ' · ✥ arranges them' : heliSim() ? 'Click to capture the mouse · mouse rolls &amp; pitches · W nose down / S flare · A/D yaw · Shift/Ctrl throttle · F switch weapon · 3 flares · C camera · V freelook · Esc releases' : penSeen ? 'Pen: hover to steer or aim · FIRE button with your finger · pen tap: ' + (PEN_OPTS[SETTINGS.penTap[(HM.type || 'apache') + '_pilot']] || 'Flares').toLowerCase() : 'Left thumb: drag to fly · ▲▼ altitude · hold FIRE';
+  $('hmHint').innerHTML = padOn() ? 'Controller: left stick collective &amp; yaw · right stick pitch &amp; roll · RT fire · Y swap weapon · LT aim · View camera · D-pad → flares' : tsTwin() ? 'Two sticks fly it: ' + ({mode2: 'left = collective &amp; yaw · right = pitch &amp; roll', mode1: 'left = pitch &amp; yaw · right = collective &amp; roll', swap: 'left = pitch &amp; roll · right = collective &amp; yaw'})[SETTINGS.sticks.layout] + ' · ✥ arranges them' : heliSim() ? 'Click to capture the mouse · mouse rolls &amp; pitches · W nose down / S flare · A/D yaw · Shift/Ctrl throttle · F switch weapon · 3 flares · C camera · V freelook · Esc releases' : penSeen ? 'Pen: hover to steer or aim · FIRE button with your finger · pen tap: ' + (PEN_OPTS[SETTINGS.penTap[(HM.type || 'apache') + '_pilot']] || 'Flares').toLowerCase() : 'Left thumb: drag to fly · ▲▼ altitude · hold FIRE';
   startWave();
 }
 function hmStop(){
@@ -7503,7 +7507,22 @@ function gunnerAimDelta(src, dt){
   const sens = SETTINGS.heliSens || 1, inv = SETTINGS.heliInvert ? -1 : 1, z = HM.zoom ? 0.45 : 1;
   const mdx = src.mdx || 0, mdy = src.mdy || 0; src.mdx = src.mdy = 0;
   const PS = padOn() ? padCfg().sens.aim : 1, ax = (act('hAimR') ? 1 : 0) - (act('hAimL') ? 1 : 0) + (gpAx(2) + gpAx(0))*PS, ay = (act('hAimU') ? 1 : 0) - (act('hAimD') ? 1 : 0) - (gpAx(3) + gpAx(1))*PS;
-  return [(mdx*0.0026*sens + ax*1.1*dt)*z, (-mdy*0.0026*sens*inv + ay*0.8*dt)*z];
+  const [aa, ab] = padAssist(dt);
+  return [(mdx*0.0026*sens + ax*1.1*dt)*z + aa, (-mdy*0.0026*sens*inv + ay*0.8*dt)*z + ab];
+}
+// V116: controller aim assist in the gunner seats: whatever is nearest the middle of the sight (within a small circle) slowly
+// pulls the aim onto itself. Only with a controller, and gentle enough that you can always pull away
+const _paV = new THREE.Vector3();
+function padAssist(dt){
+  const k = padOn() ? padCfg().assist : 0; if (!k || !dt) return [0, 0];
+  let best = null, bd = 0.13*0.13;
+  const test = (x, y, z) => { _paV.set(x, y, z).project(camera); if (_paV.z > 1 || _paV.z < -1) return; const d = _paV.x*_paV.x + _paV.y*_paV.y; if (d < bd){ bd = d; best = [_paV.x, _paV.y]; } };
+  for (let i = 0; i < en; i++) if (eh[i] > 0) test(ex[i], 0.9*ESK(), ez[i]);
+  for (const b of bosses) test(b.x, 2*ESK(), b.z);
+  if (MODE === 'heli' && HM.on){ for (const e of HM.enemies) if (e.hp > 0 && e.pos) test(e.pos.x, e.pos.y, e.pos.z); for (const a of AA.list) if (a.hp > 0) test(a.x, 0.6, a.z); }
+  if (!best) return [0, 0];
+  const half = camera.fov*Math.PI/360, rate = 2.2*k*dt;     // closes ~2.2*k of the gap per second
+  return [best[0]*Math.atan(Math.tan(half)*camera.aspect)*rate, best[1]*half*rate];
 }
 function hmSimGunner(P, dt){
   const [dx, dy] = gunnerAimDelta(P, dt);
@@ -10365,6 +10384,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V116', ['Controller defaults: Y swaps primary and secondary, View (select) changes the camera; LB and RB are free', 'Controller aim assist in the gunner seats: aim near an enemy and the sight slowly drifts onto it. Strength is in Settings → Sensitivity → Controller (0 turns it off)']],
   ['V115', ['The controller test picture is a clean outline now (no glow)', 'Tablets are detected and get the PC layout: the wide menus, the PC HUD arrangement and sharper rendering, while keeping the touch controls. Settings → Graphics → PC mode also has a Tablet option to switch it by hand']],
   ['V114', ['Controller: RB now swaps between primary and secondary (miniguns and rockets on the Little Bird, primary and secondary missiles on the others) and RT fires whichever is selected', 'Settings → Sensitivity has tabs: Keyboard & mouse, Touch (phones) and Controller. The Controller tab has pitch/roll, yaw, collective and gunner-aim sensitivity, a dead zone for each stick, and a test screen: the controller outline lights up what you press, shows where each stick is against its dead zone, and lets you tap a button to check it reads correctly']],
   ['V113', ['Controller flying: left stick collective and yaw, right stick pitch and roll, RT fires, LT aims (zoom), RB missiles, D-pad right flares, X seat, Y camera (LB is free). Change any of it in Settings → Controls', 'With a controller connected the on-screen sticks and buttons disappear, flying switches to the full flight model, and the HUD shows the controller buttons', 'Phones get the full Battlefield-style helicopter HUD: the weapon box with the rocket pods, flares, seat map and health bar. The touch buttons now sit right on those tiles']],

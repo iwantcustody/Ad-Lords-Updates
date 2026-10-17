@@ -226,9 +226,16 @@ public class MainActivity extends Activity implements SensorEventListener {
     }
 
     @Override public void onWindowFocusChanged(boolean hasFocus) { super.onWindowFocusChanged(hasFocus); if (hasFocus) hideBars(); }
-    @Override protected void onPause() { super.onPause(); if (sensors != null) sensors.unregisterListener(this); web.onPause(); web.evaluateJavascript("document.dispatchEvent(new Event('visibilitychange'))", null); }
+    // V99: in the background the game stops completely: the page pauses the run and suspends its audio, then the WebView's
+    // JavaScript timers and rendering are paused, so nothing keeps running (or draining the battery) until you come back
+    @Override protected void onPause() {
+        super.onPause(); if (sensors != null) sensors.unregisterListener(this);
+        web.evaluateJavascript("window.__appBg && window.__appBg(true)", null);
+        web.onPause(); web.pauseTimers();
+    }
     @Override protected void onResume() {
-        super.onResume(); web.onResume(); hideBars();
+        super.onResume(); web.resumeTimers(); web.onResume(); hideBars();
+        web.evaluateJavascript("window.__appBg && window.__appBg(false)", null);
         synchronized (mLock) { gyroT = 0; rx = ry = rz = 0; }
         if (sensors != null) { if (gyro != null) sensors.registerListener(this, gyro, SensorManager.SENSOR_DELAY_GAME); if (accel != null) sensors.registerListener(this, accel, SensorManager.SENSOR_DELAY_GAME); }
     }

@@ -1148,7 +1148,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V98';
+const GAME_VERSION = 'V99';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -1162,7 +1162,7 @@ const AU = {ctx: null, master: null, sfx: null, amb: null, noise: null, last: {}
 // V89 watchdog: if the phone suspends the audio, or its clock stalls under load, kick it back into life
 const AUW = {ct: -1, t: 0};
 setInterval(() => {
-  const c = AU.ctx; if (!c || !SETTINGS.sound || document.visibilityState !== 'visible') return;
+  const c = AU.ctx; if (!c || !SETTINGS.sound || document.visibilityState !== 'visible' || (typeof APPBG !== 'undefined' && APPBG.on)) return;
   if (c.state === 'suspended' || c.state === 'interrupted'){ c.resume().catch(() => {}); return; }
   const now = performance.now();
   if (c.currentTime === AUW.ct && now - AUW.t > 900){ AUW.t = now; c.suspend().then(() => c.resume()).catch(() => {}); return; }
@@ -8264,7 +8264,21 @@ $('quitBtn').onclick = () => { $('pause').hidden = true; openTitle(); };
 // Windows app: a way out from the pause menu, and Alt+F4 always works
 if (window.AdLordsNative && AdLordsNative.quit){ $('exitAppBtn').hidden = false; $('exitAppBtn').onclick = () => { try { persist(); } catch(_){} AdLordsNative.quit(); }; }
 addEventListener('keydown', e => { if (e.altKey && e.key === 'F4' && window.AdLordsNative && AdLordsNative.quit){ e.preventDefault(); try { persist(); } catch(_){} AdLordsNative.quit(); } }, true);
-document.addEventListener('visibilitychange', () => { if (document.hidden){ if (state === 'play') pauseGame(); } });
+// V99: leaving the app (home, app switcher, screen off) pauses the run and silences everything: the sound engine is suspended and the
+// radio stops, so nothing keeps running and draining the battery. The Android app calls __appBg too, since its WebView can still
+// report itself visible in the background
+const APPBG = {on: false};
+function appBg(on){
+  APPBG.on = !!on;
+  if (on){
+    if (state === 'play') pauseGame();
+    try { if (RADIO.au && !RADIO.au.paused) RADIO.au.pause(); } catch(e){}
+    if (AU.ctx && AU.ctx.state === 'running') AU.ctx.suspend().catch(() => {});
+  } else if (AU.ctx && SETTINGS.sound) AU.ctx.resume().catch(() => {});
+}
+window.__appBg = appBg;
+document.addEventListener('visibilitychange', () => appBg(document.hidden));
+addEventListener('pagehide', () => appBg(true));
 addEventListener('pagehide', () => { if (state === 'play') pauseGame(); });
 // ---- settings ----
 function bindSettings(){
@@ -9178,6 +9192,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V99', ['Radio keeps playing when you pause, open the shop, a card or Settings: muffled and a little quieter, back to full when you return to the fight', 'Leaving the app (home button, app switcher, screen off) now pauses the run and stops all sound and processing, so it no longer runs in the background and drains the battery (Android: the app update this needs is offered when you open the game)']],
   ['V98', ['Radio: hold Q in any seat (or press the 📻 button) for a station wheel; aim at a station and let go. AD LORDS FM plays your own recordings, four more station slots are ready for new tracks, and Settings → Audio has a Radio volume',
            'Apache and Black Hawk: the rocket and TOW reticles now trail the nose and spring back exactly like the Little Bird\'s minigun cross, and unguided rockets land on the aim point',
            'Little Bird: minigun rounds no longer land past the reticle when you fly low; strikes show where the round really meets the ground, and close-in rounds still hit', 'Gunner seats in wave mode now work exactly like gunship mode: mouse aim (click to capture), arrow keys and stick, the same sensitivity, invert, zoom (right click) and swing limits', 'Wave-mode Apache front seat uses the gunship gunner sight and turret aiming (no more dragging a ground marker); F fires the Hellfire, 2 the rocket salvo', 'Door guns in wave mode: same aim speed and direction on both sides as the gunship door guns, the BF sight only', 'Holding Q for the radio no longer drops the helicopter (Q is also collective down)']],
@@ -9309,7 +9324,22 @@ const RADIO_ST = [
 const RADIO = {open: false, src: '', x: 0, y: 0, sel: -1, sticky: false, pid: null, ox: 0, oy: 0, moved: false, st: SETTINGS.radio ?? -1, au: null, q: {}, tuned: {}, segs: []};
 const RW_N = 6, RW_R0 = 58, RW_R1 = 152, RW_DEAD = 26;
 const radioSeat = () => (MODE === 'heli' && HM.on) || DF.on || DG.on || (GS_.on && GS_.phase === 'gun');
-const radioVolume = () => { if (RADIO.au) RADIO.au.volume = clamp(SETTINGS.sound ? (SETTINGS.master ?? 0.8)*(SETTINGS.radioVol ?? 0.6) : 0, 0, 1); };
+// V99: the radio runs through a low-pass and a gain in the game's audio, so menus can muffle it instead of stopping it
+const radioLevel = () => clamp(SETTINGS.sound ? (SETTINGS.master ?? 0.8)*(SETTINGS.radioVol ?? 0.6) : 0, 0, 1);
+const radioMuffled = () => state === 'paused' || state === 'shop' || state === 'card' || state === 'choice' || (NET.on && NET.shopOpen);
+function radioWire(){
+  if (RADIO.fx || !RADIO.au || !AU.ctx) return !!RADIO.fx;
+  try { const c = AU.ctx, src = c.createMediaElementSource(RADIO.au), lp = c.createBiquadFilter(), g = c.createGain();
+    lp.type = 'lowpass'; lp.frequency.value = 20000; lp.Q.value = 0.5; g.gain.value = 0; src.connect(lp); lp.connect(g); g.connect(c.destination);
+    RADIO.fx = {lp, g}; RADIO.au.volume = 1; } catch(e){ RADIO.fx = null; }
+  return !!RADIO.fx;
+}
+const radioVolume = () => { if (!RADIO.au) return; if (radioWire()){ radioMix(true); return; } RADIO.au.volume = radioLevel()*(radioMuffled() ? 0.55 : 1); };
+// open air in play; behind a pause, the shop, a card or Settings: duller and a bit quieter, still playing
+function radioMix(snap){
+  if (!RADIO.fx) return; const c = AU.ctx, t = c.currentTime, m = radioMuffled(), tc = snap ? 0.01 : 0.25;
+  RADIO.fx.lp.frequency.setTargetAtTime(m ? 650 : 20000, t, tc); RADIO.fx.g.gain.setTargetAtTime(radioLevel()*(m ? 0.55 : 1), t, tc);
+}
 function radioBuild(){
   const svg = $('rwSvg'), NS = 'http://www.w3.org/2000/svg', pt = (r, a) => (r*Math.cos(a)).toFixed(1) + ' ' + (r*Math.sin(a)).toFixed(1);
   { const hub = document.createElementNS(NS, 'circle'); hub.setAttribute('r', RW_R0 - 4); hub.setAttribute('fill', 'rgba(12,16,20,.85)'); hub.setAttribute('stroke', 'rgba(240,238,196,.35)'); svg.append(hub); }
@@ -9364,7 +9394,7 @@ function radioNext(tuneIn){
   RADIO.now = tr[1]; au.src = 'assets/radio/' + tr[0] + '.mp3'; radioVolume();
   // like GTA, the first time you tune in you land partway through a song, as if the station had been playing all along
   if (tuneIn && !RADIO.tuned[RADIO.st]){ RADIO.tuned[RADIO.st] = true; au.addEventListener('loadedmetadata', () => { if (isFinite(au.duration) && au.duration > 20) au.currentTime = au.duration*rnd(0.08, 0.55); }, {once: true}); }
-  if (state === 'play' || state === 'dying') au.play().catch(() => {});
+  if (state === 'play' || state === 'dying' || radioMuffled()) au.play().catch(() => {});
   if (tuneIn || state === 'play') toast('📻 ' + st.name + ' · ' + tr[1], '#f0eec4');
   radioRender();
 }
@@ -9390,7 +9420,9 @@ setInterval(() => {
   const live = state === 'play' || state === 'dying', btn = $('radioBtn');
   if (btn.hidden === live) btn.hidden = !live;
   if (RADIO.open && !live) radioClose();
-  if (RADIO.st >= 0 && live && !document.hidden){ if (!RADIO.au || !RADIO.au.src) radioNext(true); else if (RADIO.au.paused) RADIO.au.play().catch(() => {}); }
+  const on = live || radioMuffled();       // V99: keeps playing (muffled) through pause, the shop, cards and Settings
+  if (RADIO.au) radioMix(false);
+  if (RADIO.st >= 0 && on && !document.hidden && !APPBG.on){ if (!RADIO.au || !RADIO.au.src) radioNext(true); else if (RADIO.au.paused) RADIO.au.play().catch(() => {}); }
   else if (RADIO.au && !RADIO.au.paused) RADIO.au.pause();
 }, 300);
 $('radioBtn').classList.toggle('on', RADIO.st >= 0);

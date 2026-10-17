@@ -413,7 +413,12 @@ button.ccard{cursor:pointer}
 #gs button{background:rgba(10,16,22,.6)!important;color:#e8fbff!important;box-shadow:none!important;border:1.5px solid rgba(232,251,255,.75)!important;border-radius:6px!important;font-family:var(--body)!important;font-weight:800!important;font-size:13px!important}
 #gs button small{font-family:var(--display)!important;font-size:18px!important;font-weight:400!important}
 #gs svg.ret g{stroke:#e8fbff}
-#gs .scope,#gs svg.ret,#dg > svg,#dg .vig{display:none}   /* V98: the gunship-mode sights are drawn instead */
+#gs .scope,#gs svg.ret,#dg > svg,#dg .vig{display:none}
+#gs .acBtns{position:absolute;left:12px;bottom:calc(14px + env(safe-area-inset-bottom, 0px));display:none;flex-direction:column;gap:7px;pointer-events:none}
+#gs.ac .acBtns{display:flex}#gs.ac .btns,#gs.ac #gsLock{display:none!important}
+#gs .acBtns button{min-width:70px;padding:6px 10px;text-align:left}
+#gs .acBtns button.on{background:rgba(232,251,255,.92)!important;color:#0a1016!important}
+#gs .acBtns button small{display:inline!important;font-size:12px!important;margin-left:3px}   /* V98: the gunship-mode sights are drawn instead */
 #gs .tint{position:absolute;inset:0;background:radial-gradient(ellipse at center, rgba(40,90,50,0) 45%, rgba(4,18,8,.55) 100%), repeating-linear-gradient(0deg, rgba(0,0,0,.08) 0 2px, rgba(0,0,0,0) 2px 4px), rgba(60,140,80,.12)}
 #gs .top{position:absolute;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top, 0px)) 14px 0;display:flex;justify-content:space-between;align-items:flex-start;font-family:var(--display);font-size:16px;letter-spacing:1px;text-shadow:0 0 6px rgba(0,0,0,.6)}
 #gs .bar{width:120px;height:8px;border:1.5px solid #c8ffd0;border-radius:5px;margin-top:4px;overflow:hidden}
@@ -587,11 +592,12 @@ body.pc .titleFs{display:none}
   <div id="toast"></div>
   <div id="gs" hidden>
     <div class="scope"></div>
-    <div class="top"><div>APACHE · GUNNER<div class="bar"><i id="gsTime"></i></div></div><div style="text-align:right">30MM <span id="gsMag">12/12</span> · <span id="gsKills">0</span> KILLS<br><button class="landBtn" id="gsLand" type="button" aria-label="Landscape">⤢</button> <button id="gsExit" type="button">Exit</button></div></div>
+    <div class="top"><div><span id="gsName">APACHE · GUNNER</span><div class="bar"><i id="gsTime"></i></div></div><div style="text-align:right">30MM <span id="gsMag">12/12</span> · <span id="gsKills">0</span> KILLS<br><button class="landBtn" id="gsLand" type="button" aria-label="Landscape">⤢</button> <button id="gsExit" type="button">Exit</button></div></div>
     <svg class="ret" viewBox="-75 -75 150 150" aria-hidden="true"><g fill="none" stroke="#c8ffd0" stroke-width="2"><circle r="22"/><path d="M-70 0h34M36 0h34M0 -70v34M0 36v34"/><path d="M-50 -50h12M-50 -50v12M50 -50h-12M50 -50v12M-50 50h12M-50 50v-12M50 50h-12M50 50v-12"/></g><circle r="2.5" fill="#c8ffd0"/></svg>
     <div class="lock" id="gsLock"></div>
     <div class="hint" id="gsHint">Drag to aim · hold FIRE for the 30 mm</div>
     <div class="btns"><button id="gsRockets" type="button">ROCKETS<small id="gsRk">6 salvos</small></button><button id="gsHellfire" type="button">HELLFIRE<small id="gsHf">4 left</small></button></div>
+    <div class="acBtns" id="acBtns"><button type="button" data-w="105">105<small>mm</small></button><button type="button" data-w="40">40<small>mm</small></button><button type="button" data-w="25">25<small>mm</small></button><button type="button" id="acIr">WHOT<small>sensor</small></button></div>
   </div>
   <div id="dg" hidden>
     <div class="vig"></div>
@@ -1054,7 +1060,10 @@ const ASSETS = {
     dap:       {model: 'assets/uh60.json', body: 'assets/dapwt_body.json', rotor: 'assets/dapwt_rotor.json', tailRotor: 'assets/dapwt_tail.json'},
     // “Minigun M-134” by Nik Vega, CC BY 4.0 — split by its rig into receiver and spinning barrel cluster (metres, barrels along -z)
     m134:      {body: 'assets/m134_body.json', barrels: 'assets/m134_barrels.json', muzzle: -0.69},
-    abrams:    {hull: null, turret: null, barrel: null},
+    // V103: “M1A1 Abrams” (the player's pack): hull, tracks and a separate Turret mesh (with the 120mm); barrel along -z, metres scaled to 1 long
+    abrams:    {model: 'assets/veh_abrams.glb'},
+    // V103: AC-130 gunship, exterior only (the cabin interior is left out), propellers split out as prop0..prop3
+    ac130:     {model: 'assets/veh_ac130.glb'},
     // V94: DShK technical (pickup + 12.7mm DShK); the old built-in truck is only a fallback if the file fails
     technical: {model: 'assets/veh_technical.json'},
     // M2 Bradley IFV (turret_lod is the turret + 25mm), F/A-18F Super Hornet (decimated, vertex colours, nose +z, metres)
@@ -1080,7 +1089,7 @@ const DAP_MODELS = {
 };
 try { const pick = (JSON.parse(localStorage.getItem('adlords-settings') || '{}').dapLook) || 'pods'; ASSETS.vehicles.dap = {...DAP_MODELS[pick] || DAP_MODELS.pods}; } catch(e){ ASSETS.vehicles.dap = {...DAP_MODELS.pods}; }
 // heavy parts that load in the background after the menu is up
-const LAZY = new Set(['apache', 'blackhawk', 'dap', 'm134', 'little', 'bradley', 'jet']);
+const LAZY = new Set(['apache', 'blackhawk', 'dap', 'm134', 'little', 'bradley', 'jet', 'abrams', 'ac130']);
 
 // ================= constants =================
 let MAIN = 4; const MAIN0 = 4, MAIN_W = 7.6, MAIN_W2 = 9.12, MOUTH = -30, FAR = -62, GUN_Z = 1.0, BARRICADE_Z = -0.7;
@@ -1155,6 +1164,8 @@ const VEHICLES = {
   apache:    {name: 'Apache', desc: 'Take the gunner seat: 30mm cannon, rockets and Hellfires. Once every 3 waves.', dur: 38, price: 650, weight: 1.5},
   little:    {name: 'Little Bird', desc: 'Fast AH-6 strafing runs up the pier: twin miniguns and quick rocket volleys.', dur: 26, price: 340, weight: 2.6},
   jet:       {name: 'F/A-18 Strike', desc: 'A Super Hornet dives in for a 20mm gun run up the thickest part of the horde, then comes back around with bombs.', dur: 14, price: 380, weight: 1.8},
+  // V103: shop only (never from barrels). Short time on station, the heaviest guns in the game, and you work them yourself on the thermal sight
+  ac130:     {name: 'AC-130 Gunship', desc: 'Circles high over the pier for a short time. Take the guns yourself: 105mm howitzer, 40mm Bofors and 25mm Gatling on a thermal sight.', dur: 22, price: 20000, weight: 0},
 };
 
 let best = 0;
@@ -1163,7 +1174,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V102';
+const GAME_VERSION = 'V103';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -1724,7 +1735,7 @@ function hsTick(dt){
       else if (DF.on && DF.v === v){ const P = DF.P || {}; em.push({id: 'veh' + v.uid, kind, persp: DF.view === 'cockpit' ? '1p' : '3p', pos: null, st: {load: clamp(Math.max(0, P.coll || DF.climb || 0)*0.8 + (P.loadA || 0)*0.6, 0, 1), yaw: clamp((P.wy || DF.sx || 0)/1.1, -1, 1), speed: P.vel ? P.vel.length()*4.86/120 : 0.3}}); }
       else em.push({id: 'veh' + v.uid, kind, persp: '3p', pos: v.g.position, st: {load: 0.25, speed: 0.3}});
     }
-    if (GS_.on && GS_.heli) em.push({id: 'gs', kind: 'ap', persp: GS_.phase === 'gun' ? '1p' : '3p', pos: GS_.phase === 'gun' ? null : GS_.pos, st: {load: 0.3, speed: 0.4}});
+    if (GS_.on && GS_.heli && GS_.kind !== 'ac130') em.push({id: 'gs', kind: 'ap', persp: GS_.phase === 'gun' ? '1p' : '3p', pos: GS_.phase === 'gun' ? null : GS_.pos, st: {load: 0.3, speed: 0.4}});
   }
   // V100: other aircraft's rotors: only the two nearest (your own always plays)
   { const cp = camera.position, others = em.filter(e => e.pos).sort((a, b) => a.pos.distanceToSquared(cp) - b.pos.distanceToSquared(cp)); for (const e of others.slice(2)) em.splice(em.indexOf(e), 1); }
@@ -1943,7 +1954,7 @@ function strip(xl, xr, z0, z1, step, mat, y){
 const SKY = new THREE.ShaderMaterial({side: THREE.BackSide, fog: false, depthWrite: false, uniforms: {uLo: {value: new THREE.Color(0.81, 0.92, 0.96)}, uHi: {value: new THREE.Color(0.33, 0.66, 0.9)}},
   vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
   fragmentShader: 'uniform vec3 uLo, uHi; varying vec3 vP; void main(){ float h = clamp(vP.y*2.2, 0.0, 1.0); vec3 c = mix(uLo, uHi, pow(h, 0.7)); gl_FragColor = vec4(c, 1.0); }'});
-scene.add(new THREE.Mesh(new S(500, 32, 16), SKY));
+const SKYM = new THREE.Mesh(new S(500, 32, 16), SKY); scene.add(SKYM);
 // sea
 const LOC_START = scene.children.length;
 const water = new THREE.Mesh(new THREE.PlaneGeometry(420, 420, 140, 140), new THREE.ShaderMaterial({
@@ -2760,10 +2771,33 @@ function jetSnd(v, on){
   v.snd.gun.g.gain.setTargetAtTime(v.firing && on ? clamp(30/(d + 8), 0, 1)*0.8 : 0, t, 0.02);
 }
 function jetSndOff(v){ if (!v.snd) return; try { for (const n of [v.snd.r, v.snd.w, v.snd.gun]) n.s.stop(); v.snd.lfo.stop(); } catch(e){} v.snd = null; }
+// V103: the M1A1 model. The turret turns about the middle of its base; the muzzle is the front tip of the gun
+const ABR_K = 4.1, ABR = {piv: null, muz: null, top: null};
+function abrModel(g){
+  const M = loadedParts.abrams?.model; if (!M) return null;
+  const inner = vehToon(M.clone(true), 1.15), h = new THREE.Group(); h.scale.setScalar(ABR_K); h.add(inner); g.add(h); g.updateMatrixWorld(true);
+  const tm = inner.getObjectByName('Turret'); if (!tm) return null;
+  if (!ABR.piv){
+    const pts = []; tm.traverse(o => { if (!o.isMesh) return; const P = o.geometry.attributes.position, v = new THREE.Vector3(); for (let i = 0; i < P.count; i += 3){ v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld); pts.push(v.clone()); } });
+    let y0 = Infinity, y1 = -Infinity, z0 = Infinity; for (const v of pts){ y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y); z0 = Math.min(z0, v.z); }
+    const base = pts.filter(v => v.y < y0 + (y1 - y0)*0.22), bb = new THREE.Box3().setFromPoints(base.length ? base : pts), c = bb.getCenter(new THREE.Vector3());
+    const tip = pts.filter(v => v.z < z0 + 0.06), my = tip.length ? tip.reduce((a, v) => a + v.y, 0)/tip.length : c.y;
+    ABR.piv = new THREE.Vector3(c.x, y0, c.z); ABR.muz = new THREE.Vector3(c.x, my, z0); ABR.top = y0 + (y1 - y0)*0.62;
+  }
+  return tm;
+}
 function buildAbrams(){
   const g = new THREE.Group(), tan = toon(0xbfa878), tanD = toon(0x8d7a52), dark = toon(0x2a2d33);
-  if (loadedParts.abrams?.hull) g.add(fitModel(loadedParts.abrams.hull, 3.2, 'z'));
-  else {
+  const tm = abrModel(g);
+  if (tm){
+    const turret = new THREE.Group(); turret.position.copy(ABR.piv); g.add(turret); g.updateMatrixWorld(true); turret.attach(tm);
+    const barrel = new THREE.Group(); barrel.position.set(0, 0, -0.9); turret.add(barrel);
+    const muzzle = new THREE.Object3D(); muzzle.position.set(ABR.muz.x - ABR.piv.x, ABR.muz.y - ABR.piv.y, ABR.muz.z - ABR.piv.z + 0.9); barrel.add(muzzle);
+    const coax = new THREE.Group(); coax.position.set(0.35, ABR.top - ABR.piv.y, 0.3); turret.add(coax);
+    const cmuzzle = new THREE.Object3D(); cmuzzle.position.set(0, 0.04, -0.6); coax.add(cmuzzle);
+    return {g, turret, barrel, coax, muzzle, cmuzzle};
+  }
+  {
     vAdd(g, new B(1.9, 0.45, 3.0), tan, 0, 0.62, 0);
     vAdd(g, new B(1.7, 0.25, 0.6).rotateX(0.5), tan, 0, 0.55, -1.55);
     for (const sx of [-1, 1]){ vAdd(g, new B(0.42, 0.5, 3.1), dark, sx*0.95, 0.32, 0); vAdd(g, new B(0.46, 0.12, 3.1), tanD, sx*0.95, 0.6, 0); for (let k = 0; k < 6; k++) vAdd(g, new C(0.17, 0.17, 0.46, 12).rotateZ(Math.PI/2), tanD, sx*0.95, 0.24, -1.2 + k*0.48); }
@@ -3030,7 +3064,7 @@ const REWARDS = [
   {id: 'sniper', w: 7}, {id: 'grenade', w: 7}, {id: 'rpg', w: 4},
   {id: 'gunner', label: '+1 GUNNER', w: 5}, {id: 'freeze', label: 'FREEZE', w: 4}, {id: 'repair', label: 'REPAIR', w: 5},
   {id: 'pistolup', label: 'PISTOL +', w: 5},
-  ...Object.entries(VEHICLES).map(([id, v]) => ({id, label: v.name.toUpperCase(), w: v.weight})),
+  ...Object.entries(VEHICLES).filter(([, v]) => v.weight > 0).map(([id, v]) => ({id, label: v.name.toUpperCase(), w: v.weight})),
 ];
 for (const r of REWARDS) if (!r.label) r.label = WEAPONS[r.id].name.toUpperCase();
 function pickReward(exclude){
@@ -3335,7 +3369,7 @@ const crowdMat = {};
 function instMesh(geo, mat, cap){
   const m = new THREE.InstancedMesh(geo, mat, cap);
   m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap*3).fill(1), 3);
-  m.frustumCulled = false; m.count = 0; m.visible = false; scene.add(m); m.userData.n = 0; return m;
+  m.frustumCulled = false; m.count = 0; m.visible = false; m.layers.enable(5); scene.add(m); m.userData.n = 0; return m;
 }
 const BOSS = {};
 // ======================================================================
@@ -3667,10 +3701,11 @@ let pendingChoice = null;
 // ================= call-ins: vehicles and support you hold until you want them =================
 const STOCK = {};
 let _strOn = null;
-const STREAKS = ['technical', 'abrams', 'bradley', 'blackhawk', 'dap', 'little', 'apache', 'jet', 'bulldozer', 'freeze', 'repair'];
-const STREAK_LABEL = {technical: 'Technical', abrams: 'Abrams', bradley: 'Bradley', jet: 'F/A-18', blackhawk: 'Black Hawk', dap: 'DAP', little: 'Little Bird', apache: 'Apache', bulldozer: 'Dozer', freeze: 'Freeze', repair: 'Repair'};
+const STREAKS = ['technical', 'abrams', 'bradley', 'blackhawk', 'dap', 'little', 'apache', 'jet', 'ac130', 'bulldozer', 'freeze', 'repair'];
+const STREAK_LABEL = {technical: 'Technical', abrams: 'Abrams', bradley: 'Bradley', jet: 'F/A-18', ac130: 'AC-130', blackhawk: 'Black Hawk', dap: 'DAP', little: 'Little Bird', apache: 'Apache', bulldozer: 'Dozer', freeze: 'Freeze', repair: 'Repair'};
 const HELI_SVG = '<path d="M2 6h28M16 6v3"/><path d="M5 13c2-3 6-4 13-4h5c3 0 5 2 5 4s-2 3-5 3H11l-6 1z" fill="currentColor"/><path d="M5 13l-3-3"/>';
 const STREAK_SVG = {
+  ac130: '<path d="M14 2h4v19h-4zM2 10l14-2 14 2v3l-14-1-14 1zM10 20h12v2H10z" fill="currentColor"/><path d="M7 9v-2M25 9v-2M11 8.5v-2M21 8.5v-2"/>',
   technical: '<path d="M3 15v-4l5-1 3-4h7v5h10v4z" fill="currentColor"/><circle cx="9" cy="16" r="2.4"/><circle cx="23" cy="16" r="2.4"/><path d="M19 9l7-4"/>',
   abrams: '<path d="M3 16h26l-3 3H6zM7 12h17l3 4H5z" fill="currentColor"/><path d="M13 12V9h7v3M20 10h10"/>',
   little: '<path d="M4 5h24M16 5v3"/><ellipse cx="13" cy="12" rx="6" ry="4" fill="currentColor"/><path d="M19 12h10M28 9v6M8 18h12M10 16v2M17 16v2"/>',
@@ -3705,7 +3740,7 @@ function deploy(k){
 }
 // call-in hotbar: eight fixed slots, each bound to a call-in type (Settings → Call-in hotbar) and a key (1–8 by default).
 // a slot always shows; with none in stock it's greyed out
-const hotbar = () => { const h = Array.isArray(SETTINGS.hotbar) && SETTINGS.hotbar.length === 8 ? SETTINGS.hotbar : STREAKS.filter(k => k !== 'freeze' && k !== 'bradley' && k !== 'jet'); return h; };
+const hotbar = () => { const h = Array.isArray(SETTINGS.hotbar) && SETTINGS.hotbar.length === 8 ? SETTINGS.hotbar : STREAKS.filter(k => k !== 'freeze' && k !== 'bradley' && k !== 'jet' && k !== 'ac130'); return h; };
 function buildStreaks(flash){
   const el = $('streaks'); el.innerHTML = '';
   const bn = bindsGet();
@@ -3722,6 +3757,7 @@ function buildStreaks(flash){
 }
 function refreshStreaks(){ for (const b of $('streaks').children){ const k = b.dataset.k; if (!k) continue; const n = STOCK[k] || 0; b.classList.toggle('zero', !n); b.disabled = !n || !canDeploy(k); } }
 function requestVehicle(type){
+  if (type === 'ac130'){ acStart(); return; }
   if (type === 'apache'){
     const mine = vehicles.find(o => o.type === 'apache' && !o.done && !o.ghost);
     if (GS_.on && !GS_.follow) return gunshipStart();          // already overhead: resupply
@@ -4456,6 +4492,7 @@ function airShots(dt){
       HIT_OWN = gm;
       if (sh.kind === 'cannon') explode(x, z, cannonR(), CANNON.dmg*dmgMul*gm, true);
       else if (sh.kind === 'rocket') explode(x, z, sh.aoe || 2.8, (sh.dmg || 24)*dmgMul*gm, true);
+      else if (sh.kind === 'ac'){ explode(x, z, sh.ac.r, sh.ac.dmg*dmgMul*gm, sh.ac.r < 2); if (sh.ac.r > 5 && GS_.on && GS_.kind === 'ac130') GS_.boom = 0.55; }
       else { explode(x, z, 4.4, 150*dmgMul*gm); }
       HIT_OWN = 0;
       if (P.on) P.kills += kills - before;
@@ -4523,6 +4560,7 @@ function mslLoad(){
 function missileObj(mat){ if (!MSL.geo) mslLoad(); return new THREE.Mesh(MSL.geo || missileGeo, MSL.geo ? MSL.mat : mat); }
 const tracerMat = new THREE.MeshBasicMaterial({color: 0xfff1a0}), rocketMat = new THREE.MeshBasicMaterial({color: 0xffc070}), hfMat = toon(0xdfe6ee);
 function gsPose(ang){
+  if (GS_.kind === 'ac130'){ acPose(ang); return; }
   // position on the orbit, travel direction, and gun position under the nose
   GS_.pos.set(GS_CENTER.x + Math.sin(ang)*GS_R, GS_H + Math.sin(ang*2)*0.6, GS_CENTER.z + Math.cos(ang)*GS_R);
   GS_.dir.set(Math.cos(ang), 0, -Math.sin(ang));
@@ -4530,6 +4568,7 @@ function gsPose(ang){
 }
 function gsPlaceHeli(){
   const h = GS_.heli; if (!h) return;
+  if (GS_.kind === 'ac130'){ h.g.position.copy(GS_.pos); h.g.rotation.set(0, Math.atan2(GS_.dir.z, -GS_.dir.x), 0); h.g.rotateX(GS_.phase === 'leave' ? 0.15 : 0.42); return; }
   h.g.position.copy(GS_.pos);
   h.g.rotation.set(0, Math.atan2(GS_.dir.z, -GS_.dir.x), 0);
   h.g.rotateX(0.18);            // bank into the turn
@@ -4538,11 +4577,12 @@ function gsPlaceHeli(){
 function gunshipStart(){
   autoLand();
   if (GS_.on){ GS_.dur += 12; GS_.rockets += 3; GS_.hellfires += 2; toast('Apache resupplied', '#c8ffd0'); return; }
-  Object.assign(GS_, {on: true, azOk: false, firing: false, phase: 'arrive', t: 0, dur: VEHICLES.apache.dur, ang: -0.6, kills: 0, rockets: 6, hellfires: 4, rkCd: 0, hfCd: 0, fireT: 0, salvo: 0, wasFp: fp, mag: CANNON.mag, reload: 0});
+  Object.assign(GS_, {kind: 'apache', on: true, azOk: false, firing: false, phase: 'arrive', t: 0, dur: VEHICLES.apache.dur, ang: -0.6, kills: 0, rockets: 6, hellfires: 4, rkCd: 0, hfCd: 0, fireT: 0, salvo: 0, wasFp: fp, mag: CANNON.mag, reload: 0});
   GS_.aim.set(cx*0.5, 0, -22);
   { const d = densestEnemy(); if (d >= 0) GS_.aim.set(ex[d], 0, Math.max(ez[d], -40)); }
-  if (!GS_.heli){ GS_.heli = buildApache(); GS_.heli.g.scale.setScalar(GS_SCALE); scene.add(GS_.heli.g); }
-  GS_.heli.g.visible = true;
+  if (!GS_.ap){ GS_.ap = buildApache(); GS_.ap.g.scale.setScalar(GS_SCALE); scene.add(GS_.ap.g); }
+  if (GS_.acm) GS_.acm.g.visible = false;
+  GS_.heli = GS_.ap; GS_.heli.g.visible = true; acUi(false);
   if (!GS_.gunCam) GS_.gunCam = new THREE.PerspectiveCamera(38, 1, 0.3, 300);
   toast('Apache inbound', '#c8ffd0');
   $('bottom').hidden = true;
@@ -4578,13 +4618,15 @@ function gsEnd(){
     camera.near = 0.08; resize(); return;
   }
   if (LAND.on) toggleLandscape(false);
-  GS_.phase = 'leave'; GS_.t = 0;
+  GS_.phase = 'leave'; GS_.t = 0; GS_.firing = false;
+  if (GS_.kind === 'ac130') acUi(false);
   flash(); $('gs').hidden = true; if (state !== 'over') $('hud').hidden = false;
   if (GS_.cockpit) GS_.cockpit.visible = false;
   camera.near = 0.08; resize();
 }
 function gsReset(){
   for (const sh of GS_.shots) scene.remove(sh.m); GS_.shots.length = 0;
+  if (GS_.kind === 'ac130') acUi(false);
   GS_.on = false; GS_.phase = ''; if (GS_.heli) GS_.heli.g.visible = false; if (GS_.cockpit) GS_.cockpit.visible = false;
   $('gs').hidden = true; camera.near = 0.08; resize();
 }
@@ -4625,10 +4667,12 @@ function gsUpdate(dt){
     P.pos.copy(v.g.position); P.dir.set(-1, 0, 0).applyQuaternion(v.g.quaternion); P.dir.y = 0; if (P.dir.lengthSq() < 1e-4) P.dir.set(0, 0, -1); P.dir.normalize();
     P.gun.copy(P.pos).addScaledVector(P.dir, 2.4); P.gun.y -= 0.9;
   } else {
-  if (P.phase !== 'leave') P.ang += dt*0.24;
+  if (P.phase !== 'leave') P.ang += dt*(P.kind === 'ac130' ? AC.w : 0.24);
   gsPose(P.ang);
   }
-  if (P.phase === 'arrive'){
+  if (P.kind === 'ac130' && P.phase === 'arrive'){ acArrive(P, dt); }
+  else if (P.kind === 'ac130' && P.phase === 'gun'){ acGun(P, dt); if (P.t > P.dur) gsEnd(); }
+  else if (P.phase === 'arrive'){
     // swoop in from behind the camera to the orbit
     // sweep in low over the pier so you see it from the top view, then climb into the orbit
     const k = Math.min(1, P.t/2.2), e = k*k*(3 - 2*k);
@@ -4663,11 +4707,12 @@ function gsUpdate(dt){
     if (P.t > P.dur) gsEnd();
   } else if (P.phase === 'leave'){
     P.pos.addScaledVector(P.dir, P.t*18); P.pos.y += P.t*6;
-    if (P.t > 1.8){ P.on = false; P.heli.g.visible = false; $('bottom').hidden = false; if (P.wasFp !== fp) toggleView(); }
+    if (P.t > (P.kind === 'ac130' ? 3 : 1.8)){ P.on = false; P.heli.g.visible = false; $('bottom').hidden = false; if (P.wasFp !== fp) toggleView(); if (P.kind === 'ac130') acUi(false); }
   }
 }
 function gsSync(dt){
   const P = GS_;
+  if (P.kind === 'ac130') return acSync(P, dt);
   if (P.follow){ P.follow.g.visible = P.phase !== 'gun'; if (P.follow.h) apAimTurret(P.follow.h, _apD2.copy(P.aim).sub(P.gun).normalize()); }
   if (P.heli && !P.follow){ gsPlaceHeli(); P.heli.rotor.rotation.y += dt*30; P.heli.tail.rotation.z += dt*45; }
   if (P.phase === 'arrive' || P.phase === 'leave') return false;     // normal top camera
@@ -4702,8 +4747,9 @@ function gsSync(dt){
   }
   return false;
 }
-$('gsRockets').onclick = () => { if (GS_.phase !== 'gun' || !GS_.rockets || GS_.rkCd > 0) return; GS_.rockets--; GS_.rkCd = 2.2; GS_.salvo = 10; GS_.salvoT = 0; };
+$('gsRockets').onclick = () => { if (GS_.kind === 'ac130'){ acTherm(); return; } if (GS_.phase !== 'gun' || !GS_.rockets || GS_.rkCd > 0) return; GS_.rockets--; GS_.rkCd = 2.2; GS_.salvo = 10; GS_.salvoT = 0; };
 $('gsHellfire').onclick = () => {
+  if (GS_.kind === 'ac130'){ acWeapon(); return; }
   if (GS_.phase !== 'gun' || !GS_.hellfires || GS_.hfCd > 0) return;
   GS_.hellfires--; GS_.hfCd = 1.2;
   const tg = gsTargetNear(GS_.aim) || {};
@@ -4718,6 +4764,245 @@ function gsAim(dxPx, dyPx){
   GS_.aim.z = clamp(GS_.aim.z, FAR + 6, 0); GS_.aim.x = clamp(GS_.aim.x, -halfW(GS_.aim.z), halfW(GS_.aim.z));
 }
 
+// ================= V103: AC-130 gunship =================
+// Rides on the gunship-seat code (GS_ with kind 'ac130'): the same fire / aim / zoom / exit inputs, its own orbit, guns, sight and sensor.
+// It flies a left-hand pylon turn high over the pier, so the guns in its left side always face the middle; the sight is ground-stabilised
+// (the aim point stays put on the ground while the aircraft moves). The picture is a thermal sensor: the scene without sky or fog,
+// graded to white-hot, black-hot or green night vision, with the horde, the squad and the vehicles running hot from a mask pass.
+const AC = {w: 0.13, R: 56, H: 50, C: new THREE.Vector3(0, 0, -26), len: 30, rt: null, mrt: null, qs: null, qc: null, mat: null, white: null, whiteSk: null, hotT: 0, dr: null,
+  a: new THREE.Vector3(), m: new THREE.Vector3(), b: new THREE.Vector3(), cc: new THREE.Color()};
+const AC_ORDER = ['105', '40', '25'];
+// M102 105mm: one round, then the crew reloads. L/60 Bofors 40mm: clips of 8. GAU-12 25mm: a stream
+const AC_W = {
+  '105': {name: '105MM', fov: 44, mag: 1, rate: 0, reload: 4.2, r: 6.8, dmg: 520, speed: 95, spread: 0.2, shake: 0.9, tl: 5, tw: 0.22},
+  '40':  {name: '40MM', fov: 28, mag: 8, rate: 0.42, reload: 2.4, r: 3.2, dmg: 75, speed: 120, spread: 0.45, shake: 0.28, tl: 3.4, tw: 0.13},
+  '25':  {name: '25MM', fov: 17, mag: 60, rate: 0.045, reload: 2.2, r: 1.25, dmg: 12, speed: 160, spread: 0.85, shake: 0.05, tl: 2.4, tw: 0.07}};
+const AC_IR = ['whot', 'bhot', 'nv'], AC_IR_NAME = {whot: 'WHOT', bhot: 'BHOT', nv: 'NV'};
+const _acL = new THREE.Vector3(), _acD = new THREE.Vector3();
+function buildAC(){
+  const g = new THREE.Group(), props = [], M = loadedParts.ac130?.model;
+  if (M){
+    const inner = vehToon(M.clone(true), 1.0, 0x5d6266); inner.updateMatrixWorld(true);
+    const bb = new THREE.Box3().setFromObject(inner), c = bb.getCenter(new THREE.Vector3()), sz = bb.getSize(new THREE.Vector3());
+    inner.position.sub(c); const h = new THREE.Group(); h.add(inner); h.scale.setScalar(AC.len/Math.max(1e-3, sz.x)); g.add(h);
+    inner.traverse(o => { if (/^prop\d/.test(o.name)) props.push(o); if (o.isMesh) o.castShadow = false; });
+  } else {
+    const gr = toon(0x5d6266); vAdd(g, new B(AC.len, 3.4, 3.6), gr, 0, 0, 0); vAdd(g, new B(3.6, 0.5, 40), gr, -2, 1.4, 0); vAdd(g, new B(3, 0.4, 13), gr, 13, 1.6, 0); vAdd(g, new B(3.4, 5, 0.4), gr, 13.4, 4, 0);
+  }
+  return {g, props};
+}
+function acPose(ang){
+  const P = GS_;
+  P.pos.set(AC.C.x + Math.sin(ang)*AC.R, AC.H + Math.sin(ang*1.5)*1.2, AC.C.z + Math.cos(ang)*AC.R);
+  P.dir.set(Math.cos(ang), 0, -Math.sin(ang));
+  // the guns sit in the left side of the hull, which faces the middle of the orbit
+  P.gun.copy(P.pos).addScaledVector(_acL.set(-Math.sin(ang), 0, -Math.cos(ang)), 2.2); P.gun.y -= 1.2;
+}
+function acStart(){
+  if (GS_.on){ if (GS_.kind === 'ac130'){ GS_.dur += 10; toast('AC-130 stays 10 s longer', '#c8ffd0'); } return; }
+  autoLand();
+  const aw = {}; for (const k of AC_ORDER) aw[k] = {mag: AC_W[k].mag, rel: 0, cd: 0};
+  Object.assign(GS_, {kind: 'ac130', on: true, follow: null, azOk: false, firing: false, phase: 'arrive', t: 0, dur: VEHICLES.ac130.dur, ang: -0.9, kills: 0, wasFp: fp,
+    wpn: '105', aw, shk: 0, boom: 0, ir: AC_IR.includes(SETTINGS.acIr) ? SETTINGS.acIr : 'whot', rng: 0});
+  GS_.aim.set(0, 0, -22); { const d = densestEnemy(); if (d >= 0) GS_.aim.set(ex[d], 0, Math.max(ez[d], -48)); }
+  if (!GS_.acm){ GS_.acm = buildAC(); scene.add(GS_.acm.g); }
+  if (GS_.ap) GS_.ap.g.visible = false;
+  GS_.heli = GS_.acm; GS_.heli.g.visible = true;
+  toast('AC-130 on station', '#c8ffd0'); $('bottom').hidden = true; acDrone(true);
+}
+function acArrive(P, dt){
+  // in low over the pier from behind you, climbing and banking into the orbit
+  const k = Math.min(1, P.t/3.2), e = k*k*(3 - 2*k), u = 1 - e;
+  const a = AC.a.set(-34, 20, 46), m = AC.m.set(6, 34, -12), b = AC.b.copy(P.pos);
+  P.pos.set(u*u*a.x + 2*u*e*m.x + e*e*b.x, u*u*a.y + 2*u*e*m.y + e*e*b.y, u*u*a.z + 2*u*e*m.z + e*e*b.z);
+  if (e < 0.98) P.dir.set(2*u*(m.x - a.x) + 2*e*(b.x - m.x), 0, 2*u*(m.z - a.z) + 2*e*(b.z - m.z)).normalize();
+  if (k >= 1){
+    P.phase = 'gun'; P.t = 0; flash(); $('gs').hidden = false; $('hud').hidden = true; $('gsHint').style.opacity = 1; P.started = time; acUi(true);
+    $('gsHint').textContent = PC.on ? 'Mouse aims · left click fires · 1 / 2 / 3: 105, 40, 25 · F: next gun · V: sensor · right click: zoom' : 'Drag to aim · hold FIRE · pick the gun and the sensor on the left';
+  }
+}
+function acGun(P, dt){
+  if (P.t > 3) $('gsHint').style.opacity = 0;
+  // ground-stabilised sight: start from where the aim point is now, add anything the inputs turned since the last frame
+  if (!P.azOk){
+    const dx = P.aim.x - P.gun.x, dy = P.aim.y - P.gun.y, dz = P.aim.z - P.gun.z; P.az = Math.atan2(dx, -dz); P.el = clamp(Math.atan2(dy, Math.hypot(dx, dz)), -1.52, -0.12);
+    P.azOk = true; P.azL = P.az; P.elL = P.el; HM.zoom = false; GUNIN.mdx = GUNIN.mdy = 0; if (PC.on) heliCapture();
+  } else {
+    const ox = P.az - P.azL, oy = P.el - P.elL, dx = P.aim.x - P.gun.x, dy = P.aim.y - P.gun.y, dz = P.aim.z - P.gun.z;
+    P.az = Math.atan2(dx, -dz) + ox; P.el = Math.atan2(dy, Math.hypot(dx, dz)) + oy;
+  }
+  const W = AC_W[P.wpn], kz = W.fov/44, [ddx, ddy] = gunnerAimDelta(GUNIN, dt);
+  P.az += ddx*kz; P.el = clamp(P.el + ddy*kz, -1.52, -0.12);
+  const d = _acD.set(Math.sin(P.az)*Math.cos(P.el), Math.sin(P.el), -Math.cos(P.az)*Math.cos(P.el)), t = -P.gun.y/d.y;
+  P.aim.copy(P.gun).addScaledVector(d, t);
+  const cx2 = clamp(P.aim.x, -34, 34), cz2 = clamp(P.aim.z, FAR - 24, 18);
+  if (cx2 !== P.aim.x || cz2 !== P.aim.z){ P.aim.x = cx2; P.aim.z = cz2; const qx = P.aim.x - P.gun.x, qy = -P.gun.y, qz = P.aim.z - P.gun.z; P.az = Math.atan2(qx, -qz); P.el = Math.atan2(qy, Math.hypot(qx, qz)); }
+  P.aim.y = 0; P.azL = P.az; P.elL = P.el; P.rng = P.aim.distanceTo(P.gun);
+  // every gun reloads on its own; the one you're on fires while FIRE is held
+  for (const k of AC_ORDER){ const A = P.aw[k]; A.cd = Math.max(0, A.cd - dt); if (A.rel > 0){ A.rel -= dt; if (A.rel <= 0){ A.rel = 0; A.mag = AC_W[k].mag; if (k === P.wpn) sfx('click', 0.5); } } }
+  const A = P.aw[P.wpn];
+  if (P.firing && A.rel <= 0 && A.cd <= 0 && A.mag > 0){ acFire(P, W); A.mag--; A.cd = W.rate; if (A.mag <= 0) A.rel = W.reload; }
+  P.shk = Math.max(0, P.shk - dt*2.2); P.boom = Math.max(0, P.boom - dt*1.6);
+  $('gsMag').textContent = W.name + ' ' + (A.rel > 0 ? 'RELOADING' : A.mag + '/' + W.mag);
+}
+function acFire(P, W){
+  const to = P.aim.clone(); to.x += rnd(-W.spread, W.spread); to.z += rnd(-W.spread, W.spread);
+  const m = tracerObj(W.tl, W.tw), from = P.gun; m.position.copy(from); scene.add(m);
+  _trX.copy(to).sub(from).normalize(); m.position.addScaledVector(_trX, 3); m.lookAt(_trD.copy(m.position).sub(_trX));
+  GS_.shots.push({kind: 'ac', ac: W, m, v: _trX.clone().multiplyScalar(W.speed), to, life: 4, ghost: NET.ghost});
+  P.shk = Math.max(P.shk, W.shake);
+  if (W === AC_W['105']){ sfx('tank', 1.3, 0, true); sfx('bigboom', 0.5, 0, true); }
+  else if (W === AC_W['40']) sfx('cannon30', 1, 0, true); else sfx('cal50', 0.55, 0, true);
+}
+function acSync(P, dt){
+  if (P.heli){ gsPlaceHeli(); for (const pr of P.heli.props || []) pr.rotation.x += dt*38; }
+  if (P.phase !== 'gun') return false;
+  P.heli.g.visible = false;
+  camera.position.copy(P.gun);
+  if (P.shk > 0){ const j = P.shk*0.35; camera.position.x += rnd(-j, j); camera.position.y += rnd(-j, j); camera.position.z += rnd(-j, j); }
+  camera.lookAt(P.aim);
+  camera.fov = AC_W[P.wpn].fov*(HM.zoom ? 0.5 : 1); camera.updateProjectionMatrix();
+  acHud(P);
+  $('gsTime').style.width = Math.max(0, 100 - P.t/P.dur*100) + '%';
+  $('gsKills').textContent = fmt(P.kills);
+  return true;
+}
+function acUi(on){
+  $('gs').classList.toggle('ac', on); $('gsName').textContent = on ? 'AC-130 · GUNS' : 'APACHE · GUNNER';
+  if (!on){ acDrone(false); GS_.firing = false; }
+  acBtnsSync();
+}
+function acBtnsSync(){
+  for (const b of document.querySelectorAll('#acBtns button[data-w]')) b.classList.toggle('on', b.dataset.w === GS_.wpn);
+  $('acIr').innerHTML = AC_IR_NAME[GS_.ir || 'whot'] + '<small>sensor</small>';
+}
+function acWeapon(w){
+  if (GS_.kind !== 'ac130' || GS_.phase !== 'gun') return;
+  GS_.wpn = w && AC_W[w] ? w : AC_ORDER[(AC_ORDER.indexOf(GS_.wpn) + 1) % AC_ORDER.length];
+  HM.zoom = false; sfx('click', 0.6); acBtnsSync();
+}
+function acTherm(){
+  if (GS_.kind !== 'ac130' || GS_.phase !== 'gun') return;
+  GS_.ir = AC_IR[(AC_IR.indexOf(GS_.ir) + 1) % AC_IR.length]; SETTINGS.acIr = GS_.ir; saveSettings(); sfx('click', 0.6); acBtnsSync();
+}
+for (const b of document.querySelectorAll('#acBtns button[data-w]')) b.addEventListener('click', e => { e.stopPropagation(); acWeapon(b.dataset.w); });
+$('acIr').addEventListener('click', e => { e.stopPropagation(); acTherm(); });
+// four turboprops: a low drone while it's overhead
+function acDrone(on){
+  if (!AU.ctx) return; const c = AU.ctx, t = c.currentTime;
+  if (on && !AC.dr){
+    const g = c.createGain(), lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260; g.gain.value = 0;
+    const os = [52, 52.7, 104.4, 78.2].map((f, i) => { const o = c.createOscillator(); o.type = i < 2 ? 'sawtooth' : 'triangle'; o.frequency.value = f; o.connect(lp); o.start(); return o; });
+    lp.connect(g); g.connect(AU.sfx || c.destination); g.gain.setTargetAtTime(0.06*(SETTINGS.sound ? 1 : 0), t, 0.8); AC.dr = {g, os};
+  } else if (!on && AC.dr){ const D = AC.dr; AC.dr = null; D.g.gain.setTargetAtTime(0, t, 0.6); setTimeout(() => { for (const o of D.os) try { o.stop(); } catch(_){} }, 3000); }
+}
+// what runs hot on the sensor: the horde (their instancers are on layer 5 from the start), the boss, your squad and the vehicles
+function acHot(){
+  const mark = root => root && root.traverse(o => { if (o.isMesh) o.layers.enable(o.isSkinnedMesh ? 6 : 5); });
+  if (typeof BOSS !== 'undefined') mark(BOSS.holder);
+  for (const gn of gunners) mark(gn.g);
+  for (const v of vehicles) mark(v.g);
+}
+const AC_FRAG = `uniform sampler2D tC, tM; uniform float mode, time, boom; uniform vec2 px; varying vec2 vUv;
+  float rnd(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233)) + time*7.31)*43758.5453); }
+  void main(){
+    vec3 c = texture2D(tC, vUv).rgb;
+    float l = pow(dot(c, vec3(0.299, 0.587, 0.114)), 0.4545);
+    float m = texture2D(tM, vUv).r;
+    float mb = 0.25*(texture2D(tM, vUv + vec2(px.x, 0.0)).r + texture2D(tM, vUv - vec2(px.x, 0.0)).r + texture2D(tM, vUv + vec2(0.0, px.y)).r + texture2D(tM, vUv - vec2(0.0, px.y)).r);
+    vec3 cs = pow(c, vec3(0.4545));
+    float cool = clamp((cs.b - max(cs.r, cs.g))*2.2, 0.0, 1.0);      // water and blue paint read cold
+    float h = 0.12 + l*0.5 - cool*0.32;
+    h = mix(h, 0.96, max(m, mb*0.75));
+    h += (rnd(floor(vUv*vec2(720.0, 405.0))) - 0.5)*0.07;
+    h = smoothstep(0.03, 0.97, clamp(h, 0.0, 1.0));
+    vec3 o;
+    if (mode < 0.5) o = vec3(h);
+    else if (mode < 1.5) o = vec3(0.97 - h*0.92);
+    else { float g = clamp(l*0.8 - cool*0.3 + m*0.35 + (rnd(floor(vUv*vec2(560.0, 320.0))) - 0.5)*0.16, 0.0, 1.0); o = vec3(0.16, 1.0, 0.32)*g + vec3(0.0, 0.04, 0.01); }
+    o *= 1.0 - 0.38*smoothstep(0.42, 0.86, distance(vUv, vec2(0.5)));
+    o *= 0.95 + 0.05*sin(vUv.y*900.0);
+    o += boom*(mode > 0.5 && mode < 1.5 ? -0.6 : 0.8);
+    gl_FragColor = vec4(clamp(o, 0.0, 1.0), 1.0);
+  }`;
+function acRender(){
+  const r = renderer, W = r.domElement.width, H = r.domElement.height; if (!W || !H) return false;
+  if (!AC.mat){
+    AC.mat = new THREE.ShaderMaterial({uniforms: {tC: {value: null}, tM: {value: null}, mode: {value: 0}, time: {value: 0}, boom: {value: 0}, px: {value: new THREE.Vector2()}},
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }', fragmentShader: AC_FRAG, depthTest: false, depthWrite: false});
+    AC.qs = new THREE.Scene(); const q = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), AC.mat); q.frustumCulled = false; AC.qs.add(q); AC.qc = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    AC.white = new THREE.MeshBasicMaterial({color: 0xffffff}); AC.whiteSk = new THREE.MeshBasicMaterial({color: 0xffffff, skinning: true});
+  }
+  if (!AC.rt || AC.rt.width !== W || AC.rt.height !== H){
+    if (AC.rt){ AC.rt.dispose(); AC.mrt.dispose(); }
+    AC.rt = new THREE.WebGLRenderTarget(W, H); AC.mrt = new THREE.WebGLRenderTarget(Math.max(1, W >> 1), Math.max(1, H >> 1));
+  }
+  if ((AC.hotT -= 1) <= 0){ AC.hotT = 30; acHot(); }
+  const fn = scene.fog.near, ff = scene.fog.far, cc = r.getClearColor(AC.cc).getHex(), ca = r.getClearAlpha(), lm = camera.layers.mask, su = r.shadowMap.autoUpdate;
+  scene.fog.near = 3000; scene.fog.far = 6000; SKYM.visible = false;
+  r.setClearColor(0x000000, 1);
+  r.setRenderTarget(AC.rt); r.clear(); r.render(scene, camera);
+  r.shadowMap.autoUpdate = false;
+  const ac0 = r.autoClear; r.setRenderTarget(AC.mrt); r.clear(); r.autoClear = false;
+  scene.overrideMaterial = AC.white; camera.layers.set(5); r.render(scene, camera);
+  scene.overrideMaterial = AC.whiteSk; camera.layers.set(6); r.render(scene, camera);
+  scene.overrideMaterial = null; camera.layers.mask = lm; r.shadowMap.autoUpdate = su; r.autoClear = ac0;
+  scene.fog.near = fn; scene.fog.far = ff; SKYM.visible = true;
+  r.setRenderTarget(null); r.setClearColor(cc, ca);
+  const U = AC.mat.uniforms; U.tC.value = AC.rt.texture; U.tM.value = AC.mrt.texture; U.mode.value = AC_IR.indexOf(GS_.ir || 'whot'); U.time.value = (performance.now()/1000) % 100;
+  U.boom.value = GS_.boom || 0; U.px.value.set(2/W, 2/H);
+  r.render(AC.qs, AC.qc);
+  return true;
+}
+// the sight, drawn over the sensor picture: frame corners, the gun's reticle, gun list with rounds, sensor, zoom, altitude, slant range, bearing
+function acHud(P){
+  const c = BH.cv; if (!BH.x) BH.x = c.getContext('2d');
+  const d = Math.min(2, devicePixelRatio || 1), W = c.clientWidth || innerWidth, H = c.clientHeight || innerHeight;
+  if (!BH.on){ BH.on = true; c.classList.add('on'); }
+  if (BH.w !== W || BH.h !== H || BH.d !== d){ BH.w = W; BH.h = H; BH.d = d; c.width = Math.round(W*d); c.height = Math.round(H*d); }
+  BH.t = performance.now();
+  const x = BH.x, s = clamp(Math.min(W, H)/430, 0.72, 1.5), cx = W/2, cy = H/2, w = P.wpn, A = P.aw[w], WD = AC_W[w];
+  x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, W, H);
+  const ink = P.ir === 'nv' ? 'rgba(214,255,214,.96)' : 'rgba(250,250,250,.96)';
+  x.strokeStyle = x.fillStyle = ink; x.lineWidth = 1.6*Math.max(1, s*0.9); x.shadowColor = 'rgba(0,0,0,.85)'; x.shadowBlur = 3;
+  // frame corners
+  const fx0 = W*0.5 - Math.min(W*0.4, H*0.7), fx1 = W - fx0, fy0 = H*0.16, fy1 = H*0.86, e = 22*s;
+  x.beginPath();
+  for (const [px, py, sx, sy] of [[fx0, fy0, 1, 1], [fx1, fy0, -1, 1], [fx0, fy1, 1, -1], [fx1, fy1, -1, -1]]){ x.moveTo(px, py + sy*e); x.lineTo(px, py); x.lineTo(px + sx*e, py); }
+  // reticle per gun
+  if (w === '105'){
+    const g = 16*s, L = Math.min(fx1 - cx, cy - fy0) - 14*s, bx = 84*s, by = 58*s, bk = 18*s;
+    x.moveTo(cx - L, cy); x.lineTo(cx - g, cy); x.moveTo(cx + g, cy); x.lineTo(cx + L, cy); x.moveTo(cx, cy - L*0.8); x.lineTo(cx, cy - g); x.moveTo(cx, cy + g); x.lineTo(cx, cy + L*0.8);
+    for (let k = 1; k * 22*s < L; k++){ const q = k*22*s, tk = (k % 2 ? 4 : 7)*s; x.moveTo(cx - q, cy - tk); x.lineTo(cx - q, cy + tk); x.moveTo(cx + q, cy - tk); x.lineTo(cx + q, cy + tk); if (q < L*0.8){ x.moveTo(cx - tk, cy - q); x.lineTo(cx + tk, cy - q); x.moveTo(cx - tk, cy + q); x.lineTo(cx + tk, cy + q); } }
+    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ x.moveTo(cx + sx*bx, cy + sy*(by - bk)); x.lineTo(cx + sx*bx, cy + sy*by); x.lineTo(cx + sx*(bx - bk), cy + sy*by); }
+  } else if (w === '40'){
+    const b = 34*s, k = 11*s, g = 6*s, t = 24*s;
+    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ x.moveTo(cx + sx*b, cy + sy*(b - k)); x.lineTo(cx + sx*b, cy + sy*b); x.lineTo(cx + sx*(b - k), cy + sy*b); }
+    x.moveTo(cx - t, cy); x.lineTo(cx - g, cy); x.moveTo(cx + g, cy); x.lineTo(cx + t, cy); x.moveTo(cx, cy - t); x.lineTo(cx, cy - g); x.moveTo(cx, cy + g); x.lineTo(cx, cy + t);
+    x.moveTo(cx - b - 26*s, cy); x.lineTo(cx - b - 8*s, cy); x.moveTo(cx + b + 8*s, cy); x.lineTo(cx + b + 26*s, cy);
+  } else {
+    const g = 5*s, t = 15*s, q = 22*s, k = 7*s;
+    x.moveTo(cx - t, cy); x.lineTo(cx - g, cy); x.moveTo(cx + g, cy); x.lineTo(cx + t, cy); x.moveTo(cx, cy - t); x.lineTo(cx, cy - g); x.moveTo(cx, cy + g); x.lineTo(cx, cy + t);
+    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ x.moveTo(cx + sx*q, cy + sy*q); x.lineTo(cx + sx*(q - k), cy + sy*q); x.moveTo(cx + sx*q, cy + sy*q); x.lineTo(cx + sx*q, cy + sy*(q - k)); }
+  }
+  x.stroke();
+  // reload bar under the reticle
+  if (A.rel > 0){ const bw = 90*s, f = 1 - A.rel/WD.reload, yy = cy + (w === '105' ? 74 : 50)*s; x.strokeRect(cx - bw/2, yy, bw, 6*s); x.fillRect(cx - bw/2, yy, bw*f, 6*s); }
+  // text
+  const fs = Math.round(13*s); x.font = `600 ${fs}px Consolas, "DejaVu Sans Mono", monospace`; x.textBaseline = 'top';
+  let ty = fy0 + 12*s; const lh = fs*1.35;
+  x.textAlign = 'left';
+  x.fillText('AC-130U', fx0 + 10*s, ty); ty += lh*1.3;
+  for (const k of AC_ORDER){ const Q = P.aw[k], WW = AC_W[k]; x.fillText((k === w ? '▸ ' : '  ') + (k.length < 3 ? ' ' : '') + k + 'MM  ' + (Q.rel > 0 ? 'RLD' : String(Q.mag).padStart(2, ' ') + '/' + WW.mag), fx0 + 10*s, ty); ty += lh; }
+  ty += lh*0.5; x.fillText('KILLS ' + P.kills, fx0 + 10*s, ty);
+  x.textAlign = 'right'; ty = fy0 + 12*s;
+  const ft = Math.round(P.gun.y*145), srn = P.rng*145/6076;
+  for (const line of [AC_IR_NAME[P.ir], 'FOV ' + Math.round(AC_W[w].fov*(HM.zoom ? 0.5 : 1)) + '°', 'ZOOM ' + (HM.zoom ? '2X' : '1X'), 'ALT ' + ft, 'SLT ' + srn.toFixed(1) + 'NM']){ x.fillText(line, fx1 - 10*s, ty); ty += lh; }
+  x.textAlign = 'center'; x.textBaseline = 'bottom';
+  const brg = Math.round(((P.az*57.2958) % 360 + 360) % 360), elv = Math.round(P.el*57.2958);
+  x.fillText('BRG ' + String(brg).padStart(3, '0') + '   EL ' + elv + '   ' + String(Math.round(5000 + P.aim.x*14)).padStart(4, '0') + ' ' + String(Math.round(5000 - P.aim.z*14)).padStart(4, '0'), cx, fy1 - 8*s);
+  const left = Math.max(0, P.dur - P.t); x.textAlign = 'right'; x.fillText('ON STA ' + Math.floor(left/60) + ':' + String(Math.floor(left % 60)).padStart(2, '0'), fx1 - 10*s, fy1 - 8*s);
+}
 // ================= instanced effects =================
 const blobTex = (() => { const {ctx, t} = canvasTex(64, 64); const g = ctx.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,'rgba(40,40,30,.5)'); g.addColorStop(1,'rgba(40,40,30,0)'); ctx.fillStyle = g; ctx.fillRect(0,0,64,64); return t; })();
 const blobGeo = new THREE.PlaneGeometry(1, 1); blobGeo.rotateX(-Math.PI/2);
@@ -5108,6 +5393,10 @@ function actPress(a){
     }
     if (a === 'missile') dfHellfire(); else if (a === 'fire') DF.fire = true; return; }
   if (DG.on){ if (a === 'fire' || a === 'hFire') DG.hold = true; else if (a === 'hZoom') HM.zoom = true; return; }
+  // V103: AC-130 guns: 1 / 2 / 3 pick the 105, 40 or 25, F cycles them, V (or C) cycles the sensor
+  if (GS_.on && GS_.phase === 'gun' && GS_.kind === 'ac130'){ if (a === 'fire' || a === 'hFire') GS_.firing = true; else if (a === 'hZoom') HM.zoom = true;
+    else if (a === 'hSwitch' || a === 'missile') acWeapon(); else if (a === 'view' || a === 'hView') acTherm();
+    else if (a.startsWith('call') && +a.slice(4) <= 3) acWeapon(AC_ORDER[+a.slice(4) - 1]); return; }
   if (GS_.on && GS_.phase === 'gun'){ if (a === 'fire' || a === 'hFire') GS_.firing = true; else if (a === 'hZoom') HM.zoom = true;
     else if (a === 'missile' || a === 'hSwitch') $('gsHellfire').onclick(); else if (a === 'hSec') $('gsRockets').onclick(); return; }
   if (a === 'prevW') cycleWeapon(-1); else if (a === 'nextW') cycleWeapon(1);
@@ -6100,7 +6389,7 @@ function sync(dt){
 
   if (!(MODE === 'heli' && HM.on)) heliAudioTick(DF.on && DF.P ? DF.P : HM, dt);
   DF.dt = dt;
-  if (hudT - dt <= 0) setRotor(state !== 'play' ? 0 : MODE === 'heli' ? 0.9 : GS_.on ? (GS_.phase === 'gun' ? 0.55 : 0.9) : DG.on ? 0.75 : vehicles.some(v => v.type === 'dap') ? 0.45 : vehicles.some(v => v.type === 'little') ? 0.38 : vehicles.some(v => v.type === 'blackhawk') ? 0.4 : 0);
+  if (hudT - dt <= 0) setRotor(state !== 'play' ? 0 : MODE === 'heli' ? 0.9 : GS_.on ? (GS_.kind === 'ac130' ? 0 : GS_.phase === 'gun' ? 0.55 : 0.9) : DG.on ? 0.75 : vehicles.some(v => v.type === 'dap') ? 0.45 : vehicles.some(v => v.type === 'little') ? 0.38 : vehicles.some(v => v.type === 'blackhawk') ? 0.4 : 0);
   hudT -= dt;
   if (MODE === 'def' && hudT <= 0 && (state === 'play' || state === 'card')){
     hudT = 0.1;
@@ -6182,6 +6471,7 @@ function gfxAniso(dt){
     for (const m of ms) for (const k of ['map', 'normalMap', 'emissiveMap']){ const t = m[k]; if (t && t.anisotropy !== a){ t.anisotropy = a; t.needsUpdate = true; } } });
 }
 function renderMain(dt){
+  if (GS_.on && GS_.kind === 'ac130' && GS_.phase === 'gun' && acRender()) return;
   if (GFX.q !== 'standard') gfxAniso(dt);
   if (GFX.q === 'ultra' && GFX.comp){
     const w = cv.clientWidth, h = cv.clientHeight, pr = renderer.getPixelRatio();
@@ -7402,6 +7692,7 @@ const CHARS = {
   // Mixamo-rigged, with his own rifle animations (aim / fire / reload)
   // V102: rigged characters from the player's packs; the squad borrows the animation library's pistol clips. The squad menu shows
   // Shibahu at full detail (with her outline shell); the field uses the version without it
+  blenderchan: {name: 'Blender Chan', rar: 'SR', model: 'assets/c_blenderchan.glb', modelHQ: 'assets/c_blenderchan_hq.glb', perk: {rate: 0.1}, line: 'Renders the horde out of existence, one frame at a time.'},
   shibahu: {name: 'Shibahu', rar: 'SSR', model: 'assets/c_shibahu.glb', modelHQ: 'assets/c_shibahu_hq.glb', cull: true, face: 1, perk: {dmg: 0.08, rate: 0.08}, line: 'Headphones on, jacket half off, never misses the beat.'},
   boykisser: {name: 'Boykisser', rar: 'SR', model: 'assets/c_boykisser.glb', cull: true, face: 1, perk: {coins: 0.12}, line: 'You like shooting the horde, don’t you? :3'},
   white:   {name: 'Character White', rar: 'SR', model: 'assets/c_white.json', anims: {idle: 'aim', fire: 'fire', reload: 'reload'}, hand: 'mixamorigRightHand', perk: {rate: 0.05, dmg: 0.05}, line: 'All in white. Shoulders the rifle and doesn’t blink.'},
@@ -8910,6 +9201,7 @@ const VEH_INFO = {
   blackhawk: {cls: 'Transport Helicopter', seats: 4, tags: ['Transport', 'Door Guns'], ico: 'heli', seat: {driver: ['up'], gunner: ['door']}, desc: 'Hovers off the pier while two side-mounted guns cover the lanes. Fly it yourself, or take a door gun.'},
   dap:       {cls: 'Armed Black Hawk', seats: 4, tags: ['Anti-Soldier', 'Anti-Vehicle'], ico: 'heli', seat: {driver: ['pri', 'sec', 'cm', 'up'], gunner: ['door']}, desc: 'Wing guns, rocket pods and two door miniguns. The pilot works the pods; the crew works the guns.'},
   apache:    {cls: 'Attack Helicopter', seats: 2, tags: ['Anti-Vehicle', 'Anti-Soldier'], ico: 'heli', seat: {driver: ['pri', 'sec', 'cm', 'up'], gunner: ['cannon']}, desc: 'Highly effective against everything on the ground, especially when both crew positions are manned.'},
+  ac130:     {cls: 'Fixed-Wing Gunship', seats: 3, tags: ['Air Support', 'Crowd Control', 'Anti-Vehicle'], ico: 'jet', seat: {}, desc: 'Orbits high over the pier for a short time. You work its 105mm howitzer, 40mm Bofors and 25mm Gatling through a thermal sight.'},
   little:    {cls: 'Scout Helicopter', seats: 1, tags: ['Anti-Soldier', 'Agile'], ico: 'heli', seat: {driver: ['pri', 'sec', 'cm', 'up']}, desc: 'Very effective against the horde. Its agility comes at the cost of being easy to knock out of the sky.'},
   bulldozer: {cls: 'Bulldozer', seats: 1, tags: ['Crowd Control'], ico: 'dozer', seat: {driver: ['up']}, desc: 'Drives up the pier and flattens everything in its path until the blade gives out.'},
 };
@@ -9134,6 +9426,7 @@ function hqVehModel(t){
   if (LAZY.has(t) && !lazyReady[t]) return null;
   if (t === 'blackhawk' || t === 'dap' || t === 'little'){ if (!lazyReady.m134) return null; }
   if (t === 'technical') return buildTechnical().g;
+  if (t === 'ac130'){ const b = buildAC(); b.g.scale.setScalar(0.2); return b.g; }
   if (t === 'abrams') return buildAbrams().g;
   if (t === 'bradley') return buildBradley().g;
   if (t === 'jet'){ const b = buildJet(); b.g.scale.setScalar(0.42); b.g.position.y = 0.9; return b.g; }
@@ -9332,6 +9625,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V103', ['AC-130 Gunship in the shop (● 20,000): it circles high over the pier for a short time and you work its guns yourself, the 105mm howitzer, 40mm Bofors and 25mm Gatling, on a thermal sight (white-hot, black-hot or night vision)', 'The M1 Abrams is a real tank model now, turret and all', 'New squad leader: Blender Chan (SR)']],
   ['V102', ['Friends tab is a lobby now: you stand in the middle with three pads for your squad. Everyone in your room shows up in the skin they picked, and empty pads wait for invites. The card under them shows the room’s game mode', 'New squad leaders: Shibahu (SSR) and Boykisser (SR). The squad menu shows the full-detail models', 'Radio: tuning static between stations, every tune-in drops you partway into a song, and a station plays its whole playlist shuffled before anything repeats']],
   ['V101', ['Wave 26 is a boss fight set to “Messing With Sound Stage”: the lane widens on the first drop, three bosses on the bass drop at 2:00, a shop opens in each breakdown and closes when the beat drops (4:29 and 7:31), and more bosses land on each drop', 'Little Bird: the extra tracers now follow the same line as the real rounds, so they line up with the crosshair when you dive', 'Airfield: the desert hills are lower, lumpier ridges and dunes, so they look right from up high', 'Radio in the headset is a little quieter so the cockpit sits on top of it', 'Settings > Code']],
   ['V100', ['Sound no longer breaks up late in big rounds: besides the radio, your own aircraft and the menus, only five weapons sound at once, whatever you control first, then your own crew, then the nearest. Blasts and impacts get three slots (nearest first), and only the two nearest other helicopters keep their rotor sound', 'Radio in first person (cockpit, gunner seats, door guns) sounds like it’s coming through your headset']],

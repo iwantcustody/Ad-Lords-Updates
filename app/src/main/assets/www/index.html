@@ -227,6 +227,12 @@ body.pc .streak span{font-size:11px}
 .bfTabs button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
 .bfBody{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:4px 14px 18px;-webkit-overflow-scrolling:touch}
 .bfPane{display:none}.bfPane.on{display:block}
+.senTabs{display:flex;gap:4px;margin:12px 0 4px;border-bottom:1px solid rgba(255,255,255,.1)}.senTabs button{background:none;border:0;border-bottom:2px solid transparent;color:rgba(230,238,242,.6);font:800 12px var(--body);letter-spacing:1px;text-transform:uppercase;padding:7px 10px;cursor:pointer}.senTabs button.on{color:#fff;border-bottom-color:var(--gold)}
+.senPane{display:none}.senPane.on{display:block}body.pc .senTabs .touchOnly{display:none}
+.pcWrap{position:relative;width:100%;max-width:520px;margin:8px auto;border-radius:10px;overflow:hidden;background:#000}.pcWrap img{display:block;width:100%;height:auto}.pcWrap svg{position:absolute;inset:0;width:100%;height:100%}
+#pcSvg .hs{fill:rgba(120,220,255,0);stroke:rgba(255,255,255,.0);cursor:pointer}#pcSvg .hs.on{fill:rgba(255,210,80,.75)}#pcSvg .hs.ask{stroke:#ffd34d;stroke-width:6;fill:rgba(255,211,77,.18)}#pcSvg .hs.ok{fill:rgba(90,230,120,.7)}#pcSvg .hs.bad{fill:rgba(255,90,80,.7)}
+#pcSvg .dz{fill:rgba(255,80,80,.18);stroke:rgba(255,120,120,.6);stroke-width:3}#pcSvg .dot{fill:#ffd34d;stroke:#000;stroke-width:3}#pcSvg .bar{fill:rgba(255,210,80,.85)}
+
 #settings .subh{font-family:var(--body);font-weight:800;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold);margin:16px 0 6px;opacity:.9}
 #settings .set{gap:2px 10px;grid-template-columns:minmax(0,1fr) auto}
 #settings .set>label,#settings .set>span:first-child{font-size:14px;font-weight:700;color:#e6eef2;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05)}
@@ -827,13 +833,6 @@ body.pc .titleFs{display:none}
         <div class="set"><label for="sMouse">Mouse moves the squad</label><input class="sw" type="checkbox" id="sMouse"></div>
       </section>
       <section class="bfPane" data-pane="sens">
-        <h3 class="subh touchOnly">Gunner seats</h3>
-        <div class="set touchOnly">
-          <label for="gnSwipe">Swipe aim sensitivity</label><input type="range" id="gnSwipe" min="0.2" max="3" step="0.05">
-          <label for="gnStick">Look stick sensitivity</label><input type="range" id="gnStick" min="0.2" max="3" step="0.05">
-          <label for="gnExpo">Look stick fine aim near centre</label><input type="range" id="gnExpo" min="1" max="3" step="0.05">
-          <label for="gnInv">Invert look up/down</label><input class="sw" type="checkbox" id="gnInv">
-        </div>
         <h3 class="subh">Helicopter handling</h3>
         <div class="set">
           <label for="agApache">Apache</label><input type="range" id="agApache" min="0.4" max="1.6" step="0.02">
@@ -841,17 +840,46 @@ body.pc .titleFs{display:none}
           <label for="agLittle">Little Bird</label><input type="range" id="agLittle" min="0.4" max="1.6" step="0.02">
         </div>
         <p class="fine">How fast each helicopter pitches, rolls and turns. The Apache starts a little calmer than the Black Hawk.</p>
-        <h3 class="subh touchOnly">Flight sticks</h3>
-        <div class="set touchOnly">
+        <nav class="senTabs" id="senTabs"><button type="button" data-st="kbm">Keyboard &amp; mouse</button><button type="button" data-st="touch" class="touchOnly">Touch</button><button type="button" data-st="pad">Controller</button></nav>
+        <div class="senPane" data-sp="kbm">
+        <h3 class="subh">Mouse</h3>
+        <div class="set">
+          <label for="sHs">Gunship mouse sensitivity</label><input type="range" id="sHs" min="0.3" max="3" step="0.05">
+          <label for="sHi">Invert gunship pitch</label><input class="sw" type="checkbox" id="sHi">
+        </div>
+        </div>
+        <div class="senPane" data-sp="touch">
+        <h3 class="subh">Gunner seats</h3>
+        <div class="set">
+          <label for="gnSwipe">Swipe aim sensitivity</label><input type="range" id="gnSwipe" min="0.2" max="3" step="0.05">
+          <label for="gnStick">Look stick sensitivity</label><input type="range" id="gnStick" min="0.2" max="3" step="0.05">
+          <label for="gnExpo">Look stick fine aim near centre</label><input type="range" id="gnExpo" min="1" max="3" step="0.05">
+          <label for="gnInv">Invert look up/down</label><input class="sw" type="checkbox" id="gnInv">
+        </div>
+        <h3 class="subh">Flight sticks</h3>
+        <div class="set">
           <label for="tsSens">Cyclic sensitivity (pitch/roll)</label><input type="range" id="tsSens" min="0.3" max="2.5" step="0.05">
           <label for="tsYaw">Yaw sensitivity</label><input type="range" id="tsYaw" min="0.3" max="2.5" step="0.05">
           <label for="tsDead">Dead zone</label><input type="range" id="tsDead" min="0" max="0.35" step="0.01">
           <label for="tsExpo">Fine control near centre</label><input type="range" id="tsExpo" min="1" max="2.5" step="0.05">
         </div>
-        <h3 class="subh">Mouse (PC)</h3>
+        </div>
+        <div class="senPane" data-sp="pad">
+        <h3 class="subh">Controller</h3>
         <div class="set">
-          <label for="sHs">Gunship mouse sensitivity</label><input type="range" id="sHs" min="0.3" max="3" step="0.05">
-          <label for="sHi">Invert gunship pitch</label><input class="sw" type="checkbox" id="sHi">
+          <label for="pdCyc">Pitch / roll</label><input type="range" id="pdCyc" min="0.3" max="2" step="0.05">
+          <label for="pdYaw">Yaw</label><input type="range" id="pdYaw" min="0.3" max="2" step="0.05">
+          <label for="pdColl">Collective</label><input type="range" id="pdColl" min="0.3" max="2" step="0.05">
+          <label for="pdAim">Gunner aim</label><input type="range" id="pdAim" min="0.3" max="3" step="0.05">
+          <label for="pdDzL">Left stick dead zone</label><input type="range" id="pdDzL" min="0" max="0.4" step="0.01">
+          <label for="pdDzR">Right stick dead zone</label><input type="range" id="pdDzR" min="0" max="0.4" step="0.01">
+        </div>
+        <button class="btn soft" id="padCalBtn" type="button">Test &amp; calibrate controller</button>
+        <div id="padCal" hidden>
+          <p class="fine" id="pcMsg">Press any button: it lights up on the picture. Tap a button on the picture to test that one.</p>
+          <div class="pcWrap"><img src="assets/hud/pad_outline.jpg" alt="Controller outline"><svg id="pcSvg" viewBox="0 0 1536 1024" aria-hidden="true"></svg></div>
+          <p class="fine" id="pcRaw"></p>
+        </div>
         </div>
       </section>
       <section class="bfPane" data-pane="gyro">
@@ -1271,7 +1299,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V113';
+const GAME_VERSION = 'V114';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -5552,14 +5580,14 @@ try { const b = SETTINGS.binds; if (b && b.hPitchUp && b.hPitchDown && b.hPitchU
 function bindsRebuild(){ INPUT.map = {}; const b = bindsGet(); for (const a in b) for (const c of b[a]) if (c) (INPUT.map[c] = INPUT.map[c] || []).push(a); }
 const act = a => !!(INPUT.held[a] || INPUT.gp.held[a]);
 // V113: controller layout for flying (customisable in Settings > Controls): left stick collective + yaw, right stick pitch + roll,
-// RT fires, LT aims (zoom), RB missiles, D-pad right flares, X seat, Y view; LB is free
-const PAD_DEF = {axes: {yaw: 0, coll: 1, roll: 2, pitch: 3}, inv: {yaw: false, coll: true, roll: false, pitch: false}, btn: {fire: 7, aim: 6, missile: 5, flare: 15, seat: 2, view: 3, lb: -1}};
+// RT fires the selected weapon, LT aims (zoom), RB swaps primary/secondary, D-pad right flares, X seat, Y view; LB is free
+const PAD_DEF = {axes: {yaw: 0, coll: 1, roll: 2, pitch: 3}, inv: {yaw: false, coll: true, roll: false, pitch: false}, btn: {fire: 7, aim: 6, swap: 5, missile: -1, flare: 15, seat: 2, view: 3, lb: -1}, sens: {cyc: 1, yaw: 1, coll: 1, aim: 1}, dz: {l: 0.18, r: 0.18}};
 const PAD_BTN = {0: 'A', 1: 'B', 2: 'X', 3: 'Y', 4: 'LB', 5: 'RB', 6: 'LT', 7: 'RT', 8: 'BACK', 9: 'START', 10: 'LS', 11: 'RS', 12: 'D↑', 13: 'D↓', 14: 'D←', 15: 'D→'};
 const PAD_AX = ['Left stick ↔', 'Left stick ↕', 'Right stick ↔', 'Right stick ↕'];
-const padCfg = () => { const P = SETTINGS.pad || (SETTINGS.pad = {}); P.axes = Object.assign({}, PAD_DEF.axes, P.axes); P.inv = Object.assign({}, PAD_DEF.inv, P.inv); P.btn = Object.assign({}, PAD_DEF.btn, P.btn); return P; };
+const padCfg = () => { const P = SETTINGS.pad || (SETTINGS.pad = {}); if (!P.v114){ P.v114 = true; if (P.btn && P.btn.missile === 5) P.btn.missile = -1; } for (const k of ['axes', 'inv', 'btn', 'sens', 'dz']) P[k] = Object.assign({}, PAD_DEF[k], P[k]); return P; };
 const padOn = () => !!INPUT.gp.name;
-const padAx = k => { const P = padCfg(), v = gpAx(P.axes[k]); return P.inv[k] ? -v : v; };
-const gpAx = i => { const v = INPUT.gp.ax[i] || 0; return Math.abs(v) < 0.18 ? 0 : (v - Math.sign(v)*0.18)/0.82; };
+const padAx = k => { const P = padCfg(), v = gpAx(P.axes[k])*(k === 'yaw' ? P.sens.yaw : k === 'coll' ? P.sens.coll : P.sens.cyc); return clamp(P.inv[k] ? -v : v, -1.6, 1.6); };
+const gpAx = i => { const v = INPUT.gp.ax[i] || 0, D = SETTINGS.pad && SETTINGS.pad.dz ? (i < 2 ? SETTINGS.pad.dz.l : SETTINGS.pad.dz.r) : 0.18; return Math.abs(v) < D ? 0 : (v - Math.sign(v)*D)/(1 - D); };
 const keyName = c => !c ? '—' : c.startsWith('Key') ? c.slice(3) : c.startsWith('Digit') ? c.slice(5) : c.startsWith('Numpad') ? 'Num ' + c.slice(6)
   : ({ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', Space: 'Space', Escape: 'Esc', ShiftLeft: 'L Shift', ShiftRight: 'R Shift', ControlLeft: 'L Ctrl', ControlRight: 'R Ctrl',
      AltLeft: 'L Alt', AltRight: 'R Alt', Enter: 'Enter', Tab: 'Tab', Backspace: 'Backspace', Mouse0: 'Left click', Mouse1: 'Middle click', Mouse2: 'Right click', Mouse3: 'Mouse 4', Mouse4: 'Mouse 5', F1: 'F1', F2: 'F2', WheelUp: 'Wheel up', WheelDown: 'Wheel down'})[c] || c;
@@ -5999,6 +6027,7 @@ function gpPoll(dt){
   const btn = i => !!(p.buttons[i] && (p.buttons[i].pressed || p.buttons[i].value > 0.5));
   const now = p.buttons.map((_, i) => btn(i)), was = G.prev; G.prev = now;
   const down = i => now[i] && !was[i];
+  if (PCAL.on){ G.prev = now; return; }
   if (INPUT.padBind){ const i = now.findIndex((x, j) => x && !was[j]); if (i >= 0){ const P = padCfg(); for (const k in P.btn) if (P.btn[k] === i) P.btn[k] = -1; P.btn[INPUT.padBind] = i; INPUT.padBind = null; saveSettings(); renderPadMap(); G.prev = now; return; } }
   G.ax = [p.axes[0] || 0, p.axes[1] || 0, p.axes[2] || 0, p.axes[3] || 0];
   if (now.some(x => x) || G.ax.some(v => Math.abs(v) > 0.3)) G.used = true;
@@ -6013,9 +6042,9 @@ function gpPoll(dt){
   H.prevW = H.nextW = false;      // V113: collective is on the left stick now
   if (fly && bt(PB.aim) !== !!H.aim){ H.aim = bt(PB.aim); HM.zoom = H.aim; }
   if (heli){
-    if (dn(PB.missile)) hmFireHellfire(); if (dn(PB.flare)) hmFlares(); if (dn(PB.seat)) hmSwapSeat(); if (dn(PB.view)) hmSwapView();
+    if (dn(PB.swap) && HM.seat === 'pilot') hmSelect(HM.wsel === 'sec' ? 'pri' : 'sec'); if (dn(PB.missile)) hmFireHellfire(); if (dn(PB.flare)) hmFlares(); if (dn(PB.seat)) hmSwapSeat(); if (dn(PB.view)) hmSwapView();
   } else if (DF.on){
-    if (dn(PB.missile)) dfHellfire(); if (dn(PB.view)) dfSwapView(); if (down(1)) dfEnd();
+    if (dn(PB.swap)){ DF.sec = !DF.sec; DF.fire = false; sfx('click'); toast(dfSelName(), '#c8ffd0'); } if (dn(PB.missile)) dfHellfire(); if (dn(PB.view)) dfSwapView(); if (down(1)) dfEnd();
   } else if (DG.on){
     if (down(1)) dgEnd();
   } else if (GS_.on && GS_.phase === 'gun'){
@@ -6111,7 +6140,7 @@ function renderBinds(){
     box.appendChild(row);
   }
 }
-const PAD_ACTS = [['fire', 'Fire guns / rockets'], ['aim', 'Aim (zoom)'], ['missile', 'Missiles'], ['flare', 'Flares'], ['seat', 'Swap seat'], ['view', 'Camera'], ['lb', 'Unassigned (LB)']];
+const PAD_ACTS = [['fire', 'Fire (selected weapon)'], ['aim', 'Aim (zoom)'], ['swap', 'Swap primary / secondary'], ['missile', 'Fire secondary directly'], ['flare', 'Flares'], ['seat', 'Swap seat'], ['view', 'Camera'], ['lb', 'Unassigned (LB)']];
 const PAD_AXN = [['coll', 'Collective'], ['yaw', 'Yaw'], ['pitch', 'Pitch'], ['roll', 'Roll']];
 function renderPadMap(){
   const el = $('padMap'); if (!el) return; const P = padCfg();
@@ -6123,6 +6152,43 @@ function renderPadMap(){
 }
 $('padReset').onclick = () => { SETTINGS.pad = null; padCfg(); saveSettings(); INPUT.padBind = null; renderPadMap(); };
 renderPadMap();
+// V114: Sensitivity is split by input: Keyboard & mouse, Touch (phones), Controller
+function senTab(t){ for (const b of $('senTabs').children) b.classList.toggle('on', b.dataset.st === t); for (const p of document.querySelectorAll('.senPane')) p.classList.toggle('on', p.dataset.sp === t); SETTINGS.senTab = t; }
+for (const b of $('senTabs').children) b.onclick = () => { sfx('click'); senTab(b.dataset.st); };
+const senTabInit = () => senTab(padOn() ? 'pad' : SETTINGS.senTab && (SETTINGS.senTab !== 'touch' || !PC.on) ? SETTINGS.senTab : PC.on ? 'kbm' : 'touch');
+for (const [id, grp, k] of [['pdCyc', 'sens', 'cyc'], ['pdYaw', 'sens', 'yaw'], ['pdColl', 'sens', 'coll'], ['pdAim', 'sens', 'aim'], ['pdDzL', 'dz', 'l'], ['pdDzR', 'dz', 'r']]){
+  const el = $(id); el.value = padCfg()[grp][k]; el.addEventListener('input', () => { padCfg()[grp][k] = +el.value; saveSettings(); }); }
+// ---- controller test & calibration: the outline lights up what the pad reports; tap a button on it to check that one ----
+const PCAL = {on: false, ask: -1, res: {}, prev: [], raf: 0};
+const PC_HS = [[0, 1012, 302, 34], [1, 1078, 240, 34], [2, 944, 240, 34], [3, 1012, 170, 34], [4, 480, 72, 40], [5, 1045, 72, 40], [4, 970, 830, 30], [5, 562, 830, 30],
+  [6, 1020, 880, 32], [7, 515, 880, 32], [8, 697, 240, 24], [9, 827, 240, 24], [10, 517, 240, 70], [11, 893, 388, 70], [12, 636, 345, 26], [13, 636, 442, 26], [14, 588, 393, 26], [15, 684, 393, 26]];
+function padCalBuild(){
+  const svg = $('pcSvg'), NS = 'http://www.w3.org/2000/svg'; svg.innerHTML = '';
+  for (const [st, cx, cy] of [['L', 517, 240], ['R', 893, 388]]){ const dz = document.createElementNS(NS, 'circle'); dz.setAttribute('cx', cx); dz.setAttribute('cy', cy); dz.setAttribute('class', 'dz'); dz.id = 'pcDz' + st; svg.append(dz); }
+  PC_HS.forEach(([i, x, y, r], k) => { const c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', r); c.setAttribute('class', 'hs'); c.dataset.i = i; c.id = 'pcH' + k;
+    c.addEventListener('click', () => { PCAL.ask = i; delete PCAL.res[i]; $('pcMsg').textContent = 'Press ' + PAD_BTN[i] + ' on your controller…'; sfx('click'); }); svg.append(c); });
+  for (const [st, cx, cy] of [['L', 517, 240], ['R', 893, 388]]){ const d = document.createElementNS(NS, 'circle'); d.setAttribute('r', 14); d.setAttribute('class', 'dot'); d.id = 'pcDot' + st; d.setAttribute('cx', cx); d.setAttribute('cy', cy); svg.append(d); }
+  for (const [t, x] of [['LT', 1100], ['RT', 380]]){ const r = document.createElementNS(NS, 'rect'); r.setAttribute('x', x); r.setAttribute('y', 990); r.setAttribute('height', 18); r.setAttribute('width', 0); r.setAttribute('class', 'bar'); r.id = 'pcBar' + t; svg.append(r); }
+}
+function padCalTick(){
+  if (!PCAL.on || $('padCal').hidden || $('settings').hidden){ PCAL.on = false; return; }
+  PCAL.raf = requestAnimationFrame(padCalTick);
+  const pads = navigator.getGamepads ? navigator.getGamepads() : []; let p = null; for (const g of pads) if (g && g.connected){ p = g; break; }
+  if (!p){ $('pcRaw').textContent = 'No controller found. Connect one and press any button.'; return; }
+  const P = padCfg(), now = p.buttons.map(b => !!(b && (b.pressed || b.value > 0.5)));
+  PC_HS.forEach(([i], k) => { const el = $('pcH' + k); el.classList.toggle('on', now[i]); el.classList.toggle('ask', PCAL.ask === i); el.classList.toggle('ok', PCAL.res[i] === true && !now[i]); el.classList.toggle('bad', PCAL.res[i] === false && !now[i]); });
+  const fresh = now.findIndex((x, j) => x && !PCAL.prev[j]); PCAL.prev = now;
+  if (PCAL.ask >= 0 && fresh >= 0){ const ok = fresh === PCAL.ask; PCAL.res[PCAL.ask] = ok; $('pcMsg').textContent = ok ? '✓ ' + PAD_BTN[PCAL.ask] + ' reads correctly.' : '✗ That press read as ' + (PAD_BTN[fresh] || 'button ' + fresh) + ', not ' + PAD_BTN[PCAL.ask] + '. You can remap it in Settings → Keys.'; sfx(ok ? 'reward' : 'deny'); PCAL.ask = -1; }
+  const R = 70, ax = p.axes;
+  for (const [st, a, b, cx, cy, dz] of [['L', 0, 1, 517, 240, P.dz.l], ['R', 2, 3, 893, 388, P.dz.r]]){
+    const x = ax[a] || 0, y = ax[b] || 0, inDz = Math.hypot(x, y) < dz; $('pcDz' + st).setAttribute('r', Math.max(1, dz*R));
+    const d = $('pcDot' + st); d.setAttribute('cx', cx + x*R); d.setAttribute('cy', cy + y*R); d.style.fill = inDz ? '#888' : '#ffd34d'; }
+  const tv = i => p.buttons[i] ? p.buttons[i].value || (p.buttons[i].pressed ? 1 : 0) : 0;
+  $('pcBarLT').setAttribute('width', 260*tv(6)); $('pcBarRT').setAttribute('width', 260*tv(7));
+  const f = v => (v >= 0 ? '+' : '') + (v || 0).toFixed(2);
+  $('pcRaw').textContent = 'Left stick ' + f(ax[0]) + ' ' + f(ax[1]) + ' · Right stick ' + f(ax[2]) + ' ' + f(ax[3]) + ' · LT ' + tv(6).toFixed(2) + ' · RT ' + tv(7).toFixed(2) + ' · grey dot = inside the dead zone (ignored)';
+}
+$('padCalBtn').onclick = () => { sfx('click'); const el = $('padCal'); el.hidden = !el.hidden; if (!el.hidden){ if (!$('pcSvg').children.length) padCalBuild(); PCAL.on = true; PCAL.ask = -1; padCalTick(); } else PCAL.on = false; };
 function refreshPadInfo(){ const el = $('padInfo'); if (el) el.textContent = INPUT.gp.name ? 'Connected: ' + INPUT.gp.name.replace(/\s*\(.*$/, '').slice(0, 48) : 'No controller found. Connect one and press any button.'; }
 bindsRebuild();
 $('bindReset').onclick = () => { SETTINGS.binds = null; saveSettings(); bindsRebuild(); renderBinds(); renderHotbarSet(); buildStreaks(); };
@@ -6796,7 +6862,7 @@ function hmStart(type = 'apache'){
     g.traverse(o => { if (o.isMesh && o.visible && !(o.material && o.material.transparent)) bb.expandByObject(o); }); HM.gy = isFinite(bb.min.y) ? Math.max(1.2, -bb.min.y + 0.05) : 2.2*HB; }
   if (!GS_.gunCam) GS_.gunCam = new THREE.PerspectiveCamera(38, 1, 0.3, 400);
   $('hm').hidden = false; hmSeatUI();
-  $('hmHint').innerHTML = padOn() ? 'Controller: left stick collective &amp; yaw · right stick pitch &amp; roll · RT fire · RB missiles · LT aim · D-pad → flares' : tsTwin() ? 'Two sticks fly it: ' + ({mode2: 'left = collective &amp; yaw · right = pitch &amp; roll', mode1: 'left = pitch &amp; yaw · right = collective &amp; roll', swap: 'left = pitch &amp; roll · right = collective &amp; yaw'})[SETTINGS.sticks.layout] + ' · ✥ arranges them' : heliSim() ? 'Click to capture the mouse · mouse rolls &amp; pitches · W nose down / S flare · A/D yaw · Shift/Ctrl throttle · F switch weapon · 3 flares · C camera · V freelook · Esc releases' : penSeen ? 'Pen: hover to steer or aim · FIRE button with your finger · pen tap: ' + (PEN_OPTS[SETTINGS.penTap[(HM.type || 'apache') + '_pilot']] || 'Flares').toLowerCase() : 'Left thumb: drag to fly · ▲▼ altitude · hold FIRE';
+  $('hmHint').innerHTML = padOn() ? 'Controller: left stick collective &amp; yaw · right stick pitch &amp; roll · RT fire · RB swap weapon · LT aim · D-pad → flares' : tsTwin() ? 'Two sticks fly it: ' + ({mode2: 'left = collective &amp; yaw · right = pitch &amp; roll', mode1: 'left = pitch &amp; yaw · right = collective &amp; roll', swap: 'left = pitch &amp; roll · right = collective &amp; yaw'})[SETTINGS.sticks.layout] + ' · ✥ arranges them' : heliSim() ? 'Click to capture the mouse · mouse rolls &amp; pitches · W nose down / S flare · A/D yaw · Shift/Ctrl throttle · F switch weapon · 3 flares · C camera · V freelook · Esc releases' : penSeen ? 'Pen: hover to steer or aim · FIRE button with your finger · pen tap: ' + (PEN_OPTS[SETTINGS.penTap[(HM.type || 'apache') + '_pilot']] || 'Flares').toLowerCase() : 'Left thumb: drag to fly · ▲▼ altitude · hold FIRE';
   startWave();
 }
 function hmStop(){
@@ -7436,7 +7502,7 @@ const GUNIN = {mdx: 0, mdy: 0};
 function gunnerAimDelta(src, dt){
   const sens = SETTINGS.heliSens || 1, inv = SETTINGS.heliInvert ? -1 : 1, z = HM.zoom ? 0.45 : 1;
   const mdx = src.mdx || 0, mdy = src.mdy || 0; src.mdx = src.mdy = 0;
-  const ax = (act('hAimR') ? 1 : 0) - (act('hAimL') ? 1 : 0) + gpAx(2) + gpAx(0), ay = (act('hAimU') ? 1 : 0) - (act('hAimD') ? 1 : 0) - gpAx(3) - gpAx(1);
+  const PS = padOn() ? padCfg().sens.aim : 1, ax = (act('hAimR') ? 1 : 0) - (act('hAimL') ? 1 : 0) + (gpAx(2) + gpAx(0))*PS, ay = (act('hAimU') ? 1 : 0) - (act('hAimD') ? 1 : 0) - (gpAx(3) + gpAx(1))*PS;
   return [(mdx*0.0026*sens + ax*1.1*dt)*z, (-mdy*0.0026*sens*inv + ay*0.8*dt)*z];
 }
 function hmSimGunner(P, dt){
@@ -9272,7 +9338,7 @@ $('sLite').addEventListener('change', e => { SETTINGS.liteCrowd = e.target.check
 $('sLoc').addEventListener('change', e => { SETTINGS.location = e.target.value; applyLocation(SETTINGS.location); applyGraphics(); saveSettings(); });
 $('sSkin').addEventListener('change', e => { SETTINGS.enemySkin = e.target.value; applyEnemySkin(SETTINGS.enemySkin); saveSettings(); });
 $('muteBtn').onclick = () => { SETTINGS.sound = !SETTINGS.sound; audioInit(); applyVolumes(); saveSettings(); bindSettings(); };
-const openSettings = () => { bindSettings(); bindSticks(); bindNew(); bfTab(SETTINGS.setTab || 'game'); showSaveState(); $('sLoc').disabled = state !== 'title'; $('sLoc').title = state !== 'title' ? 'Change maps from the main menu' : ''; $('settings').hidden = false; };
+const openSettings = () => { try { senTabInit(); } catch(e){} bindSettings(); bindSticks(); bindNew(); bfTab(SETTINGS.setTab || 'game'); showSaveState(); $('sLoc').disabled = state !== 'title'; $('sLoc').title = state !== 'title' ? 'Change maps from the main menu' : ''; $('settings').hidden = false; };
 // ---- Battlefield-style tabs ----
 const bfTabBtns = [...document.querySelectorAll('#bfTabs button')];
 function bfTab(name){
@@ -9479,7 +9545,7 @@ function bfHud(o){
       if (l.startsWith('▸')){ const a = LY.weapon_selection_arrow, r = LY[rows[i]]; img('weapon_selection_arrow', 1, [a[0], r[1] + 1.5, a[2], a[3], a[4]]); } });
   }
   { // V113: the full panel on phones too; key caps show the keyboard on PC, controller buttons with a pad, nothing for touch
-    const pad = padOn() && !PC.on, PB = padCfg().btn, padKey = { hFree: '', hView: PB.view, pause: 9, hEq1: PB.flare, hSwitch: '' };
+    const pad = padOn() && !PC.on, PB = padCfg().btn, padKey = { hFree: '', hView: PB.view, pause: 9, hEq1: PB.flare, hSwitch: PB.swap };
     // aircraft name between the brackets (where Battlefield says ASSIST OFF)
     img('assist_off_bracket_left'); img('assist_off_bracket_right');
     { const e = LY.assist_off_label; if (e){ x.save(); x.shadowBlur = 0; x.fillStyle = 'rgba(150,165,172,0.95)'; x.textAlign = 'center'; x.textBaseline = 'middle';
@@ -10291,6 +10357,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V114', ['Controller: RB now swaps between primary and secondary (miniguns and rockets on the Little Bird, primary and secondary missiles on the others) and RT fires whichever is selected', 'Settings → Sensitivity has tabs: Keyboard & mouse, Touch (phones) and Controller. The Controller tab has pitch/roll, yaw, collective and gunner-aim sensitivity, a dead zone for each stick, and a test screen: the controller outline lights up what you press, shows where each stick is against its dead zone, and lets you tap a button to check it reads correctly']],
   ['V113', ['Controller flying: left stick collective and yaw, right stick pitch and roll, RT fires, LT aims (zoom), RB missiles, D-pad right flares, X seat, Y camera (LB is free). Change any of it in Settings → Controls', 'With a controller connected the on-screen sticks and buttons disappear, flying switches to the full flight model, and the HUD shows the controller buttons', 'Phones get the full Battlefield-style helicopter HUD: the weapon box with the rocket pods, flares, seat map and health bar. The touch buttons now sit right on those tiles']],
   ['V112', ['AA sites are clusters now: 3 or 4 quarter-size vehicles where the one big one stood. Each launches missiles and runs two tracer miniguns, but a whole cluster only hits 20% harder than the old single vehicle', 'Little Bird rockets: each press fires a pair, one right after the other (pair, pair, pair, then a single), with two magazines of 7. A used magazine comes back after 30 s', 'Apache primary: guided missiles by default, steered wherever you keep the reticle like the TOW, but much faster and sharper. Or pick Light rockets in Loadouts: the Little Bird’s pairs, in magazines of 12']],
   ['V111', ['Little Bird in first person: its rotor is louder and the radio in your headset is turned up too (the rotor more than the radio)', 'Settings → Location lists the Ruined city block']],

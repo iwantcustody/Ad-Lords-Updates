@@ -873,6 +873,7 @@ body.pc .titleFs{display:none}
       </section>
       <section class="bfPane" data-pane="gfx">
         <div class="set">
+          <label for="sPotato">Potato mode (runs on anything, looks like 1993)</label><input class="sw" type="checkbox" id="sPotato">
           <label for="sShadows">Shadows</label><input class="sw" type="checkbox" id="sShadows">
           <label for="sHq">Sharp graphics</label><input class="sw" type="checkbox" id="sHq">
           <label for="sRadar">Air radar in helicopters</label><input class="sw" type="checkbox" id="sRadar">
@@ -1265,7 +1266,7 @@ try { best = +localStorage.getItem('adlords-pier-best') || 0; } catch(e) {}
 // ======================================================================
 // SOUND — everything is synthesized with Web Audio; no files to load.
 // ======================================================================
-const GAME_VERSION = 'V108';
+const GAME_VERSION = 'V109';
 const SETTINGS = {sound: true, master: 0.8, sfx: 0.9, amb: 0.5, radioVol: 0.6, radio: -1, shadows: true, hq: true};
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('adlords-settings') || '{}')); } catch(e) {}
 const saveSettings = () => { try { localStorage.setItem('adlords-settings', JSON.stringify(SETTINGS)); } catch(e) {} };
@@ -1495,10 +1496,10 @@ function heliAudioTick(P, dt){
   P.loadA = (P.loadA || 0) + (load - (P.loadA || 0))*Math.min(1, dt*3);
   const dm = on ? clamp((0.75 - (P.hull || 100)/100)/0.6, 0, 1) : 0;     // V104: starts sooner and gets much louder as the airframe gives out
   AU.wind.gain.setTargetAtTime(on ? 0.012*(0.3 + 0.7*sp*sp) : 0, t, 0.15);
-  AU.rumble.gain.setTargetAtTime(on ? 0.75*P.loadA + 0.76*dm : 0, t, 0.1);     // V107: the damage parts of the cockpit sound are twice as loud
+  AU.rumble.gain.setTargetAtTime(on ? 0.75*P.loadA + 0.91*dm : 0, t, 0.1);     // V107: the damage parts of the cockpit sound are twice as loud
   AU.rotShelf.gain.setTargetAtTime(on ? clamp(5*Math.min(0, coll) + 3*P.loadA + 7*dm + (inFirstPerson() ? 2 : 0), -6, 8) : 0, t, 0.2);
-  AU.surgeD.gain.setTargetAtTime(on ? 1.0*dm : 0, t, 0.3); AU.rotorLfoG.gain.setTargetAtTime(on ? 0.9 - 0.4*dm : 0.9, t, 0.3);
-  AU.dmgN.gain.setTargetAtTime(dm ? dm*(HS.covering ? 0.4 : 1)*(Math.random() < 0.3 ? rnd(0.08, 0.18) : 0.03) : 0, t, 0.012);
+  AU.surgeD.gain.setTargetAtTime(on ? 1.2*dm : 0, t, 0.3); AU.rotorLfoG.gain.setTargetAtTime(on ? 0.9 - 0.4*dm : 0.9, t, 0.3);
+  AU.dmgN.gain.setTargetAtTime(dm ? dm*(HS.covering ? 0.4 : 1)*(Math.random() < 0.3 ? rnd(0.096, 0.216) : 0.036) : 0, t, 0.012);
   const scrape = on && P.onGround && hs > 0.8 ? clamp(hs/6, 0, 1) : 0;
   AU.scrape.gain.setTargetAtTime(0.035*scrape*rnd(0.6, 1.2), t, 0.03);
   AU.rotSpd.gain.setTargetAtTime(on ? 1 + 0.6*Math.min(1, sp) : 1, t, 0.2);
@@ -2589,7 +2590,7 @@ function applyLocation(name){
   PIER.stages = L.stages; PIER.mode = L.mode;
   for (const k in LOC.sets) if (k !== name) for (const st of LOC.sets[k].stages) for (const tg of st.tugs || []) tg.visible = false;
   pierSet(PIER.stage);
-  scene.fog.color.setHex(L.fog); scene.fog.near = L.fogR[0]*(PC.on ? (gfxQ() === 'ultra' ? 1.5 : 1.3) : 1); scene.fog.far = L.fogR[1]*(PC.on ? (gfxQ() === 'ultra' ? 1.6 : 1.35) : 1); renderer.setClearColor(L.fog);
+  scene.fog.color.setHex(L.fog); scene.fog.near = L.fogR[0]*(POTATO() ? 0.5 : PC.on ? (gfxQ() === 'ultra' ? 1.5 : 1.3) : 1); scene.fog.far = L.fogR[1]*(POTATO() ? 0.6 : PC.on ? (gfxQ() === 'ultra' ? 1.6 : 1.35) : 1); renderer.setClearColor(L.fog);
   SKY.uniforms.uLo.value.setRGB(...L.sky[0]); SKY.uniforms.uHi.value.setRGB(...L.sky[1]);
   for (const gl of gulls) gl.m.visible = L.gulls;
 }
@@ -3350,7 +3351,7 @@ function addGunner(){
   const g = new THREE.Group();
   let body;
   let anim = null;
-  if (loadedParts.playerAnim && SETTINGS.mocap !== false){
+  if (loadedParts.playerAnim && SETTINGS.mocap !== false && !POTATO()){
     const A = loadedParts.playerAnim, inst = skClone(A.src); inst.scale.multiplyScalar(A.k); inst.position.copy(A.off);
     body = new THREE.Group(); body.add(inst); body.rotation.y = Math.PI;
     inst.traverse(o => { if (o.isMesh){ o.castShadow = true; o.frustumCulled = false; const mm = o.material; o.material = new THREE.MeshToonMaterial({map: (A.cull && mm.emissiveMap) || mm.map, gradientMap: gradSoft, side: A.cull ? mm.side : THREE.DoubleSide, skinning: !!o.isSkinnedMesh, color: mm.map ? new THREE.Color(0.8, 0.8, 0.82) : mm.color.clone()}); } });
@@ -5264,6 +5265,7 @@ const RED = new THREE.Color(0xff6b5b), CREAM = new THREE.Color(0xfff4e4), TEAL =
 const roleR = i => ROLES[ROLE_ORDER[er[i]]].r*1.45*ESK();
 
 function chips(x, y, z, col, n, sp = 4){
+  if (POTATO()){ n = Math.ceil(n/3); }
   const ca = chipMesh.instanceColor.array;
   for (let k = 0; k < n; k++){
     const i = pHead; pHead = (pHead + 1) % PCAP;
@@ -6179,14 +6181,14 @@ function update(dt){
   }
   if (bossPending && waveT > bossNextT && !PIER.hold && !NET.mirror){
     const first = !bosses.length && bossNextT <= 6;
-    bossPending--; bossNextT = waveT + 4.5;
-    const max = MODE === 'heli' ? 400 + 90*wave : Math.round(70*Math.pow(wave, 2.0)), hw = halfW(FAR + 2) - 2.5;
+    bossPending--; bossNextT = waveT + (EV.on ? 0.25 : 4.5);
+    const max = MODE === 'heli' ? 400 + 90*wave : Math.round(70*Math.pow(wave, 2.0)*(EV.on ? EV26.hpK : 1)), hw = halfW(FAR + 2) - 2.5;
     bosses.push({x: bosses.length || bossPending ? rnd(-hw, hw) : 0, z: FAR + 2, hp: max, max, hit: 0, dirty: true, ph: rnd(0, 6)});
     if (first) toast(bossPending ? (bossPending + 1) + ' bosses incoming' : 'Boss incoming', '#ff9a90'); sfx('boss');
   }
   if (bosses.length && !frozen && !NET.mirror){
     summonT -= dt;
-    if (summonT <= 0){ summonT = 2.6; const per = Math.ceil((3 + wave)/Math.sqrt(bosses.length)); for (const boss of bosses){ SPAWN_CMD = boss.cmd ? 1 : 0; for (let k = 0; k < per; k++) spawnEnemy(k % 3 ? 'normal' : 'swarm', boss.z + rnd(-1, 1), boss.x + rnd(-2.5, 2.5)); } SPAWN_CMD = 0; }
+    if (summonT <= 0){ summonT = 2.6; const per = EV.on ? Math.ceil((3 + wave)*1.5/bosses.length) : Math.ceil((3 + wave)/Math.sqrt(bosses.length)); for (const boss of bosses){ SPAWN_CMD = boss.cmd ? 1 : 0; for (let k = 0; k < per; k++) spawnEnemy(k % 3 ? 'normal' : 'swarm', boss.z + rnd(-1, 1), boss.x + rnd(-2.5, 2.5)); } SPAWN_CMD = 0; }
   }
 
   // barrels arrive in pairs: choose which one to break
@@ -6449,7 +6451,7 @@ function sync(dt){
   for (const m of CM) m.userData.n = 0;
   const ba = blobs.instanceMatrix.array; let bn = 0;
   // three levels of detail; on crowded waves every band moves closer to the camera
-  const lite = !!SETTINGS.liteCrowd && !PC.on, crowd = lite ? clamp((en - 150)/350, 0, 1) : 0, nearZ = NEAR_Z + crowd*5, xfarZ = lite ? -34 + crowd*12 : -1e9;
+  const lite = (!!SETTINGS.liteCrowd && !PC.on) || POTATO(), crowd = lite ? clamp((en - 150)/350, 0, 1) : 0, nearZ = NEAR_Z + crowd*5, xfarZ = lite ? -34 + crowd*12 : -1e9;
   for (let i = 0; i < en; i++){
     const role = ROLE_ORDER[er[i]], R = ROLES[role], C = CROWD[role]; if (!C) continue;
     const gait = elunge[i] ? 'run' : R.gait, frames = C.gaits[gait];
@@ -6627,7 +6629,7 @@ const GRADE_SHADER = {
       gl_FragColor = vec4(g, t.a);
     }`
 };
-const gfxQ = () => !PC.on ? 'standard' : (SETTINGS.gfxQ || 'ultra');
+const gfxQ = () => !PC.on || POTATO() ? 'standard' : (SETTINGS.gfxQ || 'ultra');
 function gfxBuild(){
   if (GFX.comp || !THREE.EffectComposer || !THREE.UnrealBloomPass) return !!GFX.comp;
   const w = Math.max(2, cv.clientWidth), h = Math.max(2, cv.clientHeight);
@@ -6689,7 +6691,7 @@ let last = performance.now();
 const DYN = {avg: 16, t: 0, scale: 1};
 function dynRes(ms){
   DYN.avg += (ms - DYN.avg)*0.05; DYN.t += ms;
-  if (DYN.t < 1500) return; DYN.t = 0;
+  if (DYN.t < 1500) return; DYN.t = 0; if (POTATO()) return;
   const base = pxBase(), floor = PC.on ? 0.7 : 0.55;
   let s = DYN.scale;
   if (DYN.avg > 24 && s > floor) s = Math.max(floor, s - 0.15); else if (DYN.avg < 15 && s < 1) s = Math.min(1, s + 0.1);
@@ -7254,7 +7256,7 @@ function hmDamageFx(P, dt){
   if (P.spT <= 0){ P.spT = rnd(0.25, 0.9)*(P.hull/55 + 0.3); const a = rnd(0, 6.28), r = rnd(0.5, 1.4)*HB; chips(P.pos.x + Math.cos(a)*r, P.pos.y + rnd(0, 0.8)*HB, P.pos.z + Math.sin(a)*r, SPARK, 6, 4); if (Math.random() < 0.4) chips(P.pos.x, P.pos.y, P.pos.z, DEBRIS, 2, 3); }
   P.smT = (P.smT || 0) - dt; const crit = P.hull < 28;
   if (P.smT <= 0){ P.smT = crit ? 0.03 : 0.08 - 0.04*(55 - P.hull)/55; const y = P.pos.y + 0.6*HB; chips(P.pos.x + rnd(-0.4, 0.4), y, P.pos.z + rnd(-0.4, 0.4), SMOKE, crit ? 3 : 2, 1.4); if (P.hull < 40) chips(P.pos.x + rnd(-0.3, 0.3), y - 0.1, P.pos.z + rnd(-0.3, 0.3), DEBRIS, 1, 1.2); if (crit){ chips(P.pos.x, y - 0.2, P.pos.z, ORANGE, 2, 2.2); if (Math.random() < 0.3) fx('fire', P.pos.x + rnd(-0.3, 0.3), y - 0.3, P.pos.z + rnd(-0.3, 0.3), 0.6); } }
-  if (crit){ P.cauT = (P.cauT || 0) - dt; if (P.cauT <= 0 && AU.ctx && SETTINGS.sound){ P.cauT = 1.1; const t = AU.ctx.currentTime; tone(t, 0.16, {f: 740, type: 'triangle', vol: 0.16}); tone(t + 0.2, 0.16, {f: 740, type: 'triangle', vol: 0.16}); } }
+  if (crit){ P.cauT = (P.cauT || 0) - dt; if (P.cauT <= 0 && AU.ctx && SETTINGS.sound){ P.cauT = 1.1; const t = AU.ctx.currentTime; tone(t, 0.16, {f: 740, type: 'triangle', vol: 0.19}); tone(t + 0.2, 0.16, {f: 740, type: 'triangle', vol: 0.19}); } }
 }
 function hmFxClear(){ HM.lk = null; }
 // V105: enemy aircraft show their damage too: smoke from half health, fire as well under a quarter
@@ -7936,7 +7938,9 @@ function detectPC(){
   const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
   return fine && !mobile && Math.max(screen.width, screen.height) >= 1000;
 }
-const pxBase = () => PC.on ? Math.min(2, window.devicePixelRatio || 1) : SETTINGS.hq ? Math.min(1.75, window.devicePixelRatio || 1) : 1;
+// V109: Potato mode: the game draws about 240 pixels across and blows them up, DOOM-style, with every extra switched off
+const POTATO = () => !!SETTINGS.potato;
+const pxBase = () => POTATO() ? Math.max(0.05, 240/Math.max(1, cv.clientWidth || innerWidth)) : PC.on ? Math.min(2, window.devicePixelRatio || 1) : SETTINGS.hq ? Math.min(1.75, window.devicePixelRatio || 1) : 1;
 function applyPC(){
   const m = SETTINGS.pcMode || 'auto'; PC.on = m === 'on' || (m === 'auto' && detectPC());
   document.body.classList.toggle('pc', PC.on);
@@ -9169,11 +9173,12 @@ addEventListener('pagehide', () => { if (state === 'play') pauseGame(); });
 // ---- settings ----
 function bindSettings(){
   const S_ = SETTINGS;
-  $('sSound').checked = S_.sound; $('sMaster').value = S_.master; $('sSfx').value = S_.sfx; $('sAmb').value = S_.amb; $('sRadio').value = S_.radioVol; $('sShadows').checked = S_.shadows; $('sMocap').checked = S_.mocap !== false; $('sHq').checked = S_.hq; $('sLite').checked = !!S_.liteCrowd; $('sMouse').checked = !!S_.mouseMove; $('sPc').value = S_.pcMode || 'auto'; $('sHf').value = S_.heliFlight || 'auto'; $('sHs').value = S_.heliSens || 1; $('sHi').checked = !!S_.heliInvert; renderBinds(); renderHotbarSet(); refreshPadInfo(); $('sLoc').value = S_.location || 'pier'; $('sSkin').value = S_.enemySkin || 'zombie';
+  $('sSound').checked = S_.sound; $('sMaster').value = S_.master; $('sSfx').value = S_.sfx; $('sAmb').value = S_.amb; $('sRadio').value = S_.radioVol; $('sShadows').checked = S_.shadows; $('sMocap').checked = S_.mocap !== false; $('sHq').checked = S_.hq; $('sPotato').checked = !!S_.potato; $('sLite').checked = !!S_.liteCrowd; $('sMouse').checked = !!S_.mouseMove; $('sPc').value = S_.pcMode || 'auto'; $('sHf').value = S_.heliFlight || 'auto'; $('sHs').value = S_.heliSens || 1; $('sHi').checked = !!S_.heliInvert; renderBinds(); renderHotbarSet(); refreshPadInfo(); $('sLoc').value = S_.location || 'pier'; $('sSkin').value = S_.enemySkin || 'zombie';
   $('muteBtn').textContent = S_.sound ? '🔊' : '🔇'; $('muteBtn').setAttribute('aria-label', S_.sound ? 'Mute sound' : 'Turn sound on');
 }
 function applyGraphics(){
-  renderer.shadowMap.enabled = SETTINGS.shadows; sun.castShadow = SETTINGS.shadows;
+  const sh = SETTINGS.shadows && !POTATO(); renderer.shadowMap.enabled = sh; sun.castShadow = sh; cv.style.imageRendering = POTATO() ? 'pixelated' : '';
+  if (POTATO()) DYN.scale = 1;
   scene.traverse(o => { if (o.material){ (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.needsUpdate = true); } });
   renderer.setPixelRatio(pxBase()*DYN.scale); resize();
 }
@@ -9183,6 +9188,7 @@ $('sDap').value = SETTINGS.dapLook || 'pods';
 $('sDap').addEventListener('change', e => { SETTINGS.dapLook = e.target.value; saveSettings(); toast('DAP model changes on the next load', '#e8fbff'); });
 $('sShadows').addEventListener('change', e => { SETTINGS.shadows = e.target.checked; applyGraphics(); saveSettings(); });
 $('sMocap').addEventListener('change', e => { SETTINGS.mocap = e.target.checked; saveSettings(); toast('Restart the game to re-bake the crowd', '#e8fbff'); });
+$('sPotato').addEventListener('change', e => { SETTINGS.potato = e.target.checked; saveSettings(); applyQuality(); applyGraphics(); applyLocation(LOC.cur); toast(SETTINGS.potato ? 'Potato mode on' : 'Potato mode off', '#f0eec4'); });
 $('sHq').addEventListener('change', e => { SETTINGS.hq = e.target.checked; applyGraphics(); saveSettings(); });
 $('sPc').addEventListener('change', e => { SETTINGS.pcMode = e.target.value; saveSettings(); applyPC(); applyLocation(LOC.cur); });
 $('sQual').value = SETTINGS.gfxQ || 'ultra'; $('sBloom').value = SETTINGS.gfxBloom ?? 0.55; $('sGrade').value = SETTINGS.gfxGrade ?? 0.6;
@@ -9831,7 +9837,7 @@ function hqRender(){
 function hqInit3d(){
   if (HQ.R) return true;
   try { HQ.R = new THREE.WebGLRenderer({canvas: $('hqCv'), antialias: true, alpha: true}); } catch(e){ return false; }
-  HQ.R.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1)); HQ.R.setClearColor(0x000000, 0);
+  HQ.R.setPixelRatio(POTATO() ? 0.35 : Math.min(1.5, window.devicePixelRatio || 1)); if (POTATO()) HQ.R.domElement.style.imageRendering = 'pixelated'; HQ.R.setClearColor(0x000000, 0);
   HQ.S = new THREE.Scene(); HQ.C = new THREE.PerspectiveCamera(26, 1, 0.05, 300);
   HQ.S.add(new THREE.HemisphereLight(0xdbe8ff, 0x1a2228, 0.9));
   const key = new THREE.DirectionalLight(0xfff1dc, 1.0); key.position.set(-3, 5, 4); HQ.S.add(key);
@@ -9989,7 +9995,7 @@ function hqShowVeh(t){ hqShow('v:' + t, () => hqVehModel(t), HQ_VYAW[t] ?? 2.05)
 const HQ_VLEN = {apache: 17.7, blackhawk: 19.8, dap: 19.8, little: 9.9, jet: 18.3, abrams: 9.8, bradley: 6.5, technical: 5.4, bulldozer: 7, ac130: 29.8};
 const HQ_VYAW = {};
 function hqHangarLoad(){
-  if (HQ.hangar || !SKIN_LOAD.fresh) return; HQ.hangar = 'loading';
+  if (HQ.hangar || !SKIN_LOAD.fresh || POTATO()) return; HQ.hangar = 'loading';
   SKIN_LOAD.fresh('assets/hq_hangar.glb').then(g => {
     const h = g.scene; h.traverse(o => { if (o.isMesh){ const m = o.material, map = m.map; o.material = new THREE.MeshLambertMaterial({map, color: new THREE.Color(0.62, 0.64, 0.68), side: THREE.DoubleSide, alphaTest: m.alphaTest || 0}); o.frustumCulled = true; } });
     HQ.hangar = h; HQ.S.add(h); HQ.S.fog = new THREE.Fog(0x161d24, 30, 140); hqHangarFit();
@@ -10212,6 +10218,7 @@ $('updGo').onclick = () => {
 $('updX').onclick = () => { UPD.dismissed = true; $('updBar').hidden = true; };
 // ---- change log: the big things in each version; shows once after an update, after "Check now" finds nothing, or from Settings ----
 const NEWS = [
+  ['V109', ['Helicopter damage sounds are another 20% louder', 'When your helicopter is badly hurt the radio fades down, like turning the music off to focus, and comes back as you heal', 'Bass rounds (waves 26 and 30): every drop brings 8 bosses at once and 8 more every 22 s while the beat runs, with the horde throughout. They’re lighter, and any still standing when the music goes quiet burn out, so the breaks stay clear', 'Settings → Graphics: Potato mode. About 240 pixels across, no shadows, short draw distance, fewer particles, a lighter crowd and no hangar: for the oldest, slowest devices', 'First person: the radio no longer plays through the headset and the open speakers at once']],
   ['V108', ['Helicopters: the damage sounds (engine strain, rattles, the caution tone) are twice as loud', 'More damage you can see: sparks and pieces fly off with every hit, thicker smoke and fire as it gets worse, the screen edges darken and pulse, the glass cracks in first person, and the HUD flickers and the airframe shakes when it is critical']],
   ['V107', ['Wave 30 is a second bass round: the same song and boss drops as wave 26', 'Ruined city block: the horde and its bosses are 2.5× bigger (and that much easier to hit), same speed', 'The extra gates from the wave-15 shop are ×2 now instead of ×4']],
   ['V106', ['New map: Ruined city block. Hold the crossroads of a quarantined street while the horde pours out of the walled outpost; dozers push the concrete barriers out when the street widens',
@@ -10405,8 +10412,11 @@ const radioVolume = () => { if (!RADIO.au) return; if (radioWire()){ radioMix(tr
 // open air in play; behind a pause, the shop, a card or Settings: duller and a bit quieter, still playing
 function radioMix(snap){
   if (!RADIO.fx) return; const c = AU.ctx, t = c.currentTime, m = radioMuffled(), tc = snap ? 0.01 : 0.25;
-  RADIO.fx.lp.frequency.setTargetAtTime(m ? 650 : 20000, t, tc); RADIO.fx.g.gain.setTargetAtTime(radioLevel()*(m ? 0.55 : 1), t, tc);
-  const hs = !m && inFirstPerson() ? 1 : 0; RADIO.fx.head.gain.setTargetAtTime(hs*0.62, t, 0.15);     // V101: in the headset it's a few dB down, so the cockpit is on top RADIO.fx.open.gain.setTargetAtTime(1 - hs, t, 0.15);
+  // V109: badly hurt, you turn the music down to focus: from about half health it fades, to about a third of the volume when critical
+  const hurtK = MODE === 'heli' && HM.on && HM.hull > 0 ? clamp((55 - HM.hull)/40, 0, 1) : 0, duck = 1 - 0.65*hurtK;
+  RADIO.fx.lp.frequency.setTargetAtTime(m ? 650 : 20000, t, tc); RADIO.fx.g.gain.setTargetAtTime(radioLevel()*(m ? 0.55 : 1)*duck, t, snap ? tc : 0.6);
+  const hs = !m && inFirstPerson() ? 1 : 0; RADIO.fx.head.gain.setTargetAtTime(hs*0.62, t, 0.15);     /* V101: in the headset it's a few dB down, so the cockpit is on top */
+  RADIO.fx.open.gain.setTargetAtTime(1 - hs, t, 0.15);
 }
 function radioBuild(){
   $('rwSvg').innerHTML = ''; RADIO.segs = [];
@@ -10562,7 +10572,9 @@ $('radioBtn').classList.toggle('on', !!RADIO.cur); $('rb2').classList.toggle('on
 //   1:28 spawns stop so the field is clear for                     2:00 the bass drop: three bosses and a rush
 //   2:43 spawns stop -> 3:10 the breakdown: a quick shop opens, the music plays on, it closes on the drop at 4:29 (four bosses)
 //   5:45 spawns stop -> 6:12 second breakdown: shop until the last drop at 7:31 (five bosses)  9:00 last spawns, clear it out
-const EV26 = {widen: 41, drops: [[120, 3], [269, 4], [451, 5]], menus: [[190, 269], [372, 451]], last: 540,
+// V109: every drop lands 8 bosses at once, and while the beat keeps going another 8 come every 22 s (each active stretch keeps
+// its quiet ending). Event bosses are lighter, and any still standing when the music goes quiet burn out within a few seconds
+const EV26 = {widen: 41, drops: [[120, 8], [269, 8], [451, 8]], more: [[120, 163], [269, 345], [451, 540]], every: 22, pack: 8, hpK: 0.2, menus: [[190, 269], [372, 451]], last: 540,
   rate: [[0, 0.03], [41, 0.06], [88, 0], [120, 0.08], [163, 0], [269, 0.1], [345, 0], [451, 0.12], [540, 0]]};     // share of a normal wave 26's spawn rate
 const EV = {on: false, t: 0, au: null, g: null, B: 0, cues: new Set(), menu: false, menuEnd: 0, noAudio: false, music: false};
 // V107: wave 30 is a second bass round, the same song and script as wave 26
@@ -10571,7 +10583,7 @@ const ev26Wanted = () => MODE === 'def' && !(NET.on && NET.started);
 function ev26Rate(){ let r = 0; for (const [t0, v] of EV26.rate) if (EV.t >= t0) r = v; return r; }
 function ev26Level(){ return clamp(SETTINGS.sound ? (SETTINGS.master ?? 0.8)*Math.max(0.35, SETTINGS.radioVol ?? 0.6)*1.1 : 0, 0, 1); }
 function ev26Start(){
-  Object.assign(EV, {on: true, t: 0, cues: new Set(), menu: false, noAudio: false, music: true, B: budget/waveDur});
+  Object.assign(EV, {on: true, burn: false, t: 0, cues: new Set(), menu: false, noAudio: false, music: true, B: budget/waveDur});
   budget = Infinity; bossPending = 0;
   if (RADIO.au && !RADIO.au.paused) RADIO.au.pause();
   if (!EV.au){ EV.au = new Audio('assets/music/messing_with_sound_stage.mp3'); EV.au.preload = 'auto';
@@ -10599,12 +10611,17 @@ function ev26Tick(dt){
   if (EV.au && EV.music){ if (live && EV.au.paused && !EV.noAudio) EV.au.play().catch(() => { EV.noAudio = true; }); else if (!live && !EV.au.paused) EV.au.pause(); }
   if (EV.au && !EV.noAudio && EV.au.currentTime > 0) EV.t = EV.au.currentTime; else if (live && dt) EV.t += dt;     // no audio: keep time ourselves
   ev26Vol();
+  if (EV.burn && dt && state === 'play'){ for (const bo of bosses){ bo.hp -= bo.max*dt/4; bo.dirty = true; bo.hit = 0.05; if (Math.random() < dt*6) chips(bo.x, 2.5, bo.z, SMOKE, 2, 2); } if (bosses.length) checkBoss(); }
   if (!EV.on) return;
   const T = EV.t, once = k => !EV.cues.has(k) && EV.cues.add(k);
   if (T >= EV26.widen && once('widen') && PIER.stage < 2){ PIER.stage = 2; PIER.t = 0; PIER.hold = true; toast(PIER.mode === 'unroll' ? 'Ground crew: widening again' : 'More tugboats incoming', '#c6ecff'); }
   for (const [at, n] of EV26.drops) if (T >= at && once('drop' + at)){
-    ev26CloseMenu(); bossPending += n; bossNextT = waveT + 0.5; spawnAcc += EV.B*0.8; shake = Math.max(shake, 0.6);
+    ev26CloseMenu(); EV.burn = false; bossPending += n; bossNextT = waveT + 0.5; spawnAcc += EV.B*0.8; shake = Math.max(shake, 0.6);
     toast(n + ' bosses on the drop', '#ff9a90'); }
+  for (const [a, b] of EV26.more){
+    for (let at = a + EV26.every; at <= b - 20; at += EV26.every) if (T >= at && once('pack' + at)){ bossPending += EV26.pack; bossNextT = waveT + 0.3; shake = Math.max(shake, 0.4); toast(EV26.pack + ' more bosses', '#ff9a90'); }
+    if (T >= b && once('burn' + b)) EV.burn = true;
+  }
   for (const [a, b] of EV26.menus){
     if (T >= a && T < b - 4 && !EV.menu && !EV.cues.has('menu' + a) && state === 'play' && en === 0 && !bosses.length && !bossPending){ EV.cues.add('menu' + a); ev26OpenMenu(b); }
   }
